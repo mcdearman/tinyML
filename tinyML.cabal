@@ -1,0 +1,41 @@
+cabal-version:      3.0
+name:               tinyML
+version:            0.1.0.0
+synopsis:           The MiniML programming language
+license:            BSD-3-Clause
+license-file:       LICENSE
+author:             Chris McDearman
+maintainer:         mcdearmanchris@gmail.com
+category:           Language
+build-type:         Simple
+extra-doc-files:    CHANGELOG.md
+
+common warnings
+    ghc-options: -Wall -Werror=missing-signatures -Werror=incomplete-patterns -Werror=incomplete-uni-patterns
+
+executable tinyML
+    import:           warnings
+    main-is:          Main.hs
+    other-modules: 
+        Span
+        Spanned
+        AST.Def
+        AST.Expr
+        AST.Lit
+        Parser
+    default-extensions: 
+        OverloadedStrings
+        ScopedTypeVariables
+        LambdaCase
+        TupleSections
+        TemplateHaskell
+        GADTs
+    build-depends:    
+        base ^>=4.17.2.1,
+        megaparsec,
+        text,
+        pretty-simple,
+        array,
+        haskeline,
+    hs-source-dirs:   src
+    default-language: Haskell2010
