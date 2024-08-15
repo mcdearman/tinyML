@@ -1,8 +1,6 @@
 module Parser where
 
-import qualified AST.Def as D
-import qualified AST.Expr as E
-import qualified AST.Lit as AL
+import AST
 import Control.Applicative (empty, (<|>))
 import Data.Text (Text, pack)
 import Data.Void
@@ -78,12 +76,12 @@ bool = lexemeWithSpan $ choice [True <$ symbol "true", False <$ symbol "false"]
 stringLiteral :: Parser (Spanned String)
 stringLiteral = lexemeWithSpan $ char '\"' *> manyTill L.charLiteral (char '\"')
 
-lit :: Parser (Spanned AL.Lit)
+lit :: Parser (Spanned Lit)
 lit =
   choice
-    [ fmap AL.Int <$> signedInt,
-      fmap AL.Bool <$> bool,
-      fmap AL.String <$> stringLiteral
+    [ fmap Int <$> signedInt,
+      fmap Bool <$> bool,
+      fmap String <$> stringLiteral
     ]
 
 ident :: Parser (Spanned Text)
@@ -92,7 +90,7 @@ ident = lexemeWithSpan $ pack <$> ((:) <$> letterChar <*> many alphaNumChar)
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
-atom :: Parser (Spanned E.Expr)
+atom :: Parser (Spanned Expr)
 atom =
   choice
     [ litExpr,
@@ -102,22 +100,19 @@ atom =
   where
     litExpr = do
       l <- lit
-      return $ Spanned (E.Lit l) (span l)
+      return $ Spanned (Lit l) (span l)
     varExpr = do
       i <- ident
-      return $ Spanned (E.Var i) (span i)
+      return $ Spanned (Var i) (span i)
 
-expr :: Parser (Spanned E.Expr)
+expr :: Parser (Spanned Expr)
 expr = atom
 
-def :: Parser (Spanned D.Def)
-def = withSpan $ do
-  i <- ident
-  _ <- symbol "="
-  D.Def i <$> expr
+def :: Parser (Spanned Def)
+def = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
 
-repl :: Parser (Spanned D.Def)
+repl :: Parser (Spanned Def)
 repl = def
 
-parseDef :: Text -> Either (ParseErrorBundle Text Void) (Spanned D.Def)
+parseDef :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
 parseDef = parse def ""

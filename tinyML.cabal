@@ -19,9 +19,7 @@ executable tinyML
     other-modules: 
         Span
         Spanned
-        AST.Def
-        AST.Expr
-        AST.Lit
+        AST
         Parser
     default-extensions: 
         OverloadedStrings
