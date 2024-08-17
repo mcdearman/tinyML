@@ -34,7 +34,7 @@ withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
   startPos <- getOffset
   result <- p
-  Spanned result . Span startPos <$> getOffset
+  Spanned result . SrcLoc startPos <$> getOffset
 
 lexemeWithSpan :: Parser a -> Parser (Spanned a)
 lexemeWithSpan p = withSpan p <* sc
@@ -112,7 +112,14 @@ def :: Parser (Spanned Def)
 def = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
 
 repl :: Parser (Spanned Def)
-repl = def
+repl =
+  try def <|> do
+    e <- expr
+    let s = span e
+    return $ Spanned (Def (Spanned "main" (Gen s)) e) (Gen s)
 
-parseDef :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
-parseDef = parse def ""
+parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
+parse = Text.Megaparsec.parse def ""
+
+replParse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
+replParse = Text.Megaparsec.parse repl ""

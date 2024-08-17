@@ -2,7 +2,7 @@ module Main where
 
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
-import Parser (parseDef)
+import Parser (replParse)
 import System.Console.Haskeline
 import Text.Pretty.Simple (pShow)
 
@@ -13,7 +13,7 @@ repl :: InputT IO ()
 repl = do
   input <- getMultilineInput ""
   case input of
-    Just i -> case parseDef (pack i) of
+    Just i -> case replParse (pack i) of
       Left err -> outputStrLn $ "Error: " ++ unpack (toStrict $ pShow err)
       Right def -> outputStrLn $ unpack $ toStrict $ pShow def
     Nothing -> return ()
