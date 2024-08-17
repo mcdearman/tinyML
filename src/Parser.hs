@@ -115,8 +115,8 @@ repl :: Parser (Spanned Def)
 repl =
   try def <|> do
     e <- expr
-    let s = span e
-    return $ Spanned (Def (Spanned "main" (Gen s)) e) (Gen s)
+    let s = Gen $ span e
+    return $ Spanned (Def (Spanned "main" s) e) s
 
 parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
 parse = Text.Megaparsec.parse def ""
