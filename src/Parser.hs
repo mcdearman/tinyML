@@ -33,7 +33,7 @@ type Parser = Parsec Void Text
 withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
   startPos <- getOffset
-  result <- p
+  result <- sc *> p
   Spanned result . SrcLoc startPos <$> getOffset
 
 lexemeWithSpan :: Parser a -> Parser (Spanned a)
@@ -85,7 +85,10 @@ lit =
     ]
 
 ident :: Parser (Spanned Text)
-ident = lexemeWithSpan $ pack <$> ((:) <$> letterChar <*> many alphaNumChar)
+ident = lexemeWithSpan $ pack <$> ((:) <$> identStartChar <*> many identChar)
+  where
+    identStartChar = letterChar <|> char '_'
+    identChar = alphaNumChar <|> char '_' <|> char '\''
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
