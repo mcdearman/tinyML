@@ -3,7 +3,11 @@ module AST where
 import Data.Text (Text)
 import Spanned
 
-data Def = Def (Spanned Text) (Spanned Expr) deriving (Show)
+newtype Root = Root [Spanned Decl] deriving (Show)
+
+data Decl
+  = Def (Spanned Text) (Spanned Expr)
+  deriving (Show, Eq)
 
 data Expr
   = Lit (Spanned Lit)
@@ -11,9 +15,10 @@ data Expr
   | App (Spanned Expr) (Spanned Expr)
   | Lam (Spanned Text) (Spanned Expr)
   | Let (Spanned Text) (Spanned Expr) (Spanned Expr)
-  deriving (Show)
+  deriving (Show, Eq)
+
 data Lit
   = Int Integer
   | Bool Bool
   | String Text
-  deriving (Show)
+  deriving (Show, Eq)

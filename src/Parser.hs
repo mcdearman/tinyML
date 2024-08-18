@@ -111,20 +111,30 @@ atom =
 expr :: Parser (Spanned Expr)
 expr = atom
 
-def :: Parser (Spanned Def)
-def = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
+decl :: Parser (Spanned Decl)
+decl = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
 
-repl :: Parser (Spanned Def)
-repl =
-  sc
-    *> ( try def <|> do
-           e <- expr
-           let s = Gen $ span e
-           pure $ Spanned (Def (Spanned "main" s) e) s
-       )
+root :: Parser (Spanned Root)
+root = withSpan $ Root <$> many decl
 
-parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
-parse = Text.Megaparsec.parse def ""
+-- parse one decl or expr then wrap in a root
+repl :: Parser (Spanned Root)
+repl = sc *> (try declParser <|> exprParser)
+  where
+    declParser = do
+      d <- decl
+      let r = Root [d]
+      pure $ Spanned r (span d)
 
-replParse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
+    exprParser = do
+      e <- expr
+      let s = Gen $ span e
+      let mainDecl = Spanned (Def (Spanned "main" s) e) s
+      let r = Root [mainDecl]
+      pure $ Spanned r s
+
+parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Root)
+parse = Text.Megaparsec.parse root ""
+
+replParse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Root)
 replParse = Text.Megaparsec.parse repl ""
