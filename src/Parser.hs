@@ -33,7 +33,7 @@ type Parser = Parsec Void Text
 withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
   startPos <- getOffset
-  result <- sc *> p
+  result <- p
   Spanned result . SrcLoc startPos <$> getOffset
 
 lexemeWithSpan :: Parser a -> Parser (Spanned a)
@@ -46,14 +46,14 @@ symbol :: Text -> Parser (Spanned Text)
 symbol p = withSpan (L.symbol sc p)
 
 -- Token parsers
--- let' :: Parser Text
--- let' = symbol "let"
+let' :: Parser (Spanned Text)
+let' = symbol "let"
 
--- in' :: Parser Text
--- in' = symbol "in"
+in' :: Parser (Spanned Text)
+in' = symbol "in"
 
--- eq :: Parser Text
--- eq = symbol "="
+eq :: Parser (Spanned Text)
+eq = symbol "="
 
 octal :: Parser Integer
 octal = char '0' >> char' 'o' >> L.octal
@@ -73,8 +73,8 @@ real = lexemeWithSpan $ L.signed (notFollowedBy space1) L.float
 bool :: Parser (Spanned Bool)
 bool = lexemeWithSpan $ choice [True <$ symbol "true", False <$ symbol "false"]
 
-stringLiteral :: Parser (Spanned String)
-stringLiteral = lexemeWithSpan $ char '\"' *> manyTill L.charLiteral (char '\"')
+stringLiteral :: Parser (Spanned Text)
+stringLiteral = lexemeWithSpan $ char '\"' *> (pack <$> manyTill L.charLiteral (char '\"'))
 
 lit :: Parser (Spanned Lit)
 lit =
@@ -103,10 +103,10 @@ atom =
   where
     litExpr = do
       l <- lit
-      return $ Spanned (Lit l) (span l)
+      pure $ Spanned (Lit l) (span l)
     varExpr = do
       i <- ident
-      return $ Spanned (Var i) (span i)
+      pure $ Spanned (Var i) (span i)
 
 expr :: Parser (Spanned Expr)
 expr = atom
@@ -116,10 +116,12 @@ def = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
 
 repl :: Parser (Spanned Def)
 repl =
-  try def <|> do
-    e <- expr
-    let s = Gen $ span e
-    return $ Spanned (Def (Spanned "main" s) e) s
+  sc
+    *> ( try def <|> do
+           e <- expr
+           let s = Gen $ span e
+           pure $ Spanned (Def (Spanned "main" s) e) s
+       )
 
 parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Def)
 parse = Text.Megaparsec.parse def ""

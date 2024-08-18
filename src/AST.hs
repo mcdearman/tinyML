@@ -12,9 +12,8 @@ data Expr
   | Lam (Spanned Text) (Spanned Expr)
   | Let (Spanned Text) (Spanned Expr) (Spanned Expr)
   deriving (Show)
-
 data Lit
   = Int Integer
   | Bool Bool
-  | String String
+  | String Text
   deriving (Show)
