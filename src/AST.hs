@@ -15,6 +15,7 @@ data Expr
   | App (Spanned Expr) (Spanned Expr)
   | Lam (Spanned Text) (Spanned Expr)
   | Let (Spanned Text) (Spanned Expr) (Spanned Expr)
+  | Unit
   deriving (Show, Eq)
 
 data Lit

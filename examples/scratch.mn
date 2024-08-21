@@ -37,3 +37,15 @@ do
   y <- bar;
   return (x + y)
 end 
+
+def map : a b. (a -> b) -> [a] -> [b]
+  | f [] = []
+  | f (x :: xs) = f x :: map f xs
+
+def map {a b} (f : a -> b) (xs : [a]) : [b] = 
+  match xs with
+  | [] -> []
+  | (x::xs) -> f x :: map f xs
+
+def (.) : a b c. (b -> c) -> (a -> b) -> a -> c
+  | f . g = \x -> f (g x)

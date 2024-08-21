@@ -2,6 +2,8 @@ module Parser where
 
 import AST
 import Control.Applicative (empty, (<|>))
+import Data.Functor (($>))
+import qualified Data.Functor
 import Data.Text (Text, pack)
 import Data.Void
 import Span
@@ -93,23 +95,37 @@ ident = lexemeWithSpan $ pack <$> ((:) <$> identStartChar <*> many identChar)
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
-atom :: Parser (Spanned Expr)
-atom =
-  choice
-    [ litExpr,
-      varExpr,
-      parens expr
-    ]
+expr :: Parser (Spanned Expr)
+expr = atom
   where
+    unit :: Parser (Spanned Expr)
+    unit = withSpan $ symbol "()" $> Unit
+
     litExpr = do
       l <- lit
       pure $ Spanned (Lit l) (span l)
+
     varExpr = do
       i <- ident
       pure $ Spanned (Var i) (span i)
 
-expr :: Parser (Spanned Expr)
-expr = atom
+    simple :: Parser (Spanned Expr)
+    simple = choice [unit, litExpr, varExpr]
+
+    lambda :: Parser (Spanned Expr)
+    lambda = withSpan $ do
+      _ <- symbol "\\"
+      arg <- ident
+      _ <- symbol "->"
+      Lam arg <$> expr
+
+    atom :: Parser (Spanned Expr)
+    atom =
+      choice
+        [ simple,
+          lambda,
+          parens expr
+        ]
 
 decl :: Parser (Spanned Decl)
 decl = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
