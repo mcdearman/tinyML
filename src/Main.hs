@@ -15,7 +15,7 @@ repl = do
   case input of
     Just i -> case replParse (pack i) of
       Left err -> outputStrLn $ "Error: " ++ unpack (toStrict $ pShow err)
-      Right def -> outputStrLn $ unpack $ toStrict $ pShow def
+      Right d -> outputStrLn $ unpack $ toStrict $ pShow d
     Nothing -> return ()
   repl
 

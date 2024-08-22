@@ -21,6 +21,11 @@ executable tinyML
         Spanned
         AST
         Parser
+        NIR
+        Rename
+        TIR
+        Infer
+        Eval
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables
@@ -35,5 +40,6 @@ executable tinyML
         pretty-simple,
         array,
         haskeline,
+        intern,
     hs-source-dirs:   src
     default-language: Haskell2010

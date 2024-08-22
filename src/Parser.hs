@@ -14,11 +14,15 @@ import Text.Megaparsec
     Parsec,
     between,
     choice,
+    endBy,
     getOffset,
     many,
     manyTill,
     parse,
     satisfy,
+    sepBy,
+    sepEndBy,
+    some,
   )
 import Text.Megaparsec.Char
   ( alphaNumChar,
@@ -46,16 +50,6 @@ sc = L.space space1 (L.skipLineComment "--") empty
 
 symbol :: Text -> Parser (Spanned Text)
 symbol p = withSpan (L.symbol sc p)
-
--- Token parsers
-let' :: Parser (Spanned Text)
-let' = symbol "let"
-
-in' :: Parser (Spanned Text)
-in' = symbol "in"
-
-eq :: Parser (Spanned Text)
-eq = symbol "="
 
 octal :: Parser Integer
 octal = char '0' >> char' 'o' >> L.octal
@@ -95,8 +89,30 @@ ident = lexemeWithSpan $ pack <$> ((:) <$> identStartChar <*> many identChar)
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
+data Operator m a -- N.B.
+  = -- | Non-associative infix
+    InfixN (m (a -> a -> a))
+  | -- | Left-associative infix
+    InfixL (m (a -> a -> a))
+  | -- | Right-associative infix
+    InfixR (m (a -> a -> a))
+  | -- | Prefix
+    Prefix (m (a -> a))
+  | -- | Postfix
+    Postfix (m (a -> a))
+
+binary :: Text -> (Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
+binary name f = InfixL (f <$ symbol name)
+
+prefix, postfix :: Text -> (Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
+prefix name f = Prefix (f <$ symbol name)
+postfix name f = Postfix (f <$ symbol name)
+
+operatorTable :: [[Operator Parser (Spanned Expr)]]
+operatorTable = undefined
+
 expr :: Parser (Spanned Expr)
-expr = atom
+expr = try apply <|> atom
   where
     unit :: Parser (Spanned Expr)
     unit = withSpan $ symbol "()" $> Unit
@@ -110,22 +126,54 @@ expr = atom
       pure $ Spanned (Var i) (span i)
 
     simple :: Parser (Spanned Expr)
-    simple = choice [unit, litExpr, varExpr]
+    simple = choice [unit, litExpr, varExpr, parens expr]
 
     lambda :: Parser (Spanned Expr)
     lambda = withSpan $ do
       _ <- symbol "\\"
-      arg <- ident
+      args <- many ident
       _ <- symbol "->"
-      Lam arg <$> expr
+      Lam args <$> expr
+
+    let' :: Parser (Spanned Expr)
+    let' = withSpan $ do
+      _ <- symbol "let"
+      name <- ident
+      _ <- symbol "="
+      val <- expr
+      _ <- symbol "in"
+      Let name val <$> expr
+
+    if' :: Parser (Spanned Expr)
+    if' = withSpan $ do
+      _ <- symbol "if"
+      cond <- expr
+      _ <- symbol "then"
+      t <- expr
+      _ <- symbol "else"
+      If cond t <$> expr
+
+    list :: Parser (Spanned Expr)
+    list = withSpan $ do
+      _ <- symbol "["
+      elems <- sepEndBy expr (symbol ",")
+      _ <- symbol "]"
+      pure $ List elems
 
     atom :: Parser (Spanned Expr)
     atom =
       choice
-        [ simple,
+        [ let',
           lambda,
-          parens expr
+          if',
+          list,
+          simple
         ]
+
+    apply :: Parser (Spanned Expr)
+    apply = withSpan $ do
+      f <- atom
+      App f <$> some atom
 
 decl :: Parser (Spanned Decl)
 decl = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
