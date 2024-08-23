@@ -1,9 +1,10 @@
 module Parser where
 
 import AST
-import Control.Applicative (empty, (<|>))
+import Control.Applicative (empty, optional, (<|>))
 import Data.Functor (($>))
 import qualified Data.Functor
+import Data.Maybe (fromMaybe)
 import Data.Text (Text, pack)
 import Data.Void
 import Span
@@ -89,17 +90,12 @@ ident = lexemeWithSpan $ pack <$> ((:) <$> identStartChar <*> many identChar)
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
-data Operator m a -- N.B.
-  = -- | Non-associative infix
-    InfixN (m (a -> a -> a))
-  | -- | Left-associative infix
-    InfixL (m (a -> a -> a))
-  | -- | Right-associative infix
-    InfixR (m (a -> a -> a))
-  | -- | Prefix
-    Prefix (m (a -> a))
-  | -- | Postfix
-    Postfix (m (a -> a))
+data Operator m a
+  = InfixN (m (a -> a -> a))
+  | InfixL (m (a -> a -> a))
+  | InfixR (m (a -> a -> a))
+  | Prefix (m (a -> a))
+  | Postfix (m (a -> a))
 
 binary :: Text -> (Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
 binary name f = InfixL (f <$ symbol name)
