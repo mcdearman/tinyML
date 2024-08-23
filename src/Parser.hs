@@ -90,6 +90,12 @@ ident = lexemeWithSpan $ pack <$> ((:) <$> identStartChar <*> many identChar)
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
+brackets :: Parser a -> Parser a
+brackets = between (symbol "[") (symbol "]")
+
+braces :: Parser a -> Parser a
+braces = between (symbol "{") (symbol "}")
+
 data Operator m a
   = InfixN (m (a -> a -> a))
   | InfixL (m (a -> a -> a))
@@ -108,7 +114,7 @@ operatorTable :: [[Operator Parser (Spanned Expr)]]
 operatorTable = undefined
 
 expr :: Parser (Spanned Expr)
-expr = try apply <|> atom
+expr = apply
   where
     unit :: Parser (Spanned Expr)
     unit = withSpan $ symbol "()" $> Unit
@@ -125,36 +131,25 @@ expr = try apply <|> atom
     simple = choice [unit, litExpr, varExpr, parens expr]
 
     lambda :: Parser (Spanned Expr)
-    lambda = withSpan $ do
-      _ <- symbol "\\"
-      args <- many ident
-      _ <- symbol "->"
-      Lam args <$> expr
+    lambda = withSpan $ Lam <$> (symbol "\\" *> some ident) <*> (symbol "->" *> expr)
 
     let' :: Parser (Spanned Expr)
-    let' = withSpan $ do
-      _ <- symbol "let"
-      name <- ident
-      _ <- symbol "="
-      val <- expr
-      _ <- symbol "in"
-      Let name val <$> expr
+    let' =
+      withSpan $
+        do
+          Let <$> (symbol "let" *> ident)
+          <*> (symbol "=" *> expr)
+          <*> (symbol "in" *> expr)
 
     if' :: Parser (Spanned Expr)
     if' = withSpan $ do
-      _ <- symbol "if"
-      cond <- expr
-      _ <- symbol "then"
-      t <- expr
-      _ <- symbol "else"
-      If cond t <$> expr
+      If
+        <$> (symbol "if" *> expr)
+        <*> (symbol "then" *> expr)
+        <*> (symbol "else" *> expr)
 
     list :: Parser (Spanned Expr)
-    list = withSpan $ do
-      _ <- symbol "["
-      elems <- sepEndBy expr (symbol ",")
-      _ <- symbol "]"
-      pure $ List elems
+    list = withSpan $ List <$> brackets (expr `sepEndBy` symbol ",")
 
     atom :: Parser (Spanned Expr)
     atom =
@@ -167,9 +162,9 @@ expr = try apply <|> atom
         ]
 
     apply :: Parser (Spanned Expr)
-    apply = withSpan $ do
-      f <- atom
-      App f <$> some atom
+    apply = do
+      fargs <- some atom
+      pure $ foldl1 (\f a -> Spanned (App f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
 decl = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)

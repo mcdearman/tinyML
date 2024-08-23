@@ -13,7 +13,7 @@ data Decl
 data Expr
   = Lit (Spanned Lit)
   | Var (Spanned Text)
-  | App (Spanned Expr) [Spanned Expr]
+  | App (Spanned Expr) (Spanned Expr)
   | Lam [Spanned Text] (Spanned Expr)
   | Let (Spanned Text) (Spanned Expr) (Spanned Expr)
   | Unary (Spanned UnOp) (Spanned Expr)
