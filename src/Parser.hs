@@ -49,17 +49,17 @@ sc = L.space space1 (L.skipLineComment "--") empty
 symbol :: Text -> Parser (Spanned Text)
 symbol p = withSpan (L.symbol sc p)
 
-octal :: Parser Integer
+octal :: Parser Int
 octal = char '0' >> char' 'o' >> L.octal
 
-hexadecimal :: Parser Integer
+hexadecimal :: Parser Int
 hexadecimal = char '0' >> char' 'x' >> L.hexadecimal
 
-int :: Parser Integer
-int = try octal <|> hexadecimal <|> L.decimal
+int :: Parser (Spanned Int)
+int = lexemeWithSpan $ try octal <|> hexadecimal <|> L.decimal
 
-signedInt :: Parser (Spanned Integer)
-signedInt = lexemeWithSpan $ L.signed (notFollowedBy space1) int
+-- signedInt :: Parser (Spanned Int)
+-- signedInt = lexemeWithSpan $ L.signed (notFollowedBy space1) int
 
 real :: Parser (Spanned Double)
 real = lexemeWithSpan $ L.signed (notFollowedBy space1) L.float
@@ -73,7 +73,7 @@ stringLiteral = lexemeWithSpan $ char '\"' *> (pack <$> manyTill L.charLiteral (
 lit :: Parser (Spanned Lit)
 lit =
   choice
-    [ fmap LInt <$> signedInt,
+    [ fmap LInt <$> int,
       fmap LBool <$> bool,
       fmap LString <$> stringLiteral
     ]

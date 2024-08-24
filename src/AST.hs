@@ -9,7 +9,6 @@ data Decl
   = DDef (Spanned Text) (Spanned Expr)
   | DFn (Spanned Text) [Spanned Text] (Spanned Expr)
   deriving (Show, Eq)
-
 data Expr
   = ELit (Spanned Lit)
   | EVar (Spanned Text)
@@ -54,7 +53,7 @@ data Pattern
   deriving (Show, Eq)
 
 data Lit
-  = LInt Integer
+  = LInt Int
   | LBool Bool
   | LString Text
   deriving (Show, Eq)

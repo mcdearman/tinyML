@@ -19,6 +19,8 @@ executable tinyML
     other-modules: 
         Span
         Spanned
+        Token
+        Lexer
         AST
         Parser
         NIR
