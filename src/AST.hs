@@ -9,6 +9,7 @@ data Decl
   = DDef (Spanned Text) (Spanned Expr)
   | DFn (Spanned Text) [Spanned Text] (Spanned Expr)
   deriving (Show, Eq)
+
 data Expr
   = ELit (Spanned Lit)
   | EVar (Spanned Text)
@@ -19,6 +20,7 @@ data Expr
   | EUnary (Spanned UnOp) (Spanned Expr)
   | EBinary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
   | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
+  | EMatch (Spanned Expr) [(Spanned Pattern, Spanned Expr)]
   | EList [Spanned Expr]
   | EUnit
   deriving (Show, Eq)
@@ -46,7 +48,9 @@ data BinOp
   deriving (Show, Eq)
 
 data Pattern
-  = PVar (Spanned Text)
+  = PWildcard
+  | PLit (Spanned Lit)
+  | PVar (Spanned Text)
   | PPair (Spanned Text) [Spanned Pattern]
   | PList [Spanned Pattern]
   | PUnit

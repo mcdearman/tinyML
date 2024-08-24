@@ -26,7 +26,6 @@ import Text.Megaparsec.Char
     char,
     char',
     letterChar,
-    space,
     space1,
     string,
   )
@@ -94,7 +93,7 @@ ident = lexemeWithSpan $ try $ do
     identChar = alphaNumChar <|> char '_' <|> char '\''
 
     keywords :: [Text]
-    keywords = ["def", "let", "in", "if", "then", "else"]
+    keywords = ["def", "let", "in", "if", "then", "else", "match", "with", "true", "false"]
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
@@ -136,6 +135,19 @@ operatorTable =
     ],
     [binary "::" (\s l r -> Spanned (EBinary (Spanned BPair s) l r) (span l <> span r))]
   ]
+
+pattern' :: Parser (Spanned Pattern)
+pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
+  where
+    wildcard = symbol "_" $> PWildcard
+    litP = PLit <$> lit
+    varP = PVar <$> ident
+    pairP = do
+      h <- ident
+      ps <- some pattern'
+      pure $ PPair h ps
+    listP = PList <$> brackets (pattern' `sepEndBy` symbol ",")
+    unitP = symbol "()" $> PUnit
 
 expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
@@ -183,6 +195,12 @@ expr = makeExprParser apply operatorTable
         <*> (symbol "then" *> expr)
         <*> (symbol "else" *> expr)
 
+    match :: Parser (Spanned Expr)
+    match = dbg "match" $ withSpan $ do
+      EMatch
+        <$> (symbol "match" *> expr)
+        <*> (symbol "with" *> ((pattern' <*> expr) `sepEndBy` symbol "|"))
+
     list :: Parser (Spanned Expr)
     list = dbg "list" $ withSpan $ EList <$> brackets (expr `sepEndBy` symbol ",")
 
@@ -193,6 +211,7 @@ expr = makeExprParser apply operatorTable
           [ try let_rec <|> let',
             lambda,
             if',
+            match,
             list,
             simple
           ]
