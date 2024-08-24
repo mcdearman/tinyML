@@ -19,6 +19,7 @@ import Text.Megaparsec
     manyTill,
     parse,
     sepEndBy,
+    sepEndBy1,
     some,
   )
 import Text.Megaparsec.Char
@@ -167,14 +168,14 @@ expr = makeExprParser apply operatorTable
     simple = dbg "simple" $ choice [unit, litExpr, varExpr, parens expr]
 
     lambda :: Parser (Spanned Expr)
-    lambda = dbg "lambda" $ withSpan $ ELam <$> (symbol "\\" *> some ident) <*> (symbol "->" *> expr)
+    lambda = dbg "lambda" $ withSpan $ ELam <$> (symbol "\\" *> some pattern') <*> (symbol "->" *> expr)
 
     let' :: Parser (Spanned Expr)
     let' =
       dbg "let" $
         withSpan $
           do
-            ELet <$> (symbol "let" *> ident)
+            ELet <$> (symbol "let" *> pattern')
             <*> (symbol "=" *> expr)
             <*> (symbol "in" *> expr)
 
@@ -184,7 +185,7 @@ expr = makeExprParser apply operatorTable
         withSpan $
           do
             ELetRec <$> (symbol "let" *> ident)
-            <*> some ident
+            <*> some pattern'
             <*> (symbol "=" *> expr)
             <*> (symbol "in" *> expr)
 
@@ -199,7 +200,7 @@ expr = makeExprParser apply operatorTable
     match = dbg "match" $ withSpan $ do
       EMatch
         <$> (symbol "match" *> expr)
-        <*> (symbol "with" *> ((pattern' <*> expr) `sepEndBy` symbol "|"))
+        <*> (symbol "with" *> some (symbol "|" *> ((,) <$> pattern' <*> (symbol "->" *> expr))))
 
     list :: Parser (Spanned Expr)
     list = dbg "list" $ withSpan $ EList <$> brackets (expr `sepEndBy` symbol ",")
@@ -224,8 +225,8 @@ expr = makeExprParser apply operatorTable
 decl :: Parser (Spanned Decl)
 decl = withSpan $ try fn <|> def
   where
-    def = DDef <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
-    fn = DFn <$> (symbol "def" *> ident) <*> some ident <*> (symbol "=" *> expr)
+    def = DDef <$> (symbol "def" *> pattern') <*> (symbol "=" *> expr)
+    fn = DFn <$> (symbol "def" *> ident) <*> some pattern' <*> (symbol "=" *> expr)
 
 root :: Parser (Spanned Root)
 root = withSpan $ Root <$> many decl <* eof
@@ -241,7 +242,7 @@ repl = sc *> (try declParser <|> exprParser)
     exprParser = do
       e <- expr <* eof
       let s = Gen $ span e
-          mainDecl = Spanned (DDef (Spanned "main" s) e) s
+          mainDecl = Spanned (DDef (Spanned (PVar (Spanned "main" s)) s) e) s
           r = Root [mainDecl]
       pure $ Spanned r s
 
