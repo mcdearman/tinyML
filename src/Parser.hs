@@ -1,27 +1,23 @@
 module Parser where
 
 import AST
-import Control.Applicative (empty, optional, (<|>))
+import Control.Applicative (empty, (<|>))
+import Control.Monad.Combinators.Expr
 import Data.Functor (($>))
-import qualified Data.Functor
-import Data.Maybe (fromMaybe)
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import Data.Void
 import Span
 import Spanned
 import Text.Megaparsec
-  ( MonadParsec (notFollowedBy, try),
+  ( MonadParsec (eof, notFollowedBy, try),
     ParseErrorBundle,
     Parsec,
     between,
     choice,
-    endBy,
     getOffset,
     many,
     manyTill,
     parse,
-    satisfy,
-    sepBy,
     sepEndBy,
     some,
   )
@@ -33,6 +29,7 @@ import Text.Megaparsec.Char
     space1,
   )
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Debug (MonadParsecDbg (dbg))
 import Prelude hiding (span)
 
 type Parser = Parsec Void Text
@@ -82,10 +79,17 @@ lit =
     ]
 
 ident :: Parser (Spanned Text)
-ident = lexemeWithSpan $ pack <$> ((:) <$> identStartChar <*> many identChar)
+ident = lexemeWithSpan $ try $ do
+  name <- pack <$> ((:) <$> identStartChar <*> many identChar)
+  if name `elem` keywords
+    then fail $ "keyword " ++ unpack name ++ " cannot be an identifier"
+    else return name
   where
     identStartChar = letterChar <|> char '_'
     identChar = alphaNumChar <|> char '_' <|> char '\''
+
+    keywords :: [Text]
+    keywords = ["def", "let", "in", "if", "then", "else"]
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
@@ -96,13 +100,6 @@ brackets = between (symbol "[") (symbol "]")
 braces :: Parser a -> Parser a
 braces = between (symbol "{") (symbol "}")
 
-data Operator m a
-  = InfixN (m (a -> a -> a))
-  | InfixL (m (a -> a -> a))
-  | InfixR (m (a -> a -> a))
-  | Prefix (m (a -> a))
-  | Postfix (m (a -> a))
-
 binary :: Text -> (Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
 binary name f = InfixL (f <$ symbol name)
 
@@ -111,7 +108,11 @@ prefix name f = Prefix (f <$ symbol name)
 postfix name f = Postfix (f <$ symbol name)
 
 operatorTable :: [[Operator Parser (Spanned Expr)]]
-operatorTable = undefined
+operatorTable =
+  [ [ prefix "-" (Unary $ withSpan Neg),
+      prefix "!" (Unary Not)
+    ]
+  ]
 
 expr :: Parser (Spanned Expr)
 expr = apply
@@ -128,41 +129,43 @@ expr = apply
       pure $ Spanned (Var i) (span i)
 
     simple :: Parser (Spanned Expr)
-    simple = choice [unit, litExpr, varExpr, parens expr]
+    simple = dbg "simple" $ choice [unit, litExpr, varExpr, parens expr]
 
     lambda :: Parser (Spanned Expr)
-    lambda = withSpan $ Lam <$> (symbol "\\" *> some ident) <*> (symbol "->" *> expr)
+    lambda = dbg "lambda" $ withSpan $ Lam <$> (symbol "\\" *> some ident) <*> (symbol "->" *> expr)
 
     let' :: Parser (Spanned Expr)
     let' =
-      withSpan $
-        do
-          Let <$> (symbol "let" *> ident)
-          <*> (symbol "=" *> expr)
-          <*> (symbol "in" *> expr)
+      dbg "let" $
+        withSpan $
+          do
+            Let <$> (symbol "let" *> ident)
+            <*> (symbol "=" *> expr)
+            <*> (symbol "in" *> expr)
 
     if' :: Parser (Spanned Expr)
-    if' = withSpan $ do
+    if' = dbg "if" $ withSpan $ do
       If
         <$> (symbol "if" *> expr)
         <*> (symbol "then" *> expr)
         <*> (symbol "else" *> expr)
 
     list :: Parser (Spanned Expr)
-    list = withSpan $ List <$> brackets (expr `sepEndBy` symbol ",")
+    list = dbg "list" $ withSpan $ List <$> brackets (expr `sepEndBy` symbol ",")
 
     atom :: Parser (Spanned Expr)
     atom =
-      choice
-        [ let',
-          lambda,
-          if',
-          list,
-          simple
-        ]
+      dbg "atom" $
+        choice
+          [ let',
+            lambda,
+            if',
+            list,
+            simple
+          ]
 
     apply :: Parser (Spanned Expr)
-    apply = do
+    apply = dbg "apply" $ do
       fargs <- some atom
       pure $ foldl1 (\f a -> Spanned (App f a) (span f <> span a)) fargs
 
@@ -170,22 +173,22 @@ decl :: Parser (Spanned Decl)
 decl = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
 
 root :: Parser (Spanned Root)
-root = withSpan $ Root <$> many decl
+root = withSpan $ Root <$> many decl <* eof
 
 -- parse one decl or expr then wrap in a root
 repl :: Parser (Spanned Root)
 repl = sc *> (try declParser <|> exprParser)
   where
     declParser = do
-      d <- decl
+      d <- decl <* eof
       let r = Root [d]
       pure $ Spanned r (span d)
 
     exprParser = do
-      e <- expr
+      e <- expr <* eof
       let s = Gen $ span e
-      let mainDecl = Spanned (Def (Spanned "main" s) e) s
-      let r = Root [mainDecl]
+          mainDecl = Spanned (Def (Spanned "main" s) e) s
+          r = Root [mainDecl]
       pure $ Spanned r s
 
 parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Root)

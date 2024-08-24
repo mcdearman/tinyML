@@ -36,6 +36,7 @@ executable tinyML
     build-depends:    
         base ^>=4.17.2.1,
         megaparsec,
+        parser-combinators,
         text,
         pretty-simple,
         array,

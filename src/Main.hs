@@ -4,8 +4,8 @@ import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
 import Parser (replParse)
 import System.Console.Haskeline
+import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
-import Text.Megaparsec (parseErrorPretty)
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
@@ -15,7 +15,7 @@ repl = do
   input <- getMultilineInput ""
   case input of
     Just i -> case replParse (pack i) of
-      Left err -> outputStrLn $ "Error: " ++ unpack (pack (parseErrorPretty err))
+      Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
       Right d -> outputStrLn $ unpack $ toStrict $ pShow d
     Nothing -> return ()
   repl
