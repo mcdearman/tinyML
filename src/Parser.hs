@@ -73,9 +73,9 @@ stringLiteral = lexemeWithSpan $ char '\"' *> (pack <$> manyTill L.charLiteral (
 lit :: Parser (Spanned Lit)
 lit =
   choice
-    [ fmap Int <$> signedInt,
-      fmap Bool <$> bool,
-      fmap String <$> stringLiteral
+    [ fmap LInt <$> signedInt,
+      fmap LBool <$> bool,
+      fmap LString <$> stringLiteral
     ]
 
 ident :: Parser (Spanned Text)
@@ -100,64 +100,92 @@ brackets = between (symbol "[") (symbol "]")
 braces :: Parser a -> Parser a
 braces = between (symbol "{") (symbol "}")
 
-binary :: Text -> (Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
-binary name f = InfixL (f <$ symbol name)
+binary :: Text -> (Span -> Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
+binary name f = InfixL (f . span <$> symbol name)
 
-prefix, postfix :: Text -> (Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
-prefix name f = Prefix (f <$ symbol name)
-postfix name f = Postfix (f <$ symbol name)
+prefix, postfix :: Text -> (Span -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
+prefix name f = Prefix (f . span <$> symbol name)
+postfix name f = Postfix (f . span <$> symbol name)
 
 operatorTable :: [[Operator Parser (Spanned Expr)]]
 operatorTable =
-  [ [ prefix "-" (Unary $ withSpan Neg),
-      prefix "!" (Unary Not)
-    ]
+  [ [ prefix "-" (\s e -> Spanned (EUnary (Spanned UNeg s) e) (span e)),
+      prefix "!" (\s e -> Spanned (EUnary (Spanned UNot s) e) (span e))
+    ],
+    [ binary "*" (\s l r -> Spanned (EBinary (Spanned BMul s) l r) (span l <> span r)),
+      binary "/" (\s l r -> Spanned (EBinary (Spanned BDiv s) l r) (span l <> span r)),
+      binary "%" (\s l r -> Spanned (EBinary (Spanned BMod s) l r) (span l <> span r))
+    ],
+    [ binary "+" (\s l r -> Spanned (EBinary (Spanned BAdd s) l r) (span l <> span r)),
+      binary "-" (\s l r -> Spanned (EBinary (Spanned BSub s) l r) (span l <> span r))
+    ],
+    [ binary "=" (\s l r -> Spanned (EBinary (Spanned BEq s) l r) (span l <> span r)),
+      binary "!=" (\s l r -> Spanned (EBinary (Spanned BNeq s) l r) (span l <> span r)),
+      binary "<" (\s l r -> Spanned (EBinary (Spanned BLt s) l r) (span l <> span r)),
+      binary ">" (\s l r -> Spanned (EBinary (Spanned BGt s) l r) (span l <> span r)),
+      binary "<=" (\s l r -> Spanned (EBinary (Spanned BLeq s) l r) (span l <> span r)),
+      binary ">=" (\s l r -> Spanned (EBinary (Spanned BGeq s) l r) (span l <> span r))
+    ],
+    [ binary "&&" (\s l r -> Spanned (EBinary (Spanned BAnd s) l r) (span l <> span r)),
+      binary "||" (\s l r -> Spanned (EBinary (Spanned BOr s) l r) (span l <> span r))
+    ],
+    [binary "::" (\s l r -> Spanned (EBinary (Spanned BPair s) l r) (span l <> span r))]
   ]
 
 expr :: Parser (Spanned Expr)
-expr = apply
+expr = makeExprParser apply operatorTable
   where
     unit :: Parser (Spanned Expr)
-    unit = withSpan $ symbol "()" $> Unit
+    unit = withSpan $ symbol "()" $> EUnit
 
     litExpr = do
       l <- lit
-      pure $ Spanned (Lit l) (span l)
+      pure $ Spanned (ELit l) (span l)
 
     varExpr = do
       i <- ident
-      pure $ Spanned (Var i) (span i)
+      pure $ Spanned (EVar i) (span i)
 
     simple :: Parser (Spanned Expr)
     simple = dbg "simple" $ choice [unit, litExpr, varExpr, parens expr]
 
     lambda :: Parser (Spanned Expr)
-    lambda = dbg "lambda" $ withSpan $ Lam <$> (symbol "\\" *> some ident) <*> (symbol "->" *> expr)
+    lambda = dbg "lambda" $ withSpan $ ELam <$> (symbol "\\" *> some ident) <*> (symbol "->" *> expr)
 
     let' :: Parser (Spanned Expr)
     let' =
       dbg "let" $
         withSpan $
           do
-            Let <$> (symbol "let" *> ident)
+            ELet <$> (symbol "let" *> ident)
+            <*> (symbol "=" *> expr)
+            <*> (symbol "in" *> expr)
+
+    let_rec :: Parser (Spanned Expr)
+    let_rec =
+      dbg "let_rec" $
+        withSpan $
+          do
+            ELetRec <$> (symbol "let" *> ident)
+            <*> some ident
             <*> (symbol "=" *> expr)
             <*> (symbol "in" *> expr)
 
     if' :: Parser (Spanned Expr)
     if' = dbg "if" $ withSpan $ do
-      If
+      EIf
         <$> (symbol "if" *> expr)
         <*> (symbol "then" *> expr)
         <*> (symbol "else" *> expr)
 
     list :: Parser (Spanned Expr)
-    list = dbg "list" $ withSpan $ List <$> brackets (expr `sepEndBy` symbol ",")
+    list = dbg "list" $ withSpan $ EList <$> brackets (expr `sepEndBy` symbol ",")
 
     atom :: Parser (Spanned Expr)
     atom =
       dbg "atom" $
         choice
-          [ let',
+          [ try let_rec <|> let',
             lambda,
             if',
             list,
@@ -167,10 +195,13 @@ expr = apply
     apply :: Parser (Spanned Expr)
     apply = dbg "apply" $ do
       fargs <- some atom
-      pure $ foldl1 (\f a -> Spanned (App f a) (span f <> span a)) fargs
+      pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
-decl = withSpan $ Def <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
+decl = withSpan $ try fn <|> def
+  where
+    def = DDef <$> (symbol "def" *> ident) <*> (symbol "=" *> expr)
+    fn = DFn <$> (symbol "def" *> ident) <*> some ident <*> (symbol "=" *> expr)
 
 root :: Parser (Spanned Root)
 root = withSpan $ Root <$> many decl <* eof
@@ -181,13 +212,12 @@ repl = sc *> (try declParser <|> exprParser)
   where
     declParser = do
       d <- decl <* eof
-      let r = Root [d]
-      pure $ Spanned r (span d)
+      pure $ Spanned (Root [d]) (span d)
 
     exprParser = do
       e <- expr <* eof
       let s = Gen $ span e
-          mainDecl = Spanned (Def (Spanned "main" s) e) s
+          mainDecl = Spanned (DDef (Spanned "main" s) e) s
           r = Root [mainDecl]
       pure $ Spanned r s
 

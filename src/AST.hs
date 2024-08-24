@@ -6,47 +6,55 @@ import Spanned
 newtype Root = Root [Spanned Decl] deriving (Show)
 
 data Decl
-  = Def (Spanned Text) (Spanned Expr)
-  | Fn (Spanned Text) [Spanned Text] (Spanned Expr)
+  = DDef (Spanned Text) (Spanned Expr)
+  | DFn (Spanned Text) [Spanned Text] (Spanned Expr)
   deriving (Show, Eq)
 
 data Expr
-  = Lit (Spanned Lit)
-  | Var (Spanned Text)
-  | App (Spanned Expr) (Spanned Expr)
-  | Lam [Spanned Text] (Spanned Expr)
-  | Let (Spanned Text) (Spanned Expr) (Spanned Expr)
-  | Unary (Spanned UnOp) (Spanned Expr)
-  | Binary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
-  | If (Spanned Expr) (Spanned Expr) (Spanned Expr)
-  | List [Spanned Expr]
-  | Unit
+  = ELit (Spanned Lit)
+  | EVar (Spanned Text)
+  | EApp (Spanned Expr) (Spanned Expr)
+  | ELam [Spanned Text] (Spanned Expr)
+  | ELet (Spanned Text) (Spanned Expr) (Spanned Expr)
+  | ELetRec (Spanned Text) [Spanned Text] (Spanned Expr) (Spanned Expr)
+  | EUnary (Spanned UnOp) (Spanned Expr)
+  | EBinary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
+  | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
+  | EList [Spanned Expr]
+  | EUnit
   deriving (Show, Eq)
 
 data UnOp
-  = Neg
-  | Not
+  = UNeg
+  | UNot
   deriving (Show, Eq)
 
 data BinOp
-  = Add
-  | Sub
-  | Mul
-  | Div
-  | Mod
-  | And
-  | Or
-  | Eq
-  | Neq
-  | Lt
-  | Gt
-  | Leq
-  | Geq
-  | Pair
+  = BAdd
+  | BSub
+  | BMul
+  | BDiv
+  | BMod
+  | BAnd
+  | BOr
+  | BEq
+  | BNeq
+  | BLt
+  | BGt
+  | BLeq
+  | BGeq
+  | BPair
+  deriving (Show, Eq)
+
+data Pattern
+  = PVar (Spanned Text)
+  | PPair (Spanned Text) [Spanned Pattern]
+  | PList [Spanned Pattern]
+  | PUnit
   deriving (Show, Eq)
 
 data Lit
-  = Int Integer
-  | Bool Bool
-  | String Text
+  = LInt Integer
+  | LBool Bool
+  | LString Text
   deriving (Show, Eq)
