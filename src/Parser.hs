@@ -26,7 +26,9 @@ import Text.Megaparsec.Char
     char,
     char',
     letterChar,
+    space,
     space1,
+    string,
   )
 import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Megaparsec.Debug (MonadParsecDbg (dbg))
@@ -48,6 +50,9 @@ sc = L.space space1 (L.skipLineComment "--") empty
 
 symbol :: Text -> Parser (Spanned Text)
 symbol p = withSpan (L.symbol sc p)
+
+noSpaceSymbol :: Text -> Parser (Spanned Text)
+noSpaceSymbol = withSpan . string
 
 octal :: Parser Int
 octal = char '0' >> char' 'o' >> L.octal
@@ -104,8 +109,8 @@ binary :: Text -> (Span -> Spanned Expr -> Spanned Expr -> Spanned Expr) -> Oper
 binary name f = InfixL (f . span <$> symbol name)
 
 prefix, postfix :: Text -> (Span -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
-prefix name f = Prefix (f . span <$> symbol name)
-postfix name f = Postfix (f . span <$> symbol name)
+prefix name f = Prefix (f . span <$> noSpaceSymbol name)
+postfix name f = Postfix (f . span <$> noSpaceSymbol name)
 
 operatorTable :: [[Operator Parser (Spanned Expr)]]
 operatorTable =
