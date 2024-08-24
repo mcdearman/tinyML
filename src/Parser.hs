@@ -143,10 +143,7 @@ pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
     wildcard = symbol "_" $> PWildcard
     litP = PLit <$> lit
     varP = PVar <$> ident
-    pairP = do
-      h <- ident
-      ps <- some pattern'
-      pure $ PPair h ps
+    pairP = parens $ PPair <$> pattern' <*> (symbol "::" *> pattern')
     listP = PList <$> brackets (pattern' `sepEndBy` symbol ",")
     unitP = symbol "()" $> PUnit
 

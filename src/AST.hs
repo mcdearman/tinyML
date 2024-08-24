@@ -51,7 +51,7 @@ data Pattern
   = PWildcard
   | PLit (Spanned Lit)
   | PVar (Spanned Text)
-  | PPair (Spanned Text) [Spanned Pattern]
+  | PPair (Spanned Pattern) (Spanned Pattern)
   | PList [Spanned Pattern]
   | PUnit
   deriving (Show, Eq)
