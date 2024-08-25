@@ -38,14 +38,30 @@ do
   return (x + y)
 end 
 
-def map : a b. (a -> b) -> [a] -> [b]
+-- fn match
+def map : 'a 'b. ('a -> 'b) -> ['a] -> ['b]
   | f [] = []
   | f (x :: xs) = f x :: map f xs
 
-def map <a b> (f : a -> b) (xs : [a]) : [b] = 
+def map
+  | f [] = []
+  | f (x :: xs) = f x :: map f xs
+
+def map 'a 'b (f : 'a -> 'b) (xs : ['a]) : ['b] = 
   match xs with
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-def (.) : a b c. (b -> c) -> (a -> b) -> a -> c
+def (.) : 'a 'b 'c. ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
   | f . g = \x -> f (g x)
+
+data Option 'a = None | Some 'a
+
+data Either 'a 'b = Left 'a | Right 'b
+
+type Result 'a 'b = Either 'a 'b
+
+data List 'a = Nil | Pair 'a (List 'a)
+
+-- record
+data Person = { name : String, age : Int }

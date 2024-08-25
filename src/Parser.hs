@@ -230,10 +230,19 @@ expr = makeExprParser apply operatorTable
       pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
-decl = withSpan $ try fn <|> def
+decl = withSpan $ try fnMatch <|> try fn <|> def
   where
+    def :: Parser Decl
     def = DDef <$> (symbol "def" *> pattern') <*> (symbol "=" *> expr)
+
+    fn :: Parser Decl
     fn = DFn <$> (symbol "def" *> ident) <*> some pattern' <*> (symbol "=" *> expr)
+
+    fnMatch :: Parser Decl
+    fnMatch =
+      DFnMatch
+        <$> (symbol "def" *> ident)
+        <*> some (symbol "|" *> ((,) <$> some pattern' <*> (symbol "=" *> expr)))
 
 root :: Parser (Spanned Root)
 root = withSpan $ Root <$> many decl <* eof
@@ -249,7 +258,7 @@ repl = sc *> (try declParser <|> exprParser)
     exprParser = do
       e <- expr <* eof
       let s = Gen $ span e
-          mainDecl = Spanned (DDef (Spanned (PVar (Spanned "main" s)) s) e) s
+          mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
           r = Root [mainDecl]
       pure $ Spanned r s
 
