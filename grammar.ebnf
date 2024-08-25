@@ -1,0 +1,109 @@
+root = decl+
+
+decl = let | typeDef | typeAlias
+
+typeAlias = "type" ident "=" typeHint
+
+typeDef = "type" ident "=" sumType | recordType
+
+sumType = sumTypeCase ("|" sumTypeCase)*
+
+sumTypeCase = ident sumTypeCaseHint
+
+sumTypeCaseHint = typeHint+ | "{" ident ":" typeHint ("," ident ":" typeHint)* ","? "}"
+
+recordType = "{" ident ":" typeHint ("," ident ":" typeHint)* "}"
+
+let = "let" pat "=" expr
+
+expr = pair
+
+pair = or "::" or # 1
+
+or = and ("or" and)* # 2
+
+and = eq ("and" eq)* # 3
+
+eq = cmp (("=" | "!=") cmp)* # 4
+
+cmp = term ((">" | ">=" | "<" | "<=") term)* # 5
+
+term = factor (("+" | "-") factor)* # 6
+
+factor = pow (("*" | "/" | "%") pow)* # 7
+
+pow = unary ("^" unary)* # 8
+
+unary = dot | ("-" | "!") unary # 9
+
+dot = apply "." ident # 10
+
+apply = atom+
+
+dot = atom "." ident # 11
+
+atom = ident 
+     | lit 
+     | recordExpr
+     | if 
+     | lambda 
+     | letExpr 
+     | fnExpr 
+     | listExpr
+     | "(" expr ")"
+
+if = "if" expr "then" expr "else" expr
+
+lambda = "\\" pat+ "->" expr
+
+letExpr = "let" pat "=" expr "in" expr
+
+fnExpr = "let" ident pat+ "=" expr "in" expr
+
+recordExpr = "{" ident "=" expr ("," ident "=" expr)* "}"
+
+sumExpr = ident 
+
+listExpr = "[" expr ("," expr)* "]"
+
+tupleExpr = "(" expr ("," expr)* ")"
+
+arrayExpr = "#[" expr ("," expr)* "]"
+
+match = "match" expr "with" matchCase+
+
+matchCase = "|" pat "->" expr
+
+pat = basePat ("::" pat)?
+
+basePat = wildcard
+    | lit
+    | ident
+    | "[" basePat ("," basePat)* "]"
+    | "{" (ident "=" basePat ",")+ "}"
+    | ident basePat
+    | "(" pat ")"
+
+typeHint = baseTypeHint | (baseTypeHint+ "->" baseTypeHint)
+
+baseTypeHint = ident
+         | "(" typeHint "," typeHint ")"
+         | "[" typeHint "]"
+         | "(" typeHint ")"
+         | unit
+
+ident = [a-zA-Z_][a-zA-Z0-9_]*
+
+lit = byte | int | str | bool
+
+# num = int ("/" int)?
+
+# int = 0 | "-"? [1-9][0-9]*
+
+# str = "(\\.|[^"\\])*"
+
+# bool = "true" | "false"
+
+wildcard = "_"
+
+unit = "()"

@@ -3,6 +3,7 @@ module Parser where
 import AST
 import Control.Applicative (empty, (<|>))
 import Control.Monad.Combinators.Expr
+import Data.Array (listArray)
 import Data.Functor (($>))
 import Data.Text (Text, pack, unpack)
 import Data.Void
@@ -19,7 +20,6 @@ import Text.Megaparsec
     manyTill,
     parse,
     sepEndBy,
-    sepEndBy1,
     some,
   )
 import Text.Megaparsec.Char
@@ -63,9 +63,6 @@ hexadecimal = char '0' >> char' 'x' >> L.hexadecimal
 int :: Parser (Spanned Int)
 int = lexemeWithSpan $ try octal <|> hexadecimal <|> L.decimal
 
--- signedInt :: Parser (Spanned Int)
--- signedInt = lexemeWithSpan $ L.signed (notFollowedBy space1) int
-
 real :: Parser (Spanned Double)
 real = lexemeWithSpan $ L.signed (notFollowedBy space1) L.float
 
@@ -101,6 +98,9 @@ parens = between (symbol "(") (symbol ")")
 
 brackets :: Parser a -> Parser a
 brackets = between (symbol "[") (symbol "]")
+
+arrBrackets :: Parser a -> Parser a
+arrBrackets = between (symbol "#[") (symbol "]")
 
 braces :: Parser a -> Parser a
 braces = between (symbol "{") (symbol "}")
@@ -202,6 +202,14 @@ expr = makeExprParser apply operatorTable
     list :: Parser (Spanned Expr)
     list = dbg "list" $ withSpan $ EList <$> brackets (expr `sepEndBy` symbol ",")
 
+    array :: Parser (Spanned Expr)
+    array = dbg "array" $ withSpan $ do
+      a <- arrBrackets (expr `sepEndBy` symbol ",")
+      pure $ EArray $ listArray (0, length a - 1) a
+
+    tuple :: Parser (Spanned Expr)
+    tuple = dbg "tuple" $ withSpan $ ETuple <$> parens (expr `sepEndBy` symbol ",")
+
     atom :: Parser (Spanned Expr)
     atom =
       dbg "atom" $
@@ -211,6 +219,8 @@ expr = makeExprParser apply operatorTable
             if',
             match,
             list,
+            array,
+            tuple,
             simple
           ]
 

@@ -1,5 +1,6 @@
 module AST where
 
+import Data.Array (Array)
 import Data.Text (Text)
 import Spanned
 
@@ -22,6 +23,8 @@ data Expr
   | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
   | EMatch (Spanned Expr) [(Spanned Pattern, Spanned Expr)]
   | EList [Spanned Expr]
+  | EArray (Array Int (Spanned Expr))
+  | ETuple [Spanned Expr]
   | EUnit
   deriving (Show, Eq)
 
