@@ -42,7 +42,7 @@ def map : a b. (a -> b) -> [a] -> [b]
   | f [] = []
   | f (x :: xs) = f x :: map f xs
 
-def map {a b} (f : a -> b) (xs : [a]) : [b] = 
+def map <a b> (f : a -> b) (xs : [a]) : [b] = 
   match xs with
   | [] -> []
   | (x::xs) -> f x :: map f xs
