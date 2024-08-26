@@ -1,7 +1,7 @@
 module Parser where
 
 import AST
-import Control.Applicative (empty, (<|>))
+import Control.Applicative (empty, optional, (<|>))
 import Control.Monad.Combinators.Expr
 import Data.Array (listArray)
 import Data.Functor (($>))
@@ -31,6 +31,7 @@ import Text.Megaparsec.Char
     lowerChar,
     space1,
     string,
+    upperChar,
   )
 import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Megaparsec.Debug (MonadParsecDbg (dbg))
@@ -93,7 +94,10 @@ ident = lexemeWithSpan $ try $ do
     identChar = alphaNumChar <|> char '_' <|> char '\''
 
     keywords :: [Text]
-    keywords = ["def", "let", "in", "if", "then", "else", "match", "with", "true", "false"]
+    keywords = ["def", "let", "in", "if", "then", "else", "match", "with", "true", "false", "data"]
+
+typeIdent :: Parser Name
+typeIdent = lexemeWithSpan $ pack <$> ((:) <$> upperChar <*> many alphaNumChar)
 
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
@@ -163,7 +167,7 @@ type' = try (withSpan arrowType) <|> baseType
             boolType,
             stringType,
             varType,
-            identType,
+            THIdent <$> typeIdent,
             listType,
             arrayType,
             unitType,
@@ -173,7 +177,6 @@ type' = try (withSpan arrowType) <|> baseType
     boolType = symbol "Bool" $> THBool
     stringType = symbol "String" $> THString
     varType = THVar <$> (symbol "'" *> (pack <$> some lowerChar))
-    identType = THIdent <$> ident
     listType = THList <$> brackets type'
     arrayType = THArray <$> arrBrackets type'
     tupleType =
@@ -249,6 +252,12 @@ expr = makeExprParser apply operatorTable
           ETuple
             <$> parens ((:) <$> (expr <* symbol ",") <*> expr `sepEndBy1` symbol ",")
 
+    record :: Parser (Spanned Expr)
+    record = dbg "record" $ withSpan $ do
+      name <- optional typeIdent
+      r <- braces (((,) <$> ident <*> (symbol ":" *> expr)) `sepEndBy1` symbol ",")
+      pure $ ERecord name r
+
     atom :: Parser (Spanned Expr)
     atom =
       dbg "atom" $
@@ -259,7 +268,8 @@ expr = makeExprParser apply operatorTable
             match,
             list,
             array,
-            try tuple <|> simple
+            try tuple <|> simple,
+            record
           ]
 
     apply :: Parser (Spanned Expr)
@@ -285,7 +295,7 @@ decl = withSpan $ try fnMatch <|> try fn <|> def <|> record
     record :: Parser Decl
     record =
       DRecordDef
-        <$> (symbol "data" *> ident <* symbol "=")
+        <$> (symbol "data" *> typeIdent <* symbol "=")
         <*> braces (((,) <$> ident <*> (symbol ":" *> type')) `sepEndBy1` symbol ",")
 
     dataDef :: Parser Decl

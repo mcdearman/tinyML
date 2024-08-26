@@ -66,5 +66,11 @@ data List 'a = Nil | Pair 'a (List 'a)
 -- record
 data Person = { name : String, age : Int }
 
+-- record update
+let p = { name = "John", age = 30 } in p { age = 31 }
+
+-- record access
+let p = { name = "John", age = 30 } in p.name
+
 -- sum type
 data Shape = Circle Float | Rectangle Float Float

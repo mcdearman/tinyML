@@ -27,6 +27,7 @@ data Expr
   | EList [Spanned Expr]
   | EArray (Array Int (Spanned Expr))
   | ETuple [Spanned Expr]
+  | ERecord (Maybe Name) [(Name, Spanned Expr)]
   | EUnit
   deriving (Show, Eq)
 
