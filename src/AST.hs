@@ -56,7 +56,8 @@ data TypeHint
   = THInt
   | THBool
   | THString
-  | THVar Name
+  | THVar Text
+  | THIdent Name
   | THList (Spanned TypeHint)
   | THArray (Spanned TypeHint)
   | THTuple [Spanned TypeHint]

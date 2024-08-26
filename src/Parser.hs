@@ -7,6 +7,7 @@ import Data.Array (listArray)
 import Data.Functor (($>))
 import Data.Text (Text, pack, unpack)
 import Data.Void
+import GHC.Conc (par)
 import Span
 import Spanned
 import Text.Megaparsec
@@ -20,6 +21,7 @@ import Text.Megaparsec
     manyTill,
     parse,
     sepEndBy,
+    sepEndBy1,
     some,
   )
 import Text.Megaparsec.Char
@@ -27,6 +29,7 @@ import Text.Megaparsec.Char
     char,
     char',
     letterChar,
+    lowerChar,
     space1,
     string,
   )
@@ -148,27 +151,36 @@ pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
     unitP = symbol "()" $> PUnit
 
 type' :: Parser (Spanned TypeHint)
-type' = withSpan baseType
+type' = try (withSpan arrowType) <|> baseType
   where
-    baseType :: Parser TypeHint
+    arrowType :: Parser TypeHint
+    arrowType = THArrow <$> (baseType <* symbol "->") <*> type'
+
+    baseType :: Parser (Spanned TypeHint)
     baseType =
-      choice
-        [ intType,
-          boolType,
-          stringType,
-          varType,
-          listType,
-          arrayType,
-          tupleType,
-          unitType
-        ]
+      withSpan $
+        choice
+          [ intType,
+            boolType,
+            stringType,
+            varType,
+            identType,
+            listType,
+            arrayType,
+            unitType,
+            try tupleType <|> parens (value <$> type')
+          ]
     intType = symbol "Int" $> THInt
     boolType = symbol "Bool" $> THBool
     stringType = symbol "String" $> THString
-    varType = THVar <$> ident
+    varType = THVar <$> (symbol "'" *> (pack <$> some lowerChar))
+    identType = THIdent <$> ident
     listType = THList <$> brackets type'
     arrayType = THArray <$> arrBrackets type'
-    tupleType = THTuple <$> parens (type' `sepEndBy` symbol ",")
+    tupleType =
+      THTuple
+        <$> parens
+          ((:) <$> (type' <* symbol ",") <*> type' `sepEndBy1` symbol ",")
     unitType = symbol "unit" $> THUnit
 
 expr :: Parser (Spanned Expr)
@@ -232,7 +244,11 @@ expr = makeExprParser apply operatorTable
       pure $ EArray $ listArray (0, length a - 1) a
 
     tuple :: Parser (Spanned Expr)
-    tuple = dbg "tuple" $ withSpan $ ETuple <$> parens (expr `sepEndBy` symbol ",")
+    tuple =
+      dbg "tuple" $
+        withSpan $
+          ETuple
+            <$> parens ((:) <$> (expr <* symbol ",") <*> expr `sepEndBy1` symbol ",")
 
     atom :: Parser (Spanned Expr)
     atom =
@@ -244,8 +260,7 @@ expr = makeExprParser apply operatorTable
             match,
             list,
             array,
-            tuple,
-            simple
+            try tuple <|> simple
           ]
 
     apply :: Parser (Spanned Expr)
