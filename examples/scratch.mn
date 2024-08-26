@@ -65,3 +65,6 @@ data List 'a = Nil | Pair 'a (List 'a)
 
 -- record
 data Person = { name : String, age : Int }
+
+-- sum type
+data Shape = Circle Float | Rectangle Float Float

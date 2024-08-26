@@ -7,7 +7,6 @@ import Data.Array (listArray)
 import Data.Functor (($>))
 import Data.Text (Text, pack, unpack)
 import Data.Void
-import GHC.Conc (par)
 import Span
 import Spanned
 import Text.Megaparsec
@@ -287,12 +286,14 @@ decl = withSpan $ try fnMatch <|> try fn <|> def <|> record
     record =
       DRecordDef
         <$> (symbol "data" *> ident <* symbol "=")
-        <*> braces (((,) <$> ident <*> (symbol ":" *> type')) `sepEndBy` symbol ",")
+        <*> braces (((,) <$> ident <*> (symbol ":" *> type')) `sepEndBy1` symbol ",")
+
+    dataDef :: Parser Decl
+    dataDef = undefined
 
 root :: Parser (Spanned Root)
 root = withSpan $ Root <$> many decl <* eof
 
--- parse one decl or expr then wrap in a root
 repl :: Parser (Spanned Root)
 repl = sc *> (try declParser <|> exprParser)
   where
