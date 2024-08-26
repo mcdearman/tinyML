@@ -10,6 +10,7 @@ data Decl
   = DDef (Spanned Pattern) (Spanned Expr)
   | DFn Name [Spanned Pattern] (Spanned Expr)
   | DFnMatch Name [([Spanned Pattern], Spanned Expr)]
+  | DRecordDef Name [(Name, Spanned TypeHint)]
   deriving (Show, Eq)
 
 data Expr
@@ -49,6 +50,18 @@ data BinOp
   | BLeq
   | BGeq
   | BPair
+  deriving (Show, Eq)
+
+data TypeHint
+  = THInt
+  | THBool
+  | THString
+  | THVar Name
+  | THList (Spanned TypeHint)
+  | THArray (Spanned TypeHint)
+  | THTuple [Spanned TypeHint]
+  | THArrow (Spanned TypeHint) (Spanned TypeHint)
+  | THUnit
   deriving (Show, Eq)
 
 data Pattern

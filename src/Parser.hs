@@ -80,7 +80,7 @@ lit =
       fmap LString <$> stringLiteral
     ]
 
-ident :: Parser (Spanned Text)
+ident :: Parser Name
 ident = lexemeWithSpan $ try $ do
   name <- pack <$> ((:) <$> identStartChar <*> many identChar)
   if name `elem` keywords
@@ -146,6 +146,30 @@ pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
     pairP = parens $ PPair <$> pattern' <*> (symbol "::" *> pattern')
     listP = PList <$> brackets (pattern' `sepEndBy` symbol ",")
     unitP = symbol "()" $> PUnit
+
+type' :: Parser (Spanned TypeHint)
+type' = withSpan baseType
+  where
+    baseType :: Parser TypeHint
+    baseType =
+      choice
+        [ intType,
+          boolType,
+          stringType,
+          varType,
+          listType,
+          arrayType,
+          tupleType,
+          unitType
+        ]
+    intType = symbol "Int" $> THInt
+    boolType = symbol "Bool" $> THBool
+    stringType = symbol "String" $> THString
+    varType = THVar <$> ident
+    listType = THList <$> brackets type'
+    arrayType = THArray <$> arrBrackets type'
+    tupleType = THTuple <$> parens (type' `sepEndBy` symbol ",")
+    unitType = symbol "unit" $> THUnit
 
 expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
@@ -230,7 +254,7 @@ expr = makeExprParser apply operatorTable
       pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
-decl = withSpan $ try fnMatch <|> try fn <|> def
+decl = withSpan $ try fnMatch <|> try fn <|> def <|> record
   where
     def :: Parser Decl
     def = DDef <$> (symbol "def" *> pattern') <*> (symbol "=" *> expr)
@@ -243,6 +267,12 @@ decl = withSpan $ try fnMatch <|> try fn <|> def
       DFnMatch
         <$> (symbol "def" *> ident)
         <*> some (symbol "|" *> ((,) <$> some pattern' <*> (symbol "=" *> expr)))
+
+    record :: Parser Decl
+    record =
+      DRecordDef
+        <$> (symbol "data" *> ident <* symbol "=")
+        <*> braces (((,) <$> ident <*> (symbol ":" *> type')) `sepEndBy` symbol ",")
 
 root :: Parser (Spanned Root)
 root = withSpan $ Root <$> many decl <* eof
