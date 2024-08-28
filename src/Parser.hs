@@ -90,7 +90,7 @@ ident = lexemeWithSpan $ try $ do
     then fail $ "keyword " ++ unpack name ++ " cannot be an identifier"
     else return name
   where
-    identStartChar = letterChar <|> char '_'
+    identStartChar = lowerChar <|> char '_'
     identChar = alphaNumChar <|> char '_' <|> char '\''
 
     keywords :: [Text]
@@ -255,7 +255,7 @@ expr = makeExprParser apply operatorTable
     record :: Parser (Spanned Expr)
     record = dbg "record" $ withSpan $ do
       name <- optional typeIdent
-      r <- braces (((,) <$> ident <*> (symbol ":" *> expr)) `sepEndBy1` symbol ",")
+      r <- braces (((,) <$> ident <*> (symbol "=" *> expr)) `sepEndBy1` symbol ",")
       pure $ ERecord name r
 
     atom :: Parser (Spanned Expr)
