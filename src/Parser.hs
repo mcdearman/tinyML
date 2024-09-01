@@ -94,7 +94,22 @@ ident = lexemeWithSpan $ try $ do
     identChar = alphaNumChar <|> char '_' <|> char '\''
 
     keywords :: [Text]
-    keywords = ["def", "let", "in", "if", "then", "else", "match", "with", "true", "false", "data"]
+    keywords =
+      [ "def",
+        "let",
+        "in",
+        "if",
+        "then",
+        "else",
+        "match",
+        "with",
+        "true",
+        "false",
+        "data",
+        "type",
+        "do",
+        "end"
+      ]
 
 typeIdent :: Parser Name
 typeIdent = lexemeWithSpan $ pack <$> ((:) <$> upperChar <*> many alphaNumChar)
@@ -170,7 +185,7 @@ type' = try (withSpan arrowType) <|> baseType
             boolType,
             stringType,
             varType,
-            THIdent <$> typeIdent,
+            try kindType <|> THIdent <$> typeIdent,
             listType,
             arrayType,
             unitType,
@@ -181,6 +196,7 @@ type' = try (withSpan arrowType) <|> baseType
     boolType = symbol "Bool" $> THBool
     stringType = symbol "String" $> THString
     varType = THVar <$> tyVar
+    kindType = THKind <$> ident <*> some type'
     listType = THList <$> brackets type'
     arrayType = THArray <$> arrBrackets type'
     tupleType =
@@ -298,6 +314,7 @@ decl = withSpan $ try fnMatch <|> try fn <|> def <|> try record <|> dataDef
     fnMatch =
       DFnMatch
         <$> (symbol "def" *> ident)
+        <*> optional (symbol ":" *> type')
         <*> some (symbol "|" *> ((,) <$> some pattern' <*> (symbol "=" *> expr)))
 
     record :: Parser Decl

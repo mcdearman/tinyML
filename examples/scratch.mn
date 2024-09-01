@@ -35,11 +35,15 @@ let f x = x + 1 in f 1
 do
   x <- foo;
   y <- bar;
-  return (x + y)
+  pure (x + y)
 end 
 
 -- fn match
 def map : 'a 'b. ('a -> 'b) -> ['a] -> ['b]
+  | f [] = []
+  | f (x :: xs) = f x :: map f xs
+
+def map : ('a -> 'b) -> ['a] -> ['b]
   | f [] = []
   | f (x :: xs) = f x :: map f xs
 

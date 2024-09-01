@@ -9,7 +9,7 @@ newtype Root = Root [Spanned Decl] deriving (Show)
 data Decl
   = DDef (Spanned Pattern) (Spanned Expr)
   | DFn Name [Spanned Pattern] (Spanned Expr)
-  | DFnMatch Name [([Spanned Pattern], Spanned Expr)]
+  | DFnMatch Name (Maybe (Spanned TypeHint)) [([Spanned Pattern], Spanned Expr)]
   | DRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
   | DData Name [TyVar] [(Name, [Spanned TypeHint])]
   deriving (Show, Eq)
@@ -60,6 +60,7 @@ data TypeHint
   | THString
   | THVar TyVar
   | THIdent Name
+  | THKind Name [Spanned TypeHint]
   | THList (Spanned TypeHint)
   | THArray (Spanned TypeHint)
   | THTuple [Spanned TypeHint]
