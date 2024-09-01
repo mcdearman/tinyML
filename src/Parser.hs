@@ -95,7 +95,9 @@ ident = lexemeWithSpan $ try $ do
 
     keywords :: [Text]
     keywords =
-      [ "def",
+      [ "module",
+        "import",
+        "def",
         "let",
         "in",
         "if",
@@ -107,6 +109,10 @@ ident = lexemeWithSpan $ try $ do
         "false",
         "data",
         "type",
+        "class",
+        "instance",
+        "derive",
+        "as",
         "do",
         "end"
       ]
@@ -196,7 +202,7 @@ type' = try (withSpan arrowType) <|> baseType
     boolType = symbol "Bool" $> THBool
     stringType = symbol "String" $> THString
     varType = THVar <$> tyVar
-    kindType = THKind <$> ident <*> some type'
+    kindType = THKind <$> typeIdent <*> some type'
     listType = THList <$> brackets type'
     arrayType = THArray <$> arrBrackets type'
     tupleType =

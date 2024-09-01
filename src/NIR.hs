@@ -4,13 +4,19 @@ import Data.Array (Array)
 import Data.Text (Text)
 import Spanned
 
+
 newtype Root = Root [Spanned Decl] deriving (Show)
+
+data Module = Module Name [Spanned Decl] deriving (Show)
 
 data Decl
   = DDef (Spanned Pattern) (Spanned Expr)
   | DFn Name [Spanned Pattern] (Spanned Expr)
-  | DFnMatch Name [([Spanned Pattern], Spanned Expr)]
-  | DRecordDef Name [(Name, Spanned TypeHint)]
+  | DFnMatch Name (Maybe (Spanned TypeHint)) [([Spanned Pattern], Spanned Expr)]
+  | DRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
+  | DData Name [TyVar] [(Name, [Spanned TypeHint])]
+  | DTypeSyn Name [TyVar] (Spanned TypeHint)
+  | DImport Path
   deriving (Show, Eq)
 
 data Expr
@@ -57,12 +63,14 @@ data TypeHint
   = THInt
   | THBool
   | THString
-  | THVar Text
+  | THVar TyVar
   | THIdent Name
+  | THKind Name [Spanned TypeHint]
   | THList (Spanned TypeHint)
   | THArray (Spanned TypeHint)
   | THTuple [Spanned TypeHint]
   | THArrow (Spanned TypeHint) (Spanned TypeHint)
+  | THRecord (Maybe Name) [(Name, Spanned TypeHint)]
   | THUnit
   deriving (Show, Eq)
 
@@ -75,7 +83,11 @@ data Pattern
   | PUnit
   deriving (Show, Eq)
 
+type TyVar = Spanned Text
+
 type Name = Spanned Text
+
+type Path = Spanned [Name]
 
 data Lit
   = LInt Int
