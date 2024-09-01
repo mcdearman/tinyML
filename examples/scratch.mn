@@ -59,7 +59,7 @@ data Option 'a = None | Some 'a
 
 data Either 'a 'b = Left 'a | Right 'b
 
-type Result 'a 'b = Either 'a 'b
+data Result 'a 'b = Ok 'a | Error 'b
 
 data List 'a = Nil | Pair 'a (List 'a)
 

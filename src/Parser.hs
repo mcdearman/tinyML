@@ -99,6 +99,9 @@ ident = lexemeWithSpan $ try $ do
 typeIdent :: Parser Name
 typeIdent = lexemeWithSpan $ pack <$> ((:) <$> upperChar <*> many alphaNumChar)
 
+tyVar :: Parser TyVar
+tyVar = lexemeWithSpan $ pack <$> ((:) <$> char '\'' <*> some lowerChar)
+
 parens :: Parser a -> Parser a
 parens = between (symbol "(") (symbol ")")
 
@@ -171,18 +174,23 @@ type' = try (withSpan arrowType) <|> baseType
             listType,
             arrayType,
             unitType,
+            recordType,
             try tupleType <|> parens (value <$> type')
           ]
     intType = symbol "Int" $> THInt
     boolType = symbol "Bool" $> THBool
     stringType = symbol "String" $> THString
-    varType = THVar <$> (symbol "'" *> (pack <$> some lowerChar))
+    varType = THVar <$> tyVar
     listType = THList <$> brackets type'
     arrayType = THArray <$> arrBrackets type'
     tupleType =
       THTuple
         <$> parens
           ((:) <$> (type' <* symbol ",") <*> type' `sepEndBy1` symbol ",")
+    recordType =
+      THRecord
+        <$> optional typeIdent
+        <*> braces (((,) <$> typeIdent <*> (symbol ":" *> type')) `sepEndBy1` symbol ",")
     unitType = symbol "unit" $> THUnit
 
 expr :: Parser (Spanned Expr)
@@ -278,7 +286,7 @@ expr = makeExprParser apply operatorTable
       pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
-decl = withSpan $ try fnMatch <|> try fn <|> def <|> record
+decl = withSpan $ try fnMatch <|> try fn <|> def <|> try record <|> dataDef
   where
     def :: Parser Decl
     def = DDef <$> (symbol "def" *> pattern') <*> (symbol "=" *> expr)
@@ -295,11 +303,19 @@ decl = withSpan $ try fnMatch <|> try fn <|> def <|> record
     record :: Parser Decl
     record =
       DRecordDef
-        <$> (symbol "data" *> typeIdent <* symbol "=")
+        <$> (symbol "data" *> typeIdent)
+        <*> many tyVar
+        <* symbol "="
         <*> braces (((,) <$> ident <*> (symbol ":" *> type')) `sepEndBy1` symbol ",")
 
     dataDef :: Parser Decl
-    dataDef = undefined
+    dataDef =
+      DData
+        <$> (symbol "data" *> typeIdent)
+        <*> many tyVar
+        <*> (symbol "=" *> (dataCtor `sepEndBy1` symbol "|"))
+      where
+        dataCtor = (,) <$> typeIdent <*> many type'
 
 root :: Parser (Spanned Root)
 root = withSpan $ Root <$> many decl <* eof

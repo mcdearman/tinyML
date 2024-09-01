@@ -10,7 +10,8 @@ data Decl
   = DDef (Spanned Pattern) (Spanned Expr)
   | DFn Name [Spanned Pattern] (Spanned Expr)
   | DFnMatch Name [([Spanned Pattern], Spanned Expr)]
-  | DRecordDef Name [(Name, Spanned TypeHint)]
+  | DRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
+  | DData Name [TyVar] [(Name, [Spanned TypeHint])]
   deriving (Show, Eq)
 
 data Expr
@@ -57,12 +58,13 @@ data TypeHint
   = THInt
   | THBool
   | THString
-  | THVar Text
+  | THVar TyVar
   | THIdent Name
   | THList (Spanned TypeHint)
   | THArray (Spanned TypeHint)
   | THTuple [Spanned TypeHint]
   | THArrow (Spanned TypeHint) (Spanned TypeHint)
+  | THRecord (Maybe Name) [(Name, Spanned TypeHint)]
   | THUnit
   deriving (Show, Eq)
 
@@ -74,6 +76,8 @@ data Pattern
   | PList [Spanned Pattern]
   | PUnit
   deriving (Show, Eq)
+
+type TyVar = Spanned Text
 
 type Name = Spanned Text
 
