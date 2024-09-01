@@ -6,12 +6,16 @@ import Spanned
 
 newtype Root = Root [Spanned Decl] deriving (Show)
 
+data Module = Module Name [Spanned Decl] deriving (Show)
+
 data Decl
   = DDef (Spanned Pattern) (Spanned Expr)
   | DFn Name [Spanned Pattern] (Spanned Expr)
   | DFnMatch Name (Maybe (Spanned TypeHint)) [([Spanned Pattern], Spanned Expr)]
   | DRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
   | DData Name [TyVar] [(Name, [Spanned TypeHint])]
+  | DTypeSyn Name [TyVar] (Spanned TypeHint)
+  | DImport Path
   deriving (Show, Eq)
 
 data Expr
@@ -81,6 +85,8 @@ data Pattern
 type TyVar = Spanned Text
 
 type Name = Spanned Text
+
+type Path = Spanned [Name]
 
 data Lit
   = LInt Int

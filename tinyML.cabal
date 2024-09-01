@@ -27,6 +27,7 @@ executable tinyML
         Rename
         TIR
         Infer
+        Core
         Eval
     default-extensions: 
         OverloadedStrings
