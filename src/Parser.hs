@@ -97,6 +97,7 @@ ident = lexemeWithSpan $ try $ do
     keywords =
       [ "module",
         "import",
+        "pub",
         "def",
         "let",
         "in",
