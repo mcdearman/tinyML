@@ -20,6 +20,7 @@ executable tinyML
         Span
         Spanned
         Token
+        TokenStream
         Lexer
         AST
         Parser
@@ -35,6 +36,8 @@ executable tinyML
         LambdaCase
         TupleSections
         TemplateHaskell
+        TypeFamilies
+        RecordWildCards
         GADTs
     build-depends:    
         base ^>=4.17.2.1,

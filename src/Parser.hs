@@ -6,7 +6,9 @@ import Control.Monad.Combinators.Expr
 import Data.Array (listArray)
 import Data.Functor (($>))
 import Data.Text (Text, pack, unpack)
+import Data.Text.IO (hGetContents)
 import Data.Void
+import GHC.IO.Handle (Handle)
 import Span
 import Spanned
 import Text.Megaparsec
@@ -341,25 +343,30 @@ decl = withSpan $ try fnMatch <|> try fn <|> def <|> try record <|> dataDef
       where
         dataCtor = (,) <$> typeIdent <*> many type'
 
-root :: Parser (Spanned Root)
-root = withSpan $ Root <$> many decl <* eof
+module' :: Text -> Parser Module
+module' filename = Module (Spanned filename NoLoc) <$> many decl
 
-repl :: Parser (Spanned Root)
-repl = sc *> (try declParser <|> exprParser)
-  where
-    declParser = do
-      d <- decl <* eof
-      pure $ Spanned (Root [d]) (span d)
+-- -- prog :: Parser (Spanned Program)
+-- -- prog = withSpan $ PFile <$>
+-- repl :: Parser (Spanned Program)
+-- repl = sc *> (try declParser <|> exprParser)
+--   where
+--     declParser = do
+--       d <- decl <* eof
+--       pure $ Spanned ([d]) (span d)
 
-    exprParser = do
-      e <- expr <* eof
-      let s = Gen $ span e
-          mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
-          r = Root [mainDecl]
-      pure $ Spanned r s
+--     exprParser = do
+--       e <- expr <* eof
+--       let s = Gen $ span e
+--           mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
+--           r = Root [mainDecl]
+--       pure $ Spanned r s
 
-parse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Root)
-parse = Text.Megaparsec.parse root ""
+-- parseFile :: Handle -> Either (ParseErrorBundle Text Void) (Spanned Program)
+-- parseFile h = do
+--   contents <- pack <$> hGetContents h
+--   pure $ Text.Megaparsec.parse (module' "stdin") "" contents
 
-replParse :: Text -> Either (ParseErrorBundle Text Void) (Spanned Root)
-replParse = Text.Megaparsec.parse repl ""
+-- parseText :: Text -> Either (ParseErrorBundle Text Void) (Spanned Program)
+-- parseText = Text.Megaparsec.parse repl ""
+--   where

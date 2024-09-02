@@ -4,7 +4,10 @@ import Data.Array (Array)
 import Data.Text (Text)
 import Spanned
 
-newtype Root = Root [Spanned Decl] deriving (Show)
+data Program
+  = PFile Text Module
+  | PRepl Module
+  deriving (Show)
 
 data Module = Module Name [Spanned Decl] deriving (Show)
 

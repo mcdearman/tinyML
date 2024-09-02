@@ -2,7 +2,8 @@ module Main where
 
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
-import Parser (replParse)
+import Lexer (lexMML)
+import Parser
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
@@ -14,7 +15,7 @@ repl :: InputT IO ()
 repl = do
   input <- getMultilineInput ""
   case input of
-    Just i -> case replParse (pack i) of
+    Just i -> case lexMML (pack i) of
       Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
       Right d -> outputStrLn $ unpack $ toStrict $ pShow d
     Nothing -> return ()
