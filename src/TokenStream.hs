@@ -33,7 +33,6 @@ instance Stream TokenStream where
   take1_ (TokenStream _ []) = Nothing
   take1_ (TokenStream src (t : ts)) = Just (t, TokenStream src ts)
 
-  -- takeN_ n (TokenStream src ts) =
   takeN_ n (TokenStream str s)
     | n <= 0 = Just ([], TokenStream str s)
     | null s = Nothing
