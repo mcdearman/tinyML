@@ -12,6 +12,7 @@ import Text.Megaparsec
     between,
     choice,
     getOffset,
+    getSourcePos,
     many,
     manyTill,
     parse,
@@ -31,20 +32,30 @@ import Text.Megaparsec.Char
   )
 import qualified Text.Megaparsec.Char.Lexer as L
 import Token
+import TokenStream
 
 type Lexer = Parsec Void Text
 
-withSpan :: Lexer a -> Lexer (Spanned a)
-withSpan p = do
-  startPos <- getOffset
+-- withSpan :: Lexer a -> Lexer (Spanned a)
+-- withSpan p = do
+--   startPos <- getOffset
+--   result <- p
+--   Spanned result . SrcLoc startPos <$> getOffset
+
+withPos :: Lexer a -> Lexer (WithPos a)
+withPos p = do
+  startPos <- getSourcePos
+  startOffset <- getOffset
   result <- p
-  Spanned result . SrcLoc startPos <$> getOffset
+  endPos <- getSourcePos
+  endOffset <- getOffset
+  return $ WithPos startPos endPos (endOffset - startOffset) result
 
 lexeme :: Lexer a -> Lexer a
 lexeme p = p <* sc
 
-lexemeWithSpan :: Lexer a -> Lexer (Spanned a)
-lexemeWithSpan p = withSpan p <* sc
+lexemeWithPos :: Lexer a -> Lexer (WithPos a)
+lexemeWithPos p = withPos p <* sc
 
 sc :: Lexer ()
 sc = L.space space1 (L.skipLineComment "--") empty
@@ -108,12 +119,12 @@ typeIdent = TTypeIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
 tyVar :: Lexer Token
 tyVar = TTyVar . pack <$> ((:) <$> char '\'' <*> some lowerChar)
 
-token :: Lexer (Spanned Token)
+token :: Lexer (WithPos Token)
 token =
-  lexemeWithSpan $
+  lexemeWithPos $
     choice
       [ TComment <$ string "--" <* manyTill L.charLiteral (char '\n'),
-        int,
+        try real <|> int,
         bool,
         str,
         typeIdent,
@@ -166,5 +177,5 @@ token =
         TEnd <$ string "end"
       ]
 
-lexMML :: Text -> Either (ParseErrorBundle Text Void) [Spanned Token]
-lexMML = parse (many token <* eof) ""
+lexMML :: Text -> Either (ParseErrorBundle Text Void) TokenStream
+lexMML src = TokenStream src <$> parse (many token <* eof) "" src
