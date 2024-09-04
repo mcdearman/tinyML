@@ -40,8 +40,10 @@ withSpan p = do
   result <- p
   Spanned result . SrcLoc startPos <$> getOffset
 
+-- tokenWithSpan :: T.Token -> Parser (Spanned T.Token)
+-- tokenWithSpan t = dbg "token" $ withSpan $ pure t
 tokenWithSpan :: T.Token -> Parser (Spanned T.Token)
-tokenWithSpan t = dbg "token" $ withSpan $ pure t
+tokenWithSpan t = withSpan $ token (\(WithPos _ _ _ t') -> if t == t' then Just t else Nothing) Set.empty
 
 int :: Parser (Spanned Int)
 int = withSpan $ token (\case (WithPos _ _ _ (T.TInt n)) -> Just n; _ -> Nothing) Set.empty
@@ -173,44 +175,41 @@ expr = makeExprParser apply operatorTable
       pure $ Spanned (EVar i) (span i)
 
     simple :: Parser (Spanned Expr)
-    simple = dbg "simple" $ choice [unit', litExpr, varExpr, parens expr]
+    simple = choice [unit', litExpr, varExpr, parens expr]
 
     lambda :: Parser (Spanned Expr)
     lambda =
-      dbg "lambda" $
-        withSpan $
-          ELam
-            <$> (tokenWithSpan T.TBackSlash *> some pattern')
-            <*> (tokenWithSpan T.TArrow *> expr)
+      withSpan $
+        ELam
+          <$> (tokenWithSpan T.TBackSlash *> some pattern')
+          <*> (tokenWithSpan T.TArrow *> expr)
 
     let' :: Parser (Spanned Expr)
     let' =
-      dbg "let" $
-        withSpan $
-          do
-            ELet <$> (tokenWithSpan T.TLet *> pattern')
-            <*> (tokenWithSpan T.TEq *> expr)
-            <*> (tokenWithSpan T.TIn *> expr)
+      withSpan $
+        do
+          ELet <$> (tokenWithSpan T.TLet *> pattern')
+          <*> (tokenWithSpan T.TEq *> expr)
+          <*> (tokenWithSpan T.TIn *> expr)
 
     let_rec :: Parser (Spanned Expr)
     let_rec =
-      dbg "let_rec" $
-        withSpan $
-          do
-            ELetRec <$> (tokenWithSpan T.TLet *> ident)
-            <*> some pattern'
-            <*> (tokenWithSpan T.TEq *> expr)
-            <*> (tokenWithSpan T.TIn *> expr)
+      withSpan $
+        do
+          ELetRec <$> (tokenWithSpan T.TLet *> ident)
+          <*> some pattern'
+          <*> (tokenWithSpan T.TEq *> expr)
+          <*> (tokenWithSpan T.TIn *> expr)
 
     if' :: Parser (Spanned Expr)
-    if' = dbg "if" $ withSpan $ do
+    if' = withSpan $ do
       EIf
         <$> (tokenWithSpan T.TIf *> expr)
         <*> (tokenWithSpan T.TThen *> expr)
         <*> (tokenWithSpan T.TElse *> expr)
 
     match :: Parser (Spanned Expr)
-    match = dbg "match" $ withSpan $ do
+    match = withSpan $ do
       EMatch
         <$> (tokenWithSpan T.TMatch *> expr)
         <*> ( tokenWithSpan T.TWith
@@ -221,46 +220,44 @@ expr = makeExprParser apply operatorTable
             )
 
     list :: Parser (Spanned Expr)
-    list = dbg "list" $ withSpan $ EList <$> brackets (expr `sepEndBy` tokenWithSpan T.TComma)
+    list = withSpan $ EList <$> brackets (expr `sepEndBy` tokenWithSpan T.TComma)
 
     array :: Parser (Spanned Expr)
-    array = dbg "array" $ withSpan $ do
+    array = withSpan $ do
       a <- arrBrackets (expr `sepEndBy` tokenWithSpan T.TComma)
       pure $ EArray $ listArray (0, length a - 1) a
 
     tuple :: Parser (Spanned Expr)
     tuple =
-      dbg "tuple" $
-        withSpan $
-          ETuple
-            <$> parens
-              ( (:)
-                  <$> (expr <* tokenWithSpan T.TComma)
-                  <*> expr `sepEndBy1` tokenWithSpan T.TComma
-              )
+      withSpan $
+        ETuple
+          <$> parens
+            ( (:)
+                <$> (expr <* tokenWithSpan T.TComma)
+                <*> expr `sepEndBy1` tokenWithSpan T.TComma
+            )
 
     record :: Parser (Spanned Expr)
-    record = dbg "record" $ withSpan $ do
+    record = withSpan $ do
       name <- optional typeIdent
       r <- braces (((,) <$> ident <*> (tokenWithSpan T.TEq *> expr)) `sepEndBy1` tokenWithSpan T.TComma)
       pure $ ERecord name r
 
     atom :: Parser (Spanned Expr)
     atom =
-      dbg "atom" $
-        choice
-          [ try let_rec <|> let',
-            lambda,
-            if',
-            match,
-            list,
-            array,
-            try tuple <|> simple,
-            record
-          ]
+      choice
+        [ try let_rec <|> let',
+          lambda,
+          if',
+          match,
+          list,
+          array,
+          try tuple <|> simple,
+          record
+        ]
 
     apply :: Parser (Spanned Expr)
-    apply = dbg "apply" $ do
+    apply = do
       fargs <- some atom
       pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
 

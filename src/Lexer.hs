@@ -69,7 +69,7 @@ hexadecimal :: Lexer Int
 hexadecimal = char '0' >> char' 'x' >> L.hexadecimal
 
 int :: Lexer Token
-int = TInt <$> (try octal <|> hexadecimal <|> L.decimal)
+int = TInt <$> (try octal <|> try hexadecimal <|> L.decimal)
 
 real :: Lexer Token
 real = TReal <$> L.float
