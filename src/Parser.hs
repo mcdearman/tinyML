@@ -307,7 +307,7 @@ module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
 
 repl :: Parser (Spanned Program)
-repl = withSpan $ PRepl <$> (try declParser <|> exprParser)
+repl = withSpan $ PRepl <$> (try declParser <|> exprParser) <* tokenWithSpan T.TEOF
   where
     declParser = do
       d <- decl <* eof

@@ -1,6 +1,7 @@
 module Lexer where
 
 import Control.Applicative (empty, (<|>))
+import Data.Functor (($>))
 import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
 import Span
@@ -32,6 +33,7 @@ import Text.Megaparsec.Char
   )
 import qualified Text.Megaparsec.Char.Lexer as L
 import Token
+import qualified Token as T
 import TokenStream
 
 type Lexer = Parsec Void Text
@@ -179,4 +181,7 @@ token =
       ]
 
 lexMML :: Text -> Either (ParseErrorBundle Text Void) TokenStream
-lexMML src = TokenStream src <$> parse (many token <* eof) "" src
+lexMML src = TokenStream src <$> parse ((++) <$> many token <*> eof') "" src
+  where
+    eof' :: Lexer [WithPos Token]
+    eof' = (: []) <$> withPos (eof $> T.TEOF)
