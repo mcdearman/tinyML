@@ -27,6 +27,7 @@ import Text.Megaparsec
     sepEndBy1,
     some,
   )
+import Text.Megaparsec.Debug (MonadParsecDbg (dbg))
 import Token
 import TokenStream hiding (span)
 import Prelude hiding (span)
@@ -35,10 +36,10 @@ type Parser = Parsec Void TokenStream
 
 withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
-  start <- lookAhead . try $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
+  -- start <- lookAhead $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
   res <- p
-  end <- lookAhead . try $ token (\(WithPos _ _ e _ _) -> Just e) Set.empty
-  pure $ Spanned res (start <> end)
+  -- end <- lookAhead $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
+  pure $ Spanned res (Gen NoLoc)
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
@@ -166,7 +167,7 @@ expr = makeExprParser apply operatorTable
     varExpr = withSpan $ EVar <$> ident
 
     simple :: Parser (Spanned Expr)
-    simple = choice [litExpr, varExpr, try unit' <|> parens expr]
+    simple = dbg "simple" $ choice [litExpr, varExpr, try unit' <|> parens expr]
 
     lambda :: Parser (Spanned Expr)
     lambda = withSpan $ ELam <$> some pattern' <*> (tokenWithSpan TArrow *> expr)

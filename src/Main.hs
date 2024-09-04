@@ -16,10 +16,9 @@ repl = do
   input <- getMultilineInput ""
   case input of
     Just i -> case lexMML (pack i) of
-      Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
-      -- Right d -> outputStrLn $ unpack $ (toStrict . pShow) d
+      Left err -> outputStrLn $ "Lexer error: " ++ unpack (pack (errorBundlePretty err))
       Right d -> case parseStream d of
-        Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
+        Left err -> outputStrLn $ "Parser error: " ++ unpack (pack (errorBundlePretty err))
         Right p -> outputStrLn $ unpack $ (toStrict . pShow) p
     Nothing -> return ()
   repl
