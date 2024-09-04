@@ -181,7 +181,4 @@ token =
       ]
 
 lexMML :: Text -> Either (ParseErrorBundle Text Void) TokenStream
-lexMML src = TokenStream src <$> parse ((++) <$> many token <*> eof') "" src
-  where
-    eof' :: Lexer [WithPos Token]
-    eof' = (: []) <$> withPos (eof $> T.TEOF)
+lexMML src = TokenStream src <$> parse (many token) "" src

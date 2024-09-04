@@ -41,7 +41,7 @@ withSpan p = do
   Spanned result . SrcLoc startPos <$> getOffset
 
 tokenWithSpan :: T.Token -> Parser (Spanned T.Token)
-tokenWithSpan t = withSpan $ pure t
+tokenWithSpan t = dbg "token" $ withSpan $ pure t
 
 int :: Parser (Spanned Int)
 int = withSpan $ token (\case (WithPos _ _ _ (T.TInt n)) -> Just n; _ -> Nothing) Set.empty
@@ -307,14 +307,14 @@ module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
 
 repl :: Parser (Spanned Program)
-repl = withSpan $ PRepl <$> (try declParser <|> exprParser) <* tokenWithSpan T.TEOF
+repl = withSpan $ PRepl <$> (try declParser <|> exprParser) <* eof
   where
     declParser = do
-      d <- decl <* eof
+      d <- decl
       pure $ Spanned (Module (Spanned "main" NoLoc) [d]) (span d)
 
     exprParser = do
-      e <- expr <* eof
+      e <- expr
       let s = Gen $ span e
           mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
           m = Module (Spanned "main" NoLoc) [mainDecl]

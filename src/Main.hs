@@ -17,10 +17,10 @@ repl = do
   case input of
     Just i -> case lexMML (pack i) of
       Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
-      Right d -> outputStrLn $ unpack $ (toStrict . pShow) d
-    -- Right d -> case parseStream d of
-    --   Left err -> outputStrLn $ "Error: " ++ show err
-    --   Right p -> outputStrLn $ unpack $ (toStrict . pShow) p
+      -- Right d -> outputStrLn $ unpack $ (toStrict . pShow) d
+      Right d -> case parseStream d of
+        Left err -> outputStrLn $ "Error: " ++ show err
+        Right p -> outputStrLn $ unpack $ (toStrict . pShow) p
     Nothing -> return ()
   repl
 
