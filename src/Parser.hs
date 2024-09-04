@@ -39,7 +39,7 @@ withSpan p = do
   -- start <- lookAhead $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
   res <- p
   -- end <- lookAhead $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
-  pure $ Spanned res (Gen NoLoc)
+  pure $ Spanned res NoLoc
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
