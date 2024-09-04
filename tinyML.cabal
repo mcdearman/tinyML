@@ -11,7 +11,7 @@ build-type:         Simple
 extra-doc-files:    CHANGELOG.md
 
 common warnings
-    ghc-options: -Wall -Werror=missing-signatures -Werror=incomplete-patterns -Werror=incomplete-uni-patterns
+    ghc-options: -Wall -Werror=missing-signatures -Werror=incomplete-patterns -Werror=incomplete-uni-patterns -Wno-unused-do-bind
 
 executable tinyML
     import:           warnings
