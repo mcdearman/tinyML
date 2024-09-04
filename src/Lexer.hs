@@ -25,7 +25,6 @@ import Text.Megaparsec.Char
   ( alphaNumChar,
     char,
     char',
-    letterChar,
     lowerChar,
     space1,
     string,
@@ -33,7 +32,6 @@ import Text.Megaparsec.Char
   )
 import qualified Text.Megaparsec.Char.Lexer as L
 import Token
-import qualified Token as T
 import TokenStream
 
 type Lexer = Parsec Void Text
@@ -45,7 +43,7 @@ withPos p = do
   result <- p
   endPos <- getSourcePos
   endOffset <- getOffset
-  return $ WithPos startPos endPos startOffset endOffset (endOffset - startOffset) result
+  return $ WithPos startPos endPos (SrcLoc startOffset endOffset) (endOffset - startOffset) result
 
 lexeme :: Lexer a -> Lexer a
 lexeme p = p <* sc

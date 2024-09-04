@@ -27,30 +27,30 @@ import Text.Megaparsec
     sepEndBy1,
     some,
   )
-import TokenStream
-import Prelude hiding (span)
 import Token
+import TokenStream hiding (span)
+import Prelude hiding (span)
 
 type Parser = Parsec Void TokenStream
 
 withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
-  start <- lookAhead . try $ token (\(WithPos _ _ s _ _ _) -> Just s) Set.empty
+  start <- lookAhead . try $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
   res <- p
-  end <- lookAhead . try $ token (\(WithPos _ _ _ e _ _) -> Just e) Set.empty
-  pure $ Spanned res (SrcLoc start end)
+  end <- lookAhead . try $ token (\(WithPos _ _ e _ _) -> Just e) Set.empty
+  pure $ Spanned res (start <> end)
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
-tokenWithSpan t = token (\(WithPos _ _ s e _ t') -> if t == t' then Just (Spanned t (SrcLoc s e)) else Nothing) Set.empty
+tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
 
 int :: Parser (Spanned Int)
-int = token (\case (WithPos _ _ s e _ (TInt n)) -> Just (Spanned n (SrcLoc s e)); _ -> Nothing) Set.empty
+int = token (\case (WithPos _ _ s _ (TInt n)) -> Just (Spanned n s); _ -> Nothing) Set.empty
 
 bool :: Parser (Spanned Bool)
-bool = token (\case (WithPos _ _ s e _ (TBool b)) -> Just (Spanned b (SrcLoc s e)); _ -> Nothing) Set.empty
+bool = token (\case (WithPos _ _ s _ (TBool b)) -> Just (Spanned b s); _ -> Nothing) Set.empty
 
 string :: Parser (Spanned Text)
-string = token (\case (WithPos _ _ s e _ (TString str)) -> Just (Spanned str (SrcLoc s e)); _ -> Nothing) Set.empty
+string = token (\case (WithPos _ _ s _ (TString str)) -> Just (Spanned str s); _ -> Nothing) Set.empty
 
 unit :: Parser (Spanned ())
 unit = withSpan $ tokenWithSpan TLParen *> tokenWithSpan TRParen $> ()
@@ -64,13 +64,13 @@ lit =
     ]
 
 ident :: Parser (Spanned Text)
-ident = token (\case (WithPos _ _ s e _ (TIdent i)) -> Just (Spanned i (SrcLoc s e)); _ -> Nothing) Set.empty
+ident = token (\case (WithPos _ _ s _ (TIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 tyVar :: Parser (Spanned Text)
-tyVar = token (\case (WithPos _ _ s e _ (TTyVar v)) -> Just (Spanned v (SrcLoc s e)); _ -> Nothing) Set.empty
+tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
 
 typeIdent :: Parser (Spanned Text)
-typeIdent = token (\case (WithPos _ _ s e _ (TTypeIdent i)) -> Just (Spanned i (SrcLoc s e)); _ -> Nothing) Set.empty
+typeIdent = token (\case (WithPos _ _ s _ (TTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 parens :: Parser a -> Parser a
 parens = between (tokenWithSpan TLParen) (tokenWithSpan TRParen)
