@@ -13,7 +13,7 @@ import GHC.IO.Handle (Handle)
 import Span
 import Spanned
 import Text.Megaparsec
-  ( MonadParsec (eof, notFollowedBy, takeWhile1P, token, try),
+  ( MonadParsec (eof, lookAhead, notFollowedBy, takeWhile1P, token, try),
     ParseErrorBundle,
     Parsec,
     Stream (take1_),
@@ -27,35 +27,36 @@ import Text.Megaparsec
     sepEndBy1,
     some,
   )
-import Text.Megaparsec.Debug (MonadParsecDbg (dbg))
 import qualified Token as T
 import TokenStream
 import Prelude hiding (span)
 
 type Parser = Parsec Void TokenStream
 
-withSpan :: Parser a -> Parser (Spanned a)
-withSpan p = do
-  startPos <- getOffset
-  result <- p
-  Spanned result . SrcLoc startPos <$> getOffset
+-- withSpan :: Parser a -> Parser (Spanned a)
+-- withSpan p = do
+--   start <- lookAhead . try $ token (\(WithPos _ _ s _ _ _) -> Just s) Set.empty
+--   res <- p
+--   end <- lookAhead . try $ token (\(WithPos _ _ _ e _ _) -> Just e) Set.empty
+--   pure $ Spanned res (SrcLoc start end)
 
--- tokenWithSpan :: T.Token -> Parser (Spanned T.Token)
--- tokenWithSpan t = dbg "token" $ withSpan $ pure t
 tokenWithSpan :: T.Token -> Parser (Spanned T.Token)
-tokenWithSpan t = withSpan $ token (\(WithPos _ _ _ t') -> if t == t' then Just t else Nothing) Set.empty
+tokenWithSpan t = token (\(WithPos _ _ s e _ t') -> if t == t' then Just (Spanned t (SrcLoc s e)) else Nothing) Set.empty
 
 int :: Parser (Spanned Int)
-int = withSpan $ token (\case (WithPos _ _ _ (T.TInt n)) -> Just n; _ -> Nothing) Set.empty
+int = token (\case (WithPos _ _ s e _ (T.TInt n)) -> Just (Spanned n (SrcLoc s e)); _ -> Nothing) Set.empty
 
 bool :: Parser (Spanned Bool)
-bool = withSpan $ token (\case (WithPos _ _ _ (T.TBool b)) -> Just b; _ -> Nothing) Set.empty
+bool = token (\case (WithPos _ _ s e _ (T.TBool b)) -> Just (Spanned b (SrcLoc s e)); _ -> Nothing) Set.empty
 
 string :: Parser (Spanned Text)
-string = withSpan $ token (\case (WithPos _ _ _ (T.TString s)) -> Just s; _ -> Nothing) Set.empty
+string = token (\case (WithPos _ _ s e _ (T.TString str)) -> Just (Spanned str (SrcLoc s e)); _ -> Nothing) Set.empty
 
 unit :: Parser (Spanned ())
-unit = withSpan $ tokenWithSpan T.TLParen *> tokenWithSpan T.TRParen $> ()
+unit = do
+  start <- tokenWithSpan T.TLParen
+  end <- tokenWithSpan T.TRParen
+  pure $ Spanned () (span start <> span end)
 
 lit :: Parser (Spanned Lit)
 lit =
@@ -66,13 +67,13 @@ lit =
     ]
 
 ident :: Parser (Spanned Text)
-ident = withSpan $ token (\case (WithPos _ _ _ (T.TIdent i)) -> Just i; _ -> Nothing) Set.empty
+ident = token (\case (WithPos _ _ s e _ (T.TIdent i)) -> Just (Spanned i (SrcLoc s e)); _ -> Nothing) Set.empty
 
 tyVar :: Parser (Spanned Text)
-tyVar = withSpan $ token (\case (WithPos _ _ _ (T.TTyVar v)) -> Just v; _ -> Nothing) Set.empty
+tyVar = token (\case (WithPos _ _ s e _ (T.TTyVar v)) -> Just (Spanned v (SrcLoc s e)); _ -> Nothing) Set.empty
 
 typeIdent :: Parser (Spanned Text)
-typeIdent = withSpan $ token (\case (WithPos _ _ _ (T.TTypeIdent i)) -> Just i; _ -> Nothing) Set.empty
+typeIdent = token (\case (WithPos _ _ s e _ (T.TTypeIdent i)) -> Just (Spanned i (SrcLoc s e)); _ -> Nothing) Set.empty
 
 parens :: Parser a -> Parser a
 parens = between (tokenWithSpan T.TLParen) (tokenWithSpan T.TRParen)
@@ -119,9 +120,9 @@ operatorTable =
   ]
 
 pattern' :: Parser (Spanned Pattern)
-pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
+pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
   where
-    wildcard = tokenWithSpan T.TUnderscore $> PWildcard
+    wildcard = Spanned PWildcard . span <$> tokenWithSpan T.TUnderscore
     litP = PLit <$> lit
     varP = PVar <$> ident
     pairP = parens $ PPair <$> pattern' <*> (tokenWithSpan T.TDoubleColon *> pattern')
@@ -163,26 +164,20 @@ type' = try (withSpan arrowType) <|> baseType
 expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
   where
-    unit' :: Parser (Spanned Expr)
     unit' = withSpan $ unit $> EUnit
-
-    litExpr = do
-      l <- lit
-      pure $ Spanned (ELit l) (span l)
-
-    varExpr = do
-      i <- ident
-      pure $ Spanned (EVar i) (span i)
+    litExpr = withSpan $ ELit <$> lit
+    varExpr = withSpan $ EVar <$> ident
 
     simple :: Parser (Spanned Expr)
-    simple = choice [unit', litExpr, varExpr, parens expr]
+    simple = choice [litExpr, varExpr, try unit' <|> parens expr]
 
     lambda :: Parser (Spanned Expr)
-    lambda =
-      withSpan $
-        ELam
-          <$> (tokenWithSpan T.TBackSlash *> some pattern')
-          <*> (tokenWithSpan T.TArrow *> expr)
+    lambda = do
+      start <- tokenWithSpan T.TBackSlash
+      args <- some pattern'
+      _ <- tokenWithSpan T.TArrow
+      body <- expr
+      pure $ Spanned (ELam args body) (span start <> span body)
 
     let' :: Parser (Spanned Expr)
     let' =

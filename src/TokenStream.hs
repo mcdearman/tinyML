@@ -16,6 +16,8 @@ data TokenStream = TokenStream
 data WithPos a = WithPos
   { start :: SourcePos,
     end :: SourcePos,
+    startOffset :: Int,
+    endOffset :: Int,
     len :: Int,
     val :: a
   }

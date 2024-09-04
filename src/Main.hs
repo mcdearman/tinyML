@@ -19,7 +19,7 @@ repl = do
       Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
       -- Right d -> outputStrLn $ unpack $ (toStrict . pShow) d
       Right d -> case parseStream d of
-        Left err -> outputStrLn $ "Error: " ++ show err
+        Left err -> outputStrLn $ "Error: " ++ unpack (pack (errorBundlePretty err))
         Right p -> outputStrLn $ unpack $ (toStrict . pShow) p
     Nothing -> return ()
   repl

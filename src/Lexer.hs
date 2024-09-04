@@ -38,12 +38,6 @@ import TokenStream
 
 type Lexer = Parsec Void Text
 
--- withSpan :: Lexer a -> Lexer (Spanned a)
--- withSpan p = do
---   startPos <- getOffset
---   result <- p
---   Spanned result . SrcLoc startPos <$> getOffset
-
 withPos :: Lexer a -> Lexer (WithPos a)
 withPos p = do
   startPos <- getSourcePos
@@ -51,7 +45,7 @@ withPos p = do
   result <- p
   endPos <- getSourcePos
   endOffset <- getOffset
-  return $ WithPos startPos endPos (endOffset - startOffset) result
+  return $ WithPos startPos endPos startOffset endOffset (endOffset - startOffset) result
 
 lexeme :: Lexer a -> Lexer a
 lexeme p = p <* sc
