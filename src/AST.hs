@@ -6,7 +6,7 @@ import Spanned
 
 data Program
   = PFile Text Module
-  | PRepl Module
+  | PRepl (Spanned Module)
   deriving (Show)
 
 data Module = Module Name [Spanned Decl] deriving (Show)

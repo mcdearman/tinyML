@@ -1,4 +1,4 @@
-module Parser where
+module Parser (parseStream) where
 
 import AST
 import Control.Applicative (empty, optional, (<|>))
@@ -306,27 +306,19 @@ decl = withSpan $ try fnMatch <|> try fn <|> def <|> try record <|> dataDef
 module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
 
--- -- prog :: Parser (Spanned Program)
--- -- prog = withSpan $ PFile <$>
--- repl :: Parser (Spanned Program)
--- repl = sc *> (try declParser <|> exprParser)
---   where
---     declParser = do
---       d <- decl <* eof
---       pure $ Spanned ([d]) (span d)
+repl :: Parser (Spanned Program)
+repl = withSpan $ PRepl <$> (try declParser <|> exprParser)
+  where
+    declParser = do
+      d <- decl <* eof
+      pure $ Spanned (Module (Spanned "main" NoLoc) [d]) (span d)
 
---     exprParser = do
---       e <- expr <* eof
---       let s = Gen $ span e
---           mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
---           r = Root [mainDecl]
---       pure $ Spanned r s
+    exprParser = do
+      e <- expr <* eof
+      let s = Gen $ span e
+          mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
+          m = Module (Spanned "main" NoLoc) [mainDecl]
+      pure $ Spanned m s
 
--- parseFile :: Handle -> Either (ParseErrorBundle Text Void) (Spanned Program)
--- parseFile h = do
---   contents <- pack <$> hGetContents h
---   pure $ Text.Megaparsec.parse (module' "stdin") "" contents
-
--- parseText :: Text -> Either (ParseErrorBundle Text Void) (Spanned Program)
--- parseText = Text.Megaparsec.parse repl ""
---   where
+parseStream :: TokenStream -> Either (ParseErrorBundle TokenStream Void) (Spanned Program)
+parseStream = Text.Megaparsec.parse repl ""

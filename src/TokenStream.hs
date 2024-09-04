@@ -46,7 +46,6 @@ instance Stream TokenStream where
 
 instance VisualStream TokenStream where
   showTokens _ = unwords . map (show . val) . NE.toList
-
   tokensLength _ ts = sum (NE.map len ts)
 
 instance TraversableStream TokenStream where
