@@ -13,9 +13,10 @@ import GHC.IO.Handle (Handle)
 import Span
 import Spanned
 import Text.Megaparsec
-  ( MonadParsec (eof, lookAhead, notFollowedBy, takeWhile1P, token, try),
+  ( MonadParsec (eof, getParserState, lookAhead, notFollowedBy, takeWhile1P, token, try),
     ParseErrorBundle,
     Parsec,
+    State (stateInput),
     Stream (take1_),
     between,
     choice,
@@ -23,6 +24,7 @@ import Text.Megaparsec
     many,
     manyTill,
     parse,
+    satisfy,
     sepEndBy,
     sepEndBy1,
     some,
@@ -36,10 +38,18 @@ type Parser = Parsec Void TokenStream
 
 withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
-  -- start <- lookAhead $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
+  startState <- getParserState
+  let input = stateInput startState
+  start <- case take1_ input of
+    Nothing -> pure NoLoc
+    Just (WithPos _ _ s _ _, _) -> pure s
   res <- p
-  -- end <- lookAhead $ token (\(WithPos _ _ s _ _) -> Just s) Set.empty
-  pure $ Spanned res NoLoc
+  endState <- getParserState
+  let input' = stateInput endState
+  end <- case take1_ input' of
+    Nothing -> pure start
+    Just (WithPos _ _ s _ _, _) -> pure s
+  pure $ Spanned res (start <> end)
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
@@ -170,7 +180,7 @@ expr = makeExprParser apply operatorTable
     simple = dbg "simple" $ choice [litExpr, varExpr, try unit' <|> parens expr]
 
     lambda :: Parser (Spanned Expr)
-    lambda = withSpan $ ELam <$> some pattern' <*> (tokenWithSpan TArrow *> expr)
+    lambda = withSpan $ ELam <$> (tokenWithSpan TBackSlash *> some pattern') <*> (tokenWithSpan TArrow *> expr)
 
     let' :: Parser (Spanned Expr)
     let' =
