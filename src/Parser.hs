@@ -78,7 +78,7 @@ ident :: Parser (Spanned Text)
 ident = token (\case (WithPos _ _ s _ (TIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 tyVar :: Parser (Spanned TyVar)
-tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
+tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned (Spanned v s) s); _ -> Nothing) Set.empty
 
 typeIdent :: Parser (Spanned Text)
 typeIdent = token (\case (WithPos _ _ s _ (TTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
@@ -174,26 +174,40 @@ type' = try arrowType <|> baseType
     baseType =
       choice
         [ varType,
-          try kindType <|> THIdent <$> typeIdent,
+          try kindType <|> identType,
           listType,
           arrayType,
-          unitType,
+          Spanned THUnit . span <$> unit,
           recordType,
           try tupleType <|> parens (value <$> type')
         ]
-    varType = THVar . span <$> tyVar
-    kindType = THKind <$> typeIdent <*> some type'
-    listType = THList <$> brackets type'
-    arrayType = THArray <$> arrBrackets type'
+    varType = fmap THVar <$> tyVar
+    kindType = do
+      name <- typeIdent
+      ts <- some type'
+      pure $ Spanned (THKind name ts) (span name <> span (last ts))
+    identType = do
+      i <- typeIdent
+      pure $ Spanned (THIdent i) (span i)
+    listType = do
+      ts <- brackets type'
+      pure $ Spanned (THList (value ts)) (span ts)
+    arrayType = do
+      ts <- arrBrackets type'
+      pure $ Spanned (THArray (value ts)) (span ts)
     tupleType =
-      THTuple
+      fmap THTuple
         <$> parens
-          ((:) <$> (type' <* tokenWithSpan TComma) <*> type' `sepEndBy1` tokenWithSpan TComma)
-    recordType =
-      THRecord
-        <$> optional typeIdent
-        <*> braces (((,) <$> typeIdent <*> (tokenWithSpan TColon *> type')) `sepEndBy1` tokenWithSpan TComma)
-    unitType = tokenWithSpan TLParen *> tokenWithSpan TRParen $> THUnit
+          ( (:)
+              <$> (type' <* tokenWithSpan TComma)
+              <*> type' `sepEndBy1` tokenWithSpan TComma
+          )
+    recordType = do
+      name <- optional typeIdent
+      r <- braces (((,) <$> typeIdent <*> (tokenWithSpan TColon *> type')) `sepEndBy1` tokenWithSpan TComma)
+      case name of
+        Nothing -> pure $ Spanned (THRecord Nothing (value r)) (span r)
+        Just n -> pure $ Spanned (THRecord name (value r)) (span n <> span r)
 
 expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
