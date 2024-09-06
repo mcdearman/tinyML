@@ -36,20 +36,20 @@ import Prelude hiding (span)
 
 type Parser = Parsec Void TokenStream
 
-withSpan :: Parser a -> Parser (Spanned a)
-withSpan p = do
-  startState <- getParserState
-  let input = stateInput startState
-  start <- case take1_ input of
-    Nothing -> pure NoLoc
-    Just (WithPos _ _ s _ _, _) -> pure s
-  res <- p
-  endState <- getParserState
-  let input' = stateInput endState
-  end <- case take1_ input' of
-    Nothing -> pure start
-    Just (WithPos _ _ s _ _, _) -> pure s
-  pure $ Spanned res (start <> end)
+-- withSpan :: Parser a -> Parser (Spanned a)
+-- withSpan p = do
+--   startState <- getParserState
+--   let input = stateInput startState
+--   start <- case take1_ input of
+--     Nothing -> pure NoLoc
+--     Just (WithPos _ _ s _ _, _) -> pure s
+--   res <- p
+--   endState <- getParserState
+--   let input' = stateInput endState
+--   end <- case take1_ input' of
+--     Nothing -> pure start
+--     Just (WithPos _ _ s _ _, _) -> pure s
+--   pure $ Spanned res (start <> end)
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
@@ -64,7 +64,7 @@ string :: Parser (Spanned Text)
 string = token (\case (WithPos _ _ s _ (TString str)) -> Just (Spanned str s); _ -> Nothing) Set.empty
 
 unit :: Parser (Spanned ())
-unit = withSpan $ tokenWithSpan TLParen *> tokenWithSpan TRParen $> ()
+unit = Spanned () <$> (((<>) . span <$> tokenWithSpan TLParen) <*> (span <$> tokenWithSpan TRParen))
 
 lit :: Parser (Spanned Lit)
 lit =
@@ -77,23 +77,40 @@ lit =
 ident :: Parser (Spanned Text)
 ident = token (\case (WithPos _ _ s _ (TIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
-tyVar :: Parser (Spanned Text)
+tyVar :: Parser (Spanned TyVar)
 tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
 
 typeIdent :: Parser (Spanned Text)
 typeIdent = token (\case (WithPos _ _ s _ (TTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
-parens :: Parser a -> Parser a
-parens = between (tokenWithSpan TLParen) (tokenWithSpan TRParen)
+parens :: Parser a -> Parser (Spanned a)
+parens p = do
+  start <- tokenWithSpan TLParen
+  x <- p
+  end <- tokenWithSpan TRParen
+  pure $ Spanned x (span start <> span end)
 
-brackets :: Parser a -> Parser a
-brackets = between (tokenWithSpan TLBracket) (tokenWithSpan TRBracket)
+brackets :: Parser a -> Parser (Spanned a)
+brackets p = do
+  start <- tokenWithSpan TLBracket
+  x <- p
+  end <- tokenWithSpan TRBracket
+  pure $ Spanned x (span start <> span end)
 
-arrBrackets :: Parser a -> Parser a
-arrBrackets = between (tokenWithSpan THash *> tokenWithSpan TLBracket) (tokenWithSpan TRBracket)
+arrBrackets :: Parser a -> Parser (Spanned a)
+arrBrackets p = do
+  start <- tokenWithSpan THash
+  tokenWithSpan TLBracket
+  x <- p
+  end <- tokenWithSpan TRBracket
+  pure $ Spanned x (span start <> span end)
 
-braces :: Parser a -> Parser a
-braces = between (tokenWithSpan TLBrace) (tokenWithSpan TRBrace)
+braces :: Parser a -> Parser (Spanned a)
+braces p = do
+  start <- tokenWithSpan TLBrace
+  x <- p
+  end <- tokenWithSpan TRBrace
+  pure $ Spanned x (span start <> span end)
 
 binary :: Token -> (Span -> Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
 binary tok f = InfixL (f . span <$> tokenWithSpan tok)
@@ -128,34 +145,43 @@ operatorTable =
   ]
 
 pattern' :: Parser (Spanned Pattern)
-pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
+pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
   where
-    wildcard = tokenWithSpan TUnderscore $> PWildcard
-    litP = PLit <$> lit
-    varP = PVar <$> ident
+    wildcard = Spanned PWildcard . span <$> tokenWithSpan TUnderscore
+    litP = do
+      l <- lit
+      pure $ Spanned (PLit l) (span l)
+    varP = do
+      i <- ident
+      pure $ Spanned (PVar i) (span i)
     pairP = parens $ PPair <$> pattern' <*> (tokenWithSpan TDoubleColon *> pattern')
-    listP = PList <$> brackets (pattern' `sepEndBy` tokenWithSpan TComma)
-    unitP = unit $> PUnit
+    listP = do
+      ps <- brackets $ pattern' `sepEndBy` tokenWithSpan TComma
+      pure $ Spanned (PList (value ps)) (span ps)
+    unitP = Spanned PUnit . span <$> unit
 
 type' :: Parser (Spanned TypeHint)
-type' = try (withSpan arrowType) <|> baseType
+type' = try arrowType <|> baseType
   where
-    arrowType :: Parser TypeHint
-    arrowType = THArrow <$> (baseType <* tokenWithSpan TArrow) <*> type'
+    arrowType :: Parser (Spanned TypeHint)
+    arrowType = do
+      t1 <- baseType
+      tokenWithSpan TArrow
+      t2 <- type'
+      pure $ Spanned (THArrow t1 t2) (span t1 <> span t2)
 
     baseType :: Parser (Spanned TypeHint)
     baseType =
-      withSpan $
-        choice
-          [ varType,
-            try kindType <|> THIdent <$> typeIdent,
-            listType,
-            arrayType,
-            unitType,
-            recordType,
-            try tupleType <|> parens (value <$> type')
-          ]
-    varType = THVar <$> tyVar
+      choice
+        [ varType,
+          try kindType <|> THIdent <$> typeIdent,
+          listType,
+          arrayType,
+          unitType,
+          recordType,
+          try tupleType <|> parens (value <$> type')
+        ]
+    varType = THVar . span <$> tyVar
     kindType = THKind <$> typeIdent <*> some type'
     listType = THList <$> brackets type'
     arrayType = THArray <$> arrBrackets type'
