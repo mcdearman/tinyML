@@ -281,7 +281,7 @@ expr = makeExprParser apply operatorTable
     array :: Parser (Spanned Expr)
     array = do
       a <- arrBrackets (expr `sepEndBy` tokenWithSpan TComma)
-      pure $ Spanned (EArray $ listArray (0, length a - 1) (value a)) (span a)
+      pure $ Spanned (EArray $ listArray (0, length (value a) - 1) (value a)) (span a)
 
     tuple :: Parser (Spanned Expr)
     tuple =
@@ -367,13 +367,8 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
     dataDef = do
       name <- tokenWithSpan TData *> typeIdent
       vars <- many tyVar <* tokenWithSpan TEq
-      p <-
-        ( (,)
-            <$> ((,) <$> typeIdent <*> many type')
-            <*> many type'
-          )
-          `sepEndBy1` tokenWithSpan TBar
-      pure $ Spanned (DData name vars p) (span name <> span p)
+      p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TBar
+      pure $ Spanned (DData name vars p) (span name <> span (last (snd (last p))))
 
 module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
