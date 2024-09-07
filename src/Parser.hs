@@ -219,7 +219,7 @@ expr = makeExprParser apply operatorTable
     varExpr = (\i -> Spanned (EVar i) (span i)) <$> ident
 
     simple :: Parser (Spanned Expr)
-    simple = dbg "simple" $ choice [litExpr, varExpr, try unit' <|> parens (value <$> expr)]
+    simple = choice [litExpr, varExpr, try unit' <|> parens (value <$> expr)]
 
     lambda :: Parser (Spanned Expr)
     lambda = do
@@ -339,13 +339,12 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
       i <- tokenWithSpan TDef *> ident
       t <- optional (tokenWithSpan TColon *> type')
       cases <-
-        ( tokenWithSpan TBar
-            *> ( (,)
-                   <$> some pattern'
-                   <*> (tokenWithSpan TEq *> expr)
-               )
-          )
-          `sepEndBy1` tokenWithSpan TBar
+        tokenWithSpan TBar
+          *> ( (,)
+                 <$> some pattern'
+                 <*> (tokenWithSpan TEq *> expr)
+             )
+            `sepEndBy1` tokenWithSpan TBar
       pure $ Spanned (DFnMatch i t cases) (span i <> span (snd (last cases)))
 
     record :: Parser (Spanned Decl)
@@ -380,13 +379,13 @@ repl = do
   where
     declParser = do
       d <- decl
-      pure $ Spanned (Module (Spanned "main" NoLoc) [d]) (span d)
+      pure $ Spanned (Module (Spanned "main" (Gen (span d))) [d]) (span d)
 
     exprParser = do
       e <- expr
       let s = Gen $ span e
           mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
-          m = Module (Spanned "main" NoLoc) [mainDecl]
+          m = Module (Spanned "main" s) [mainDecl]
       pure $ Spanned m s
 
 parseStream :: TokenStream -> Either (ParseErrorBundle TokenStream Void) (Spanned Program)
