@@ -77,8 +77,8 @@ lit =
 ident :: Parser (Spanned Text)
 ident = token (\case (WithPos _ _ s _ (TIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
-tyVar :: Parser (Spanned TyVar)
-tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned (Spanned v s) s); _ -> Nothing) Set.empty
+tyVar :: Parser TyVar
+tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
 
 typeIdent :: Parser (Spanned Text)
 typeIdent = token (\case (WithPos _ _ s _ (TTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
@@ -181,7 +181,9 @@ type' = try arrowType <|> baseType
           recordType,
           try tupleType <|> parens (value <$> type')
         ]
-    varType = fmap THVar <$> tyVar
+    varType = do
+      v <- tyVar
+      pure $ Spanned (THVar v) (span v)
     kindType = do
       name <- typeIdent
       ts <- some type'
@@ -212,76 +214,91 @@ type' = try arrowType <|> baseType
 expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
   where
-    unit' = withSpan $ unit $> EUnit
-    litExpr = withSpan $ ELit <$> lit
-    varExpr = withSpan $ EVar <$> ident
+    unit' = Spanned EUnit . span <$> unit
+    litExpr = (\l -> Spanned (ELit l) (span l)) <$> lit
+    varExpr = (\i -> Spanned (EVar i) (span i)) <$> ident
 
     simple :: Parser (Spanned Expr)
-    simple = dbg "simple" $ choice [litExpr, varExpr, try unit' <|> parens expr]
+    simple = dbg "simple" $ choice [litExpr, varExpr, try unit' <|> parens (value <$> expr)]
 
     lambda :: Parser (Spanned Expr)
-    lambda = withSpan $ ELam <$> (tokenWithSpan TBackSlash *> some pattern') <*> (tokenWithSpan TArrow *> expr)
+    lambda = do
+      start <- tokenWithSpan TBackSlash
+      ps <- some pattern'
+      tokenWithSpan TArrow
+      e <- expr
+      pure $ Spanned (ELam ps e) (span start <> span e)
 
     let' :: Parser (Spanned Expr)
-    let' =
-      withSpan $
-        ELet
-          <$> (tokenWithSpan TLet *> pattern')
-          <*> (tokenWithSpan TEq *> expr)
-          <*> (tokenWithSpan TIn *> expr)
+    let' = do
+      start <- tokenWithSpan TLet
+      p <- pattern'
+      tokenWithSpan TEq
+      e1 <- expr
+      tokenWithSpan TIn
+      e2 <- expr
+      pure $ Spanned (ELet p e1 e2) (span start <> span e2)
 
     let_rec :: Parser (Spanned Expr)
-    let_rec =
-      withSpan $
-        ELetRec
-          <$> (tokenWithSpan TLet *> ident)
-          <*> some pattern'
-          <*> (tokenWithSpan TEq *> expr)
-          <*> (tokenWithSpan TIn *> expr)
+    let_rec = do
+      start <- tokenWithSpan TLet
+      i <- ident
+      ps <- some pattern'
+      tokenWithSpan TEq
+      e1 <- expr
+      tokenWithSpan TIn
+      e2 <- expr
+      pure $ Spanned (ELetRec i ps e1 e2) (span start <> span e2)
 
     if' :: Parser (Spanned Expr)
-    if' =
-      withSpan $
-        EIf
-          <$> (tokenWithSpan TIf *> expr)
-          <*> (tokenWithSpan TThen *> expr)
-          <*> (tokenWithSpan TElse *> expr)
+    if' = do
+      start <- tokenWithSpan TIf
+      cond <- expr
+      tokenWithSpan TThen
+      e1 <- expr
+      tokenWithSpan TElse
+      e2 <- expr
+      pure $ Spanned (EIf cond e1 e2) (span start <> span e2)
 
     match :: Parser (Spanned Expr)
-    match =
-      withSpan $
-        EMatch
-          <$> (tokenWithSpan TMatch *> expr)
-          <*> ( tokenWithSpan TWith
-                  *> some
-                    ( tokenWithSpan TBar
-                        *> ((,) <$> pattern' <*> (tokenWithSpan TArrow *> expr))
-                    )
-              )
+    match = do
+      start <- tokenWithSpan TMatch
+      e <- expr
+      tokenWithSpan TWith
+      cases <-
+        ( tokenWithSpan TBar
+            *> ( (,)
+                   <$> pattern'
+                   <*> (tokenWithSpan TArrow *> expr)
+               )
+          )
+          `sepEndBy1` tokenWithSpan TBar
+      pure $ Spanned (EMatch e cases) (span start <> span (snd (last cases)))
 
     list :: Parser (Spanned Expr)
-    list = withSpan $ EList <$> brackets (expr `sepEndBy` tokenWithSpan TComma)
+    list = fmap EList <$> brackets (expr `sepEndBy` tokenWithSpan TComma)
 
     array :: Parser (Spanned Expr)
-    array = withSpan $ do
+    array = do
       a <- arrBrackets (expr `sepEndBy` tokenWithSpan TComma)
-      pure $ EArray $ listArray (0, length a - 1) a
+      pure $ Spanned (EArray $ listArray (0, length a - 1) (value a)) (span a)
 
     tuple :: Parser (Spanned Expr)
     tuple =
-      withSpan $
-        ETuple
-          <$> parens
-            ( (:)
-                <$> (expr <* tokenWithSpan TComma)
-                <*> expr `sepEndBy1` tokenWithSpan TComma
-            )
+      fmap ETuple
+        <$> parens
+          ( (:)
+              <$> (expr <* tokenWithSpan TComma)
+              <*> expr `sepEndBy1` tokenWithSpan TComma
+          )
 
     record :: Parser (Spanned Expr)
-    record = withSpan $ do
+    record = do
       name <- optional typeIdent
       r <- braces (((,) <$> ident <*> (tokenWithSpan TEq *> expr)) `sepEndBy1` tokenWithSpan TComma)
-      pure $ ERecord name r
+      case name of
+        Nothing -> pure $ Spanned (ERecord Nothing (value r)) (span r)
+        Just n -> pure $ Spanned (ERecord name (value r)) (span n <> span r)
 
     atom :: Parser (Spanned Expr)
     atom =
@@ -302,49 +319,69 @@ expr = makeExprParser apply operatorTable
       pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
-decl = withSpan $ try fnMatch <|> try fn <|> def <|> try record <|> dataDef
+decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
   where
-    def :: Parser Decl
-    def = DDef <$> (tokenWithSpan TDef *> pattern') <*> (tokenWithSpan TEq *> expr)
+    def :: Parser (Spanned Decl)
+    def = do
+      pat <- tokenWithSpan TDef *> pattern'
+      e <- tokenWithSpan TEq *> expr
+      pure $ Spanned (DDef pat e) (span pat <> span e)
 
-    fn :: Parser Decl
-    fn = DFn <$> (tokenWithSpan TDef *> ident) <*> some pattern' <*> (tokenWithSpan TEq *> expr)
+    fn :: Parser (Spanned Decl)
+    fn = do
+      i <- tokenWithSpan TDef *> ident
+      ps <- some pattern'
+      e <- tokenWithSpan TEq *> expr
+      pure $ Spanned (DFn i ps e) (span i <> span e)
 
-    fnMatch :: Parser Decl
-    fnMatch =
-      DFnMatch
-        <$> (tokenWithSpan TDef *> ident)
-        <*> optional (tokenWithSpan TColon *> type')
-        <*> some (tokenWithSpan TBar *> ((,) <$> some pattern' <*> (tokenWithSpan TEq *> expr)))
-
-    record :: Parser Decl
-    record =
-      DRecordDef
-        <$> (tokenWithSpan TData *> typeIdent)
-        <*> many tyVar
-        <* tokenWithSpan TEq
-        <*> braces
-          ( ( (,)
-                <$> ident
-                <*> (tokenWithSpan TColon *> type')
-            )
-              `sepEndBy1` tokenWithSpan TComma
+    fnMatch :: Parser (Spanned Decl)
+    fnMatch = do
+      i <- tokenWithSpan TDef *> ident
+      t <- optional (tokenWithSpan TColon *> type')
+      cases <-
+        ( tokenWithSpan TBar
+            *> ( (,)
+                   <$> some pattern'
+                   <*> (tokenWithSpan TEq *> expr)
+               )
           )
+          `sepEndBy1` tokenWithSpan TBar
+      pure $ Spanned (DFnMatch i t cases) (span i <> span (snd (last cases)))
 
-    dataDef :: Parser Decl
-    dataDef =
-      DData
-        <$> (tokenWithSpan TData *> typeIdent)
-        <*> many tyVar
-        <*> (tokenWithSpan TEq *> (dataCtor `sepEndBy1` tokenWithSpan TBar))
-      where
-        dataCtor = (,) <$> typeIdent <*> many type'
+    record :: Parser (Spanned Decl)
+    record =
+      do
+        name <- tokenWithSpan TData *> typeIdent
+        vars <- many tyVar <* tokenWithSpan TEq
+        p <-
+          braces
+            ( ( (,)
+                  <$> ident
+                  <*> (tokenWithSpan TColon *> type')
+              )
+                `sepEndBy1` tokenWithSpan TComma
+            )
+        pure $ Spanned (DRecordDef name vars (value p)) (span name <> span p)
+
+    dataDef :: Parser (Spanned Decl)
+    dataDef = do
+      name <- tokenWithSpan TData *> typeIdent
+      vars <- many tyVar <* tokenWithSpan TEq
+      p <-
+        ( (,)
+            <$> ((,) <$> typeIdent <*> many type')
+            <*> many type'
+          )
+          `sepEndBy1` tokenWithSpan TBar
+      pure $ Spanned (DData name vars p) (span name <> span p)
 
 module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
 
 repl :: Parser (Spanned Program)
-repl = withSpan $ PRepl <$> (try declParser <|> exprParser) <* eof
+repl = do
+  m <- (try declParser <|> exprParser) <* eof
+  pure (Spanned (PRepl m) (span m))
   where
     declParser = do
       d <- decl
