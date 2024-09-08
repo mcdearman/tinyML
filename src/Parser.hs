@@ -174,7 +174,8 @@ type' = try arrowType <|> baseType
     baseType =
       choice
         [ varType,
-          try kindType <|> identType,
+          -- try kindType <|> identType,
+          identType,
           listType,
           arrayType,
           Spanned THUnit . span <$> unit,
@@ -206,7 +207,7 @@ type' = try arrowType <|> baseType
           )
     recordType = do
       name <- optional typeIdent
-      r <- braces (((,) <$> typeIdent <*> (tokenWithSpan TColon *> type')) `sepEndBy1` tokenWithSpan TComma)
+      r <- braces (((,) <$> ident <*> (tokenWithSpan TColon *> type')) `sepEndBy1` tokenWithSpan TComma)
       case name of
         Nothing -> pure $ Spanned (THRecord Nothing (value r)) (span r)
         Just n -> pure $ Spanned (THRecord name (value r)) (span n <> span r)
