@@ -1,6 +1,5 @@
 module NIR where
 
-import Control.Monad.State
 import Data.Array (Array)
 import Data.Text (Text)
 import Spanned
@@ -88,14 +87,11 @@ data Pattern
 
 type TyVar = Spanned Text
 
-newtype Name = Name Int deriving (Show, Eq)
+type Name = Spanned ResId
 
--- use State monad to generate fresh names
-freshName :: State Int Name
-freshName = do
-  n <- get
-  put (n + 1)
-  return (Name n)
+type ResId = Int
+
+
 
 type Path = Spanned [Name]
 
