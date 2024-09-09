@@ -1,11 +1,14 @@
 module NIR where
 
+import Control.Monad.State
 import Data.Array (Array)
 import Data.Text (Text)
 import Spanned
 
-
-newtype Root = Root [Spanned Decl] deriving (Show)
+data Program
+  = PFile Text Module
+  | PRepl (Spanned Module)
+  deriving (Show)
 
 data Module = Module Name [Spanned Decl] deriving (Show)
 
@@ -85,7 +88,14 @@ data Pattern
 
 type TyVar = Spanned Text
 
-type Name = Spanned Text
+newtype Name = Name Int deriving (Show, Eq)
+
+-- use State monad to generate fresh names
+freshName :: State Int Name
+freshName = do
+  n <- get
+  put (n + 1)
+  return (Name n)
 
 type Path = Spanned [Name]
 
