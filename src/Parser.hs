@@ -161,7 +161,7 @@ pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
     unitP = Spanned PUnit . span <$> unit
 
 type' :: Parser (Spanned TypeHint)
-type' = try arrowType <|> baseType
+type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
   where
     arrowType :: Parser (Spanned TypeHint)
     arrowType = do
@@ -169,26 +169,26 @@ type' = try arrowType <|> baseType
       tokenWithSpan TArrow
       t2 <- type'
       pure $ Spanned (THArrow t1 t2) (span t1 <> span t2)
+    kindType = do
+      name <- typeIdent
+      ts <- some baseType
+      pure $ Spanned (THKind name ts) (span name <> span (last ts))
 
     baseType :: Parser (Spanned TypeHint)
     baseType =
       choice
         [ varType,
-          -- try kindType <|> identType,
           identType,
           listType,
           arrayType,
-          Spanned THUnit . span <$> unit,
           recordType,
-          try tupleType <|> parens (value <$> type')
+          try (Spanned THUnit . span <$> unit)
+            <|> try tupleType
+            <|> parens (value <$> type')
         ]
     varType = do
       v <- tyVar
       pure $ Spanned (THVar v) (span v)
-    kindType = do
-      name <- typeIdent
-      ts <- some type'
-      pure $ Spanned (THKind name ts) (span name <> span (last ts))
     identType = do
       i <- typeIdent
       pure $ Spanned (THIdent i) (span i)

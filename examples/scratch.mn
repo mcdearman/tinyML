@@ -65,7 +65,7 @@ data Either 'a 'b = Left 'a | Right 'b
 
 data Result 'a 'b = Ok 'a | Error 'b
 
-data List 'a = Nil | Pair 'a (List 'a)
+data List 'a = Empty | Pair 'a (List 'a)
 
 -- record
 data Person = { name : String, age : Int }
