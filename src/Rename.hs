@@ -11,7 +11,9 @@ newtype RenameError = UnboundVariable Span deriving (Show, Eq)
 
 data RenameResult a = Ok a | RenameError deriving (Show, Eq)
 
-type Rename a = State Env (RenameResult a)
+newtype Rename = Rename {
+  counter :: State Int
+}
 
 data Env = Env [Frame] Int deriving (Show, Eq)
 

@@ -91,8 +91,6 @@ type Name = Spanned ResId
 
 type ResId = Int
 
-
-
 type Path = Spanned [Name]
 
 data Lit
