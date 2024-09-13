@@ -16,6 +16,8 @@ newtype Rename = Rename
   { counter :: State Int ResId
   }
 
+type Res = State Int
+
 newtype Env = Env [Frame] deriving (Show, Eq)
 
 newtype Frame = Frame [(Text, ResId)] deriving (Show, Eq)
@@ -37,25 +39,25 @@ freshName = do
   put (n + 1)
   return $ Id n
 
-define :: Text -> Env -> Env
-define x (Env (Frame ns : fs)) = do
-  let (fresh, nextId) = runState freshName
-   in Env (Frame ((x, fresh) : ns) : fs) nextId
-define x (Env []) =
-  let (fresh, nextId) = runState freshName lastId
-   in Env [Frame [(x, fresh)]] nextId
+-- define :: Text -> Env -> Env
+-- define x (Env (Frame ns : fs)) = do
+--   let (fresh, nextId) = runState freshName
+--    in Env (Frame ((x, fresh) : ns) : fs) nextId
+-- define x (Env []) =
+--   let (fresh, nextId) = runState freshName lastId
+--    in Env [Frame [(x, fresh)]] nextId
 
-lookupVar :: Text -> ResId
-lookupVar n = do
-  env <- get
-  lookupVar' n env
-  where
-    lookupVar' :: Text -> Env -> ResId
-    lookupVar' n (Env []) = pure RenameError
-    lookupVar' n (Env (Frame ns : fs)) =
-      case lookup n ns of
-        Just resId -> pure $ Ok resId
-        Nothing -> lookupVar' n (Env fs)
+-- lookupVar :: Text -> ResId
+-- lookupVar n = do
+--   env <- get
+--   lookupVar' n env
+--   where
+--     lookupVar' :: Text -> Env -> ResId
+--     lookupVar' n (Env []) = pure RenameError
+--     lookupVar' n (Env (Frame ns : fs)) =
+--       case lookup n ns of
+--         Just resId -> pure $ Ok resId
+--         Nothing -> lookupVar' n (Env fs)
 
 renameProgram :: Spanned A.Program -> Env -> Spanned Program
 renameProgram _ env = undefined
