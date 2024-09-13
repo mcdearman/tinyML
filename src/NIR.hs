@@ -3,6 +3,7 @@ module NIR where
 import Data.Array (Array)
 import Data.Text (Text)
 import Spanned
+import Unique (Unique)
 
 data Program
   = PFile Text Module
@@ -89,7 +90,7 @@ type TyVar = Spanned Text
 
 type Name = Spanned ResId
 
-type ResId = Int
+type ResId = Unique
 
 type Path = Spanned [Name]
 
