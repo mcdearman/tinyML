@@ -7,12 +7,13 @@ import NIR
 import Span
 import Spanned
 
+
 newtype RenameError = UnboundVariable Span deriving (Show, Eq)
 
 data RenameResult a = Ok a | RenameError deriving (Show, Eq)
 
 newtype Rename = Rename {
-  counter :: State Int
+  counter :: State Unique 
 }
 
 data Env = Env [Frame] Int deriving (Show, Eq)

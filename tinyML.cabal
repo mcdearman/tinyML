@@ -30,6 +30,7 @@ executable tinyML
         Infer
         Core
         Eval
+        Unique
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables
