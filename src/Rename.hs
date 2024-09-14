@@ -33,11 +33,11 @@ pop (Env (_ : fs)) = Env fs
 pop _ = error "pop: empty environment"
 
 -- -- use State monad to generate fresh names
-freshName :: State Int ResId
-freshName = do
-  n <- get
-  put (n + 1)
-  return $ Id n
+-- freshName :: State Int ResId
+-- freshName = do
+--   n <- get
+--   put (n + 1)
+--   return $ Id n
 
 -- define :: Text -> Env -> Env
 -- define x (Env (Frame ns : fs)) = do
