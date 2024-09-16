@@ -6,7 +6,7 @@ import Spanned
 import Unique (Unique)
 
 data Program
-  = PFile Text Module
+  = PFile Text (Spanned Module)
   | PRepl (Spanned Module)
   deriving (Show)
 

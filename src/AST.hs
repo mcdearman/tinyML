@@ -5,7 +5,7 @@ import Data.Text (Text)
 import Spanned
 
 data Program
-  = PFile Text Module
+  = PFile Text (Spanned Module)
   | PRepl (Spanned Module)
   deriving (Show)
 
