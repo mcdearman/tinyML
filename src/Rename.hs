@@ -12,15 +12,18 @@ import Prelude hiding (span)
 
 newtype RenameError = UnboundVariable Span deriving (Show, Eq)
 
-type RenameResult a = Result RenameError a
-
-type Res a = State Int a
-
-type NameRes a = Res (RenameResult a)
-
 newtype Env = Env [Frame] deriving (Show, Eq)
 
 newtype Frame = Frame [(Text, ResId)] deriving (Show, Eq)
+
+data Resolver = Resolver
+  { resId :: ResId,
+    env :: Env,
+    errors :: [RenameError]
+  }
+  deriving (Show, Eq)
+
+type NameRes a = State Resolver a
 
 defaultEnv :: Env
 defaultEnv = Env []
