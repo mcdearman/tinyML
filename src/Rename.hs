@@ -83,7 +83,7 @@ renameDecl d env = undefined
 
 renameExpr :: Spanned A.Expr -> Env -> NameRes (Spanned Expr, Env)
 renameExpr (Spanned (A.ELit lit) s) env = pure $ Ok (Spanned (ELit (renameLit lit)) s, env)
-renameExpr (Spanned (A.EVar (Spanned x _)) s) env = do
+renameExpr (Spanned (A.EVar (Spanned x _)) s) env =
   case lookupVar x env of
     Ok resId -> pure $ Ok (Spanned (EVar (Spanned resId s)) s, env)
     Err e -> pure $ Err e
