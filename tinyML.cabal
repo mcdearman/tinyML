@@ -31,6 +31,7 @@ executable tinyML
         Core
         Eval
         Unique
+        Result
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables
