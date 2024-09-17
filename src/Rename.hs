@@ -12,9 +12,11 @@ import Prelude hiding (span)
 
 newtype RenameError = UnboundVariable Span deriving (Show, Eq)
 
+type RenameResult a = Result RenameError a
+
 type Res a = State Int a
 
-type RenameResult a = Result (Res a) RenameError
+type NameRes a = Res (RenameResult a)
 
 newtype Env = Env [Frame] deriving (Show, Eq)
 
@@ -47,7 +49,7 @@ define x (Env []) = do
 
 lookupVar :: Text -> Env -> RenameResult ResId
 lookupVar x (Env (Frame ns : fs)) = case lookup x ns of
-  Just resId -> Ok $ pure resId
+  Just resId -> Ok resId
   Nothing -> lookupVar x (Env fs)
 lookupVar _ (Env []) = Err $ UnboundVariable NoLoc
 
@@ -76,18 +78,16 @@ lookupVar _ (Env []) = Err $ UnboundVariable NoLoc
 --     renameDecls [] env = ([], env)
 --     renameDecls (d : ds) env = let (d', env') = renameDecl d env in let (ds', env'') = renameDecls ds env' in (d' : ds', env'')
 
-renameDecl :: Spanned A.Decl -> Env -> RenameResult (Spanned Decl, Env)
+renameDecl :: Spanned A.Decl -> Env -> NameRes (Spanned Decl, Env)
 renameDecl d env = undefined
 
-renameExpr :: Spanned A.Expr -> Env -> RenameResult (Spanned Expr, Env)
-renameExpr (Spanned (A.ELit lit) s) env = Ok $ pure (Spanned (ELit (renameLit lit)) s, env)
+renameExpr :: Spanned A.Expr -> Env -> NameRes (Spanned Expr, Env)
+renameExpr (Spanned (A.ELit lit) s) env = pure $ Ok (Spanned (ELit (renameLit lit)) s, env)
 renameExpr (Spanned (A.EVar (Spanned x _)) s) env = do
-  resId <- lookupVar x env
-  Ok $ pure (Spanned (EVar (Spanned resId s)) s, env)
-renameExpr (Spanned (A.EApp e1 e2) s) env = do
-  (e1', env') <- renameExpr e1 env
-  (e2', env'') <- renameExpr e2 env'
-  Ok $ pure (Spanned (EApp e1' e2') s, env'')
+  case lookupVar x env of
+    Ok resId -> pure $ Ok (Spanned (EVar (Spanned resId s)) s, env)
+    Err e -> pure $ Err e
+renameExpr (Spanned (A.EApp f arg) s) env = undefined
 renameExpr _ _ = undefined
 
 renamePattern :: Spanned A.Pattern -> Env -> Spanned Pattern

@@ -1,20 +1,20 @@
 module Result where
 
-data Result a b
-  = Ok a
-  | Err b
+data Result e v
+  = Ok v
+  | Err e
   deriving (Eq, Show)
 
-instance Functor (Result a) where
-  fmap f (Ok a) = Ok (f a)
-  fmap _ (Err b) = Err b
+instance Functor (Result e) where
+  fmap f (Ok v) = Ok (f v)
+  fmap _ (Err e) = Err e
 
-instance Applicative (Result a) where
+instance Applicative (Result e) where
   pure = Ok
-  Ok f <*> Ok a = Ok (f a)
-  Err b <*> _ = Err b
-  _ <*> Err b = Err b
+  Ok f <*> Ok v = Ok (f v)
+  Err e <*> _ = Err e
+  _ <*> Err e = Err e
 
-instance Monad (Result a) where
-  Ok a >>= f = f a
-  Err b >>= _ = Err b
+instance Monad (Result e) where
+  Ok v >>= f = f v
+  Err e >>= _ = Err e
