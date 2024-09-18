@@ -36,13 +36,13 @@ pop (Env (_ : fs)) = Env fs
 pop _ = error "pop: empty environment"
 
 -- use State monad to generate fresh names
-freshName :: State Int ResId
+freshName :: State Int Resolver
 freshName = do
   n <- get
   put (n + 1)
-  return $ Id n
+  return $ Resolver (Id n) 
 
-define :: Text -> Env -> Res Env
+define :: Text -> Env -> NameRes Env
 define x (Env (Frame ns : fs)) = do
   resId <- freshName
   pure $ Env (Frame ((x, resId) : ns) : fs)
@@ -50,7 +50,7 @@ define x (Env []) = do
   resId <- freshName
   pure $ Env [Frame [(x, resId)]]
 
-lookupVar :: Text -> Env -> RenameResult ResId
+lookupVar :: Text -> Env -> Result RenameError ResId
 lookupVar x (Env (Frame ns : fs)) = case lookup x ns of
   Just resId -> Ok resId
   Nothing -> lookupVar x (Env fs)
