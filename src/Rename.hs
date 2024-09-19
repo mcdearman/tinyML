@@ -23,7 +23,7 @@ data Resolver = Resolver
   }
   deriving (Show, Eq)
 
-type NameRes a = State Resolver a
+type ResState a = State Resolver a
 
 defaultEnv :: Env
 defaultEnv = Env []
@@ -36,13 +36,14 @@ pop (Env (_ : fs)) = Env fs
 pop _ = error "pop: empty environment"
 
 -- use State monad to generate fresh names
-freshName :: State Int Resolver
+freshName :: ResState ResId
 freshName = do
-  n <- get
-  put (n + 1)
-  return $ Resolver (Id n) 
+  r <- get
+  let Id n = resId r
+  put r {resId = Id $ n + 1}
+  pure $ Id n
 
-define :: Text -> Env -> NameRes Env
+define :: Text -> Env -> ResState Env
 define x (Env (Frame ns : fs)) = do
   resId <- freshName
   pure $ Env (Frame ((x, resId) : ns) : fs)
@@ -81,16 +82,16 @@ lookupVar _ (Env []) = Err $ UnboundVariable NoLoc
 --     renameDecls [] env = ([], env)
 --     renameDecls (d : ds) env = let (d', env') = renameDecl d env in let (ds', env'') = renameDecls ds env' in (d' : ds', env'')
 
-renameDecl :: Spanned A.Decl -> Env -> NameRes (Spanned Decl, Env)
+renameDecl :: Spanned A.Decl -> Env -> ResState (Spanned Decl, Env)
 renameDecl d env = undefined
 
-renameExpr :: Spanned A.Expr -> Env -> NameRes (Spanned Expr, Env)
-renameExpr (Spanned (A.ELit lit) s) env = pure $ Ok (Spanned (ELit (renameLit lit)) s, env)
-renameExpr (Spanned (A.EVar (Spanned x _)) s) env =
-  case lookupVar x env of
-    Ok resId -> pure $ Ok (Spanned (EVar (Spanned resId s)) s, env)
-    Err e -> pure $ Err e
-renameExpr (Spanned (A.EApp f arg) s) env = undefined
+renameExpr :: Spanned A.Expr -> Env -> ResState (Spanned Expr, Env)
+-- renameExpr (Spanned (A.ELit lit) s) env = pure $ Ok (Spanned (ELit (renameLit lit)) s, env)
+-- renameExpr (Spanned (A.EVar (Spanned x _)) s) env =
+--   case lookupVar x env of
+--     Ok resId -> pure $ Ok (Spanned (EVar (Spanned resId s)) s, env)
+--     Err e -> pure $ Err e
+-- renameExpr (Spanned (A.EApp f arg) s) env = undefined
 renameExpr _ _ = undefined
 
 renamePattern :: Spanned A.Pattern -> Env -> Spanned Pattern
