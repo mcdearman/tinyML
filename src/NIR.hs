@@ -7,7 +7,7 @@ import Unique (Unique)
 
 data Program
   = PFile Text (Spanned Module)
-  | PRepl (Spanned Module)
+  | PRepl (Either (Spanned Decl) (Spanned Expr))
   deriving (Show)
 
 data Module = Module Name [Spanned Decl] deriving (Show)
@@ -28,9 +28,7 @@ data Expr
   | EApp (Spanned Expr) (Spanned Expr)
   | ELam [Spanned Pattern] (Spanned Expr)
   | ELet (Spanned Pattern) (Spanned Expr) (Spanned Expr)
-  | ELetRec Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
-  | EUnary (Spanned UnOp) (Spanned Expr)
-  | EBinary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
+  | EFn Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
   | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
   | EMatch (Spanned Expr) [(Spanned Pattern, Spanned Expr)]
   | EList [Spanned Expr]

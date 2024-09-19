@@ -14,23 +14,28 @@ import Unique
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
 
-repl :: InputT IO ()
-repl = do
+repl :: Resolver -> InputT IO ()
+repl r = do
   input <- getMultilineInput ""
   case input of
+    Just "env" -> do
+      outputStrLn $ unpack $ (toStrict . pShow) (env r)
+      repl r
     Just i -> case lexMML (pack i) of
       Left err -> outputStrLn $ "Lexer error: " ++ unpack (pack (errorBundlePretty err))
       Right d -> case parseStream d of
         Left err -> outputStrLn $ "Parser error: " ++ unpack (pack (errorBundlePretty err))
         Right p -> do
           outputStrLn $ unpack $ (toStrict . pShow) p
-          let defaultResolver = Resolver {resId = Id 0, env = defaultEnv, errors = []}
-          let (nir, res) = runState (renameProgram p) defaultResolver
+          let (nir, res) = runState (renameProgram p) r
           case res of
-            Resolver {errors = []} -> outputStrLn $ unpack $ (toStrict . pShow) nir
-            Resolver {errors = e} -> outputStrLn $ "Resolver errors: " ++ show e
+            Resolver {errors = []} -> do
+              outputStrLn $ unpack $ (toStrict . pShow) nir
+              repl res
+            Resolver {errors = e} -> do
+              outputStrLn $ "Resolver errors: " ++ show e
+              repl r
     Nothing -> return ()
-  repl
 
 getMultilineInput :: String -> InputT IO (Maybe String)
 getMultilineInput acc = do
@@ -50,4 +55,5 @@ collectLines acc = do
 main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
-  runInputT settings repl
+  let defaultResolver = Resolver {resId = Id 0, env = defaultEnv, errors = []}
+  runInputT settings (repl defaultResolver)

@@ -6,7 +6,7 @@ import Spanned
 
 data Program
   = PFile Text (Spanned Module)
-  | PRepl (Spanned Module)
+  | PRepl (Either (Spanned Decl) (Spanned Expr))
   deriving (Show)
 
 data Module = Module Name [Spanned Decl] deriving (Show)
@@ -27,7 +27,7 @@ data Expr
   | EApp (Spanned Expr) (Spanned Expr)
   | ELam [Spanned Pattern] (Spanned Expr)
   | ELet (Spanned Pattern) (Spanned Expr) (Spanned Expr)
-  | ELetRec Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
+  | EFn Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
   | EUnary (Spanned UnOp) (Spanned Expr)
   | EBinary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
   | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
@@ -43,6 +43,10 @@ data UnOp
   = UNeg
   | UNot
   deriving (Show, Eq)
+
+unOpName :: UnOp -> Text
+unOpName UNeg = "__neg__"
+unOpName UNot = "__not__"
 
 data BinOp
   = BAdd
@@ -60,6 +64,22 @@ data BinOp
   | BGeq
   | BPair
   deriving (Show, Eq)
+
+binOpName :: BinOp -> Text
+binOpName BAdd = "__add__"
+binOpName BSub = "__sub__"
+binOpName BMul = "__mul__"
+binOpName BDiv = "__div__"
+binOpName BMod = "__mod__"
+binOpName BAnd = "__and__"
+binOpName BOr = "__or__"
+binOpName BEq = "__eq__"
+binOpName BNeq = "__neq__"
+binOpName BLt = "__lt__"
+binOpName BGt = "__gt__"
+binOpName BLeq = "__leq__"
+binOpName BGeq = "__geq__"
+binOpName BPair = "__pair__"
 
 data TypeHint
   = THInt

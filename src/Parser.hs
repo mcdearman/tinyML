@@ -249,7 +249,7 @@ expr = makeExprParser apply operatorTable
       e1 <- expr
       tokenWithSpan TIn
       e2 <- expr
-      pure $ Spanned (ELetRec i ps e1 e2) (span start <> span e2)
+      pure $ Spanned (EFn i ps e1 e2) (span start <> span e2)
 
     if' :: Parser (Spanned Expr)
     if' = do
@@ -379,19 +379,8 @@ module' filename = Module (Spanned filename NoLoc) <$> many decl
 
 repl :: Parser (Spanned Program)
 repl = do
-  m <- (try declParser <|> exprParser) <* eof
-  pure (Spanned (PRepl m) (span m))
-  where
-    declParser = do
-      d <- decl
-      pure $ Spanned (Module (Spanned "main" (Gen (span d))) [d]) (span d)
-
-    exprParser = do
-      e <- expr
-      let s = Gen $ span e
-          mainDecl = Spanned (DFn (Spanned "main" s) [] e) s
-          m = Module (Spanned "main" s) [mainDecl]
-      pure $ Spanned m s
+  r <- (try (Left <$> decl) <|> Right <$> expr) <* eof
+  pure (Spanned (PRepl r) NoLoc)
 
 parseStream :: TokenStream -> Either (ParseErrorBundle TokenStream Void) (Spanned Program)
 parseStream = Text.Megaparsec.parse repl ""

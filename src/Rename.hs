@@ -52,6 +52,13 @@ define n = do
   put r {resId = Id $ i' + 1, env = Env $ [(n, i)] : fs}
   pure i
 
+lookupOrDefine :: Text -> ResState ResId
+lookupOrDefine n = do
+  Resolver {env = e} <- get
+  case lookup' n e of
+    Just i -> pure i
+    Nothing -> define n
+
 lookupVar :: A.Name -> ResState ResId
 lookupVar n = do
   Resolver {env = e} <- get
@@ -60,12 +67,12 @@ lookupVar n = do
     Nothing -> do
       pushError $ UnboundVariable (span n)
       pure $ Id 0
-  where
-    lookup' :: Text -> Env -> Maybe ResId
-    lookup' _ (Env []) = Nothing
-    lookup' n' (Env (f : fs)) = case lookup n' f of
-      Just i -> Just i
-      Nothing -> lookup' n' (Env fs)
+
+lookup' :: Text -> Env -> Maybe ResId
+lookup' _ (Env []) = Nothing
+lookup' n' (Env (f : fs)) = case lookup n' f of
+  Just i -> Just i
+  Nothing -> lookup' n' (Env fs)
 
 pushError :: RenameError -> ResState ()
 pushError e = do
@@ -76,13 +83,16 @@ renameProgram :: Spanned A.Program -> ResState (Spanned Program)
 renameProgram (Spanned (A.PFile name m) s) = do
   m' <- renameModule m
   pure $ Spanned (PFile name m') s
-renameProgram (Spanned (A.PRepl m) s) = do
-  m' <- renameModule m
-  pure $ Spanned (PRepl m') s
+renameProgram (Spanned (A.PRepl (Left d)) s) = do
+  d' <- renameDecl d
+  pure $ Spanned (PRepl (Left d')) s
+renameProgram (Spanned (A.PRepl (Right e)) s) = do
+  e' <- renameExpr e
+  pure $ Spanned (PRepl (Right e')) s
 
 renameModule :: Spanned A.Module -> ResState (Spanned Module)
 renameModule (Spanned (A.Module (Spanned n s) ds) s') = do
-  n' <- define n
+  n' <- lookupOrDefine n
   ds' <- traverse renameDecl ds
   pure $ Spanned (Module (Spanned n' s) ds') s'
 
@@ -93,8 +103,10 @@ renameDecl (Spanned (A.DDef p e) s) = do
   pure $ Spanned (DDef p' e') s
 renameDecl (Spanned (A.DFn (Spanned n s) ps e) s') = do
   n' <- define n
+  push
   ps' <- traverse renamePattern ps
   e' <- renameExpr e
+  pop
   pure $ Spanned (DFn (Spanned n' s) ps' e') s'
 renameDecl _ = undefined
 
@@ -113,7 +125,43 @@ renameExpr (Spanned (A.ELam ps e) s) = do
   e' <- renameExpr e
   pop
   pure $ Spanned (ELam ps' e') s
-renameExpr _ = undefined
+renameExpr (Spanned (A.ELet p e1 e2) s) = do
+  e1' <- renameExpr e1
+  push
+  p' <- renamePattern p
+  e2' <- renameExpr e2
+  pop
+  pure $ Spanned (ELet p' e1' e2') s
+renameExpr (Spanned (A.EFn (Spanned n s) ps e1 e2) s') = do
+  n' <- define n
+  push
+  ps' <- traverse renamePattern ps
+  e1' <- renameExpr e1
+  e2' <- renameExpr e2
+  pop
+  pure $ Spanned (EFn (Spanned n' s) ps' e1' e2') s'
+renameExpr (Spanned (A.EIf c t e) s) = do
+  c' <- renameExpr c
+  t' <- renameExpr t
+  e' <- renameExpr e
+  pure $ Spanned (EIf c' t' e') s
+renameExpr (Spanned (A.EUnary op e) s) = undefined
+renameExpr (Spanned (A.EBinary op e1 e2) s) = undefined
+renameExpr (Spanned (A.EMatch e cs) s) = do
+  e' <- renameExpr e
+  cs' <- traverse (\(p, e'') -> (,) <$> renamePattern p <*> renameExpr e'') cs
+  pure $ Spanned (EMatch e' cs') s
+renameExpr (Spanned (A.EList es) s) = do
+  es' <- traverse renameExpr es
+  pure $ Spanned (EList es') s
+renameExpr (Spanned (A.EArray es) s) = do
+  es' <- traverse renameExpr es
+  pure $ Spanned (EArray es') s
+renameExpr (Spanned (A.ETuple es) s) = do
+  es' <- traverse renameExpr es
+  pure $ Spanned (ETuple es') s
+renameExpr (Spanned (A.ERecord n fs) s) = undefined
+renameExpr (Spanned A.EUnit s) = pure $ Spanned EUnit s
 
 renamePattern :: Spanned A.Pattern -> ResState (Spanned Pattern)
 renamePattern (Spanned (A.PVar (Spanned v s)) s') = do
