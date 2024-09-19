@@ -40,7 +40,7 @@ pop :: ResState Env
 pop = do
   r@Resolver {env = Env fs} <- get
   case fs of
-    [] -> error "pop: empty stack"
+    [] -> error "cannot pop empty environment"
     _ : fs' -> do
       put r {env = Env fs'}
       pure $ env r
@@ -145,7 +145,10 @@ renameExpr (Spanned (A.EIf c t e) s) = do
   t' <- renameExpr t
   e' <- renameExpr e
   pure $ Spanned (EIf c' t' e') s
-renameExpr (Spanned (A.EUnary op e) s) = undefined
+renameExpr (Spanned (A.EUnary op e) s) = do
+  n <- lookupOrDefine $ A.unOpName (value op)
+  e' <- renameExpr e
+  pure $ Spanned (EApp (Spanned (EVar (Spanned n s)) s) e') s
 renameExpr (Spanned (A.EBinary op e1 e2) s) = undefined
 renameExpr (Spanned (A.EMatch e cs) s) = do
   e' <- renameExpr e
