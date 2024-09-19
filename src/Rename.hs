@@ -1,7 +1,10 @@
+{-# OPTIONS_GHC -Wno-deprecations #-}
+
 module Rename where
 
 import qualified AST as A
 import Control.Monad.State
+import Control.Placeholder (todo)
 import Data.Text (Text)
 import NIR
 import Span
@@ -174,7 +177,7 @@ renameExpr (Spanned (A.EArray es) s) = do
 renameExpr (Spanned (A.ETuple es) s) = do
   es' <- traverse renameExpr es
   pure $ Spanned (ETuple es') s
-renameExpr (Spanned (A.ERecord n fs) s) = undefined
+renameExpr (Spanned (A.ERecord n fs) s) = todo
 renameExpr (Spanned A.EUnit s) = pure $ Spanned EUnit s
 
 renameTypeHint :: Spanned A.TypeHint -> ResState (Spanned TypeHint)
@@ -202,14 +205,23 @@ renameTypeHint (Spanned (A.THArrow t1 t2) s) = do
   t1' <- renameTypeHint t1
   t2' <- renameTypeHint t2
   pure $ Spanned (THArrow t1' t2') s
-renameTypeHint (Spanned (A.THRecord n fs) s) = undefined
+renameTypeHint (Spanned (A.THRecord n fs) s) = todo
 renameTypeHint (Spanned A.THUnit s) = pure $ Spanned THUnit s
 
 renamePattern :: Spanned A.Pattern -> ResState (Spanned Pattern)
+renamePattern (Spanned A.PWildcard s) = pure $ Spanned PWildcard s
+renamePattern (Spanned (A.PLit lit) s) = pure $ Spanned (PLit (renameLit lit)) s
 renamePattern (Spanned (A.PVar (Spanned v s)) s') = do
   v' <- define v
   pure $ Spanned (PVar (Spanned v' s)) s'
-renamePattern _ = undefined
+renamePattern (Spanned (A.PPair p1 p2) s) = do
+  p1' <- renamePattern p1
+  p2' <- renamePattern p2
+  pure $ Spanned (PPair p1' p2') s
+renamePattern (Spanned (A.PList ps) s) = do
+  ps' <- traverse renamePattern ps
+  pure $ Spanned (PList ps') s
+renamePattern (Spanned A.PUnit s) = pure $ Spanned PUnit s
 
 renameLit :: Spanned A.Lit -> Spanned Lit
 renameLit (Spanned (A.LInt i) s) = Spanned (LInt i) s
