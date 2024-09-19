@@ -1,12 +1,15 @@
 module Main where
 
+import Control.Monad.State (runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
 import Lexer (lexMML)
 import Parser
+import Rename
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
+import Unique
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
@@ -19,7 +22,13 @@ repl = do
       Left err -> outputStrLn $ "Lexer error: " ++ unpack (pack (errorBundlePretty err))
       Right d -> case parseStream d of
         Left err -> outputStrLn $ "Parser error: " ++ unpack (pack (errorBundlePretty err))
-        Right p -> outputStrLn $ unpack $ (toStrict . pShow) p
+        Right p -> do
+          outputStrLn $ unpack $ (toStrict . pShow) p
+          let defaultResolver = Resolver {resId = Id 0, env = defaultEnv, errors = []}
+          let (nir, res) = runState (renameProgram p) defaultResolver
+          case res of
+            Resolver {errors = []} -> outputStrLn $ unpack $ (toStrict . pShow) nir
+            Resolver {errors = e} -> outputStrLn $ "Resolver errors: " ++ show e
     Nothing -> return ()
   repl
 

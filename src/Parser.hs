@@ -324,20 +324,23 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
   where
     def :: Parser (Spanned Decl)
     def = do
-      pat <- tokenWithSpan TDef *> pattern'
+      start <- tokenWithSpan TDef
+      p <- pattern'
       e <- tokenWithSpan TEq *> expr
-      pure $ Spanned (DDef pat e) (span pat <> span e)
+      pure $ Spanned (DDef p e) (span start <> span e)
 
     fn :: Parser (Spanned Decl)
     fn = do
-      i <- tokenWithSpan TDef *> ident
+      start <- tokenWithSpan TDef
+      i <- ident
       ps <- some pattern'
       e <- tokenWithSpan TEq *> expr
-      pure $ Spanned (DFn i ps e) (span i <> span e)
+      pure $ Spanned (DFn i ps e) (span start <> span e)
 
     fnMatch :: Parser (Spanned Decl)
     fnMatch = do
-      i <- tokenWithSpan TDef *> ident
+      start <- tokenWithSpan TDef
+      i <- ident
       t <- optional (tokenWithSpan TColon *> type')
       cases <-
         tokenWithSpan TBar
@@ -346,12 +349,13 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
                  <*> (tokenWithSpan TEq *> expr)
              )
             `sepEndBy1` tokenWithSpan TBar
-      pure $ Spanned (DFnMatch i t cases) (span i <> span (snd (last cases)))
+      pure $ Spanned (DFnMatch i t cases) (span start <> span (snd (last cases)))
 
     record :: Parser (Spanned Decl)
     record =
       do
-        name <- tokenWithSpan TData *> typeIdent
+        start <- tokenWithSpan TData
+        name <- typeIdent
         vars <- many tyVar <* tokenWithSpan TEq
         p <-
           braces
@@ -361,7 +365,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
               )
                 `sepEndBy1` tokenWithSpan TComma
             )
-        pure $ Spanned (DRecordDef name vars (value p)) (span name <> span p)
+        pure $ Spanned (DRecordDef name vars (value p)) (span start <> span p)
 
     dataDef :: Parser (Spanned Decl)
     dataDef = do

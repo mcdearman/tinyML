@@ -4,17 +4,19 @@ import qualified AST as A
 import Control.Monad.State
 import Data.Text (Text)
 import NIR
-import Result
 import Span
 import Spanned
-import Unique (Unique (Id))
+import Unique
 import Prelude hiding (span)
 
 newtype RenameError = UnboundVariable Span deriving (Show, Eq)
 
 newtype Env = Env [Frame] deriving (Show, Eq)
 
-newtype Frame = Frame [(Text, ResId)] deriving (Show, Eq)
+instance Semigroup Env where
+  Env fs <> Env fs' = Env (fs <> fs')
+
+type Frame = [(Text, ResId)]
 
 data Resolver = Resolver
   { resId :: ResId,
@@ -28,74 +30,96 @@ type ResState a = State Resolver a
 defaultEnv :: Env
 defaultEnv = Env []
 
-push :: Frame -> Env -> Env
-push f (Env fs) = Env (f : fs)
+push :: ResState Env
+push = do
+  r@Resolver {env = Env fs} <- get
+  put r {env = Env $ [] : fs}
+  pure $ env r
 
-pop :: Env -> Env
-pop (Env (_ : fs)) = Env fs
-pop _ = error "pop: empty environment"
+pop :: ResState Env
+pop = do
+  r@Resolver {env = Env fs} <- get
+  case fs of
+    [] -> error "pop: empty stack"
+    _ : fs' -> do
+      put r {env = Env fs'}
+      pure $ env r
 
--- use State monad to generate fresh names
-freshName :: ResState ResId
-freshName = do
-  r <- get
-  let Id n = resId r
-  put r {resId = Id $ n + 1}
-  pure $ Id n
+define :: Text -> ResState ResId
+define n = do
+  r@Resolver {resId = i, env = Env fs, errors = _} <- get
+  let Id i' = i
+  put r {resId = Id $ i' + 1, env = Env $ [(n, i)] : fs}
+  pure i
 
-define :: Text -> Env -> ResState Env
-define x (Env (Frame ns : fs)) = do
-  resId <- freshName
-  pure $ Env (Frame ((x, resId) : ns) : fs)
-define x (Env []) = do
-  resId <- freshName
-  pure $ Env [Frame [(x, resId)]]
+lookupVar :: A.Name -> ResState ResId
+lookupVar n = do
+  Resolver {env = e} <- get
+  case lookup' (value n) e of
+    Just i -> pure i
+    Nothing -> do
+      pushError $ UnboundVariable (span n)
+      pure $ Id 0
+  where
+    lookup' :: Text -> Env -> Maybe ResId
+    lookup' _ (Env []) = Nothing
+    lookup' n' (Env (f : fs)) = case lookup n' f of
+      Just i -> Just i
+      Nothing -> lookup' n' (Env fs)
 
-lookupVar :: Text -> Env -> Result RenameError ResId
-lookupVar x (Env (Frame ns : fs)) = case lookup x ns of
-  Just resId -> Ok resId
-  Nothing -> lookupVar x (Env fs)
-lookupVar _ (Env []) = Err $ UnboundVariable NoLoc
+pushError :: RenameError -> ResState ()
+pushError e = do
+  r@Resolver {errors = es} <- get
+  put r {errors = e : es}
 
--- rename :: Spanned A.Program -> Res (Spanned Program)
--- rename p = do
---   let (p', _) = runState (renameProgram p defaultEnv) 0
---   pure p'
+renameProgram :: Spanned A.Program -> ResState (Spanned Program)
+renameProgram (Spanned (A.PFile name m) s) = do
+  m' <- renameModule m
+  pure $ Spanned (PFile name m') s
+renameProgram (Spanned (A.PRepl m) s) = do
+  m' <- renameModule m
+  pure $ Spanned (PRepl m') s
 
--- renameProgram :: Spanned A.Program -> Env -> Res (Spanned Program, Env)
--- renameProgram p env = case p of
---   Spanned (A.PFile n m) s -> do
---     (m', env') <- renameModule m env
---     pure $ Ok (Spanned (PFile n m') s, env')
---   Spanned (A.PRepl m) s -> do
---     let (m', env') = renameModule m env
---     pure $ Ok (Spanned (PRepl m') s, env')
+renameModule :: Spanned A.Module -> ResState (Spanned Module)
+renameModule (Spanned (A.Module (Spanned n s) ds) s') = do
+  n' <- define n
+  ds' <- traverse renameDecl ds
+  pure $ Spanned (Module (Spanned n' s) ds') s'
 
--- renameModule :: Spanned A.Module -> Env -> Res (Spanned Module, Env)
--- renameModule m env = case m of
---   Spanned (A.Module n ds) s -> do
---     n' <- freshName
---     let (ds', env') = renameDecls ds env
---     pure (Spanned (Module (Spanned n' (span n)) ds') s, env')
---   where
---     renameDecls :: [Spanned A.Decl] -> Env -> ([Spanned Decl], Env)
---     renameDecls [] env = ([], env)
---     renameDecls (d : ds) env = let (d', env') = renameDecl d env in let (ds', env'') = renameDecls ds env' in (d' : ds', env'')
+renameDecl :: Spanned A.Decl -> ResState (Spanned Decl)
+renameDecl (Spanned (A.DDef p e) s) = do
+  p' <- renamePattern p
+  e' <- renameExpr e
+  pure $ Spanned (DDef p' e') s
+renameDecl (Spanned (A.DFn (Spanned n s) ps e) s') = do
+  n' <- define n
+  ps' <- traverse renamePattern ps
+  e' <- renameExpr e
+  pure $ Spanned (DFn (Spanned n' s) ps' e') s'
+renameDecl _ = undefined
 
-renameDecl :: Spanned A.Decl -> Env -> ResState (Spanned Decl, Env)
-renameDecl d env = undefined
+renameExpr :: Spanned A.Expr -> ResState (Spanned Expr)
+renameExpr (Spanned (A.ELit lit) s) = pure $ Spanned (ELit (renameLit lit)) s
+renameExpr (Spanned (A.EVar v) s) = do
+  v' <- lookupVar v
+  pure $ Spanned (EVar (Spanned v' s)) s
+renameExpr (Spanned (A.EApp f arg) s) = do
+  f' <- renameExpr f
+  arg' <- renameExpr arg
+  pure $ Spanned (EApp f' arg') s
+renameExpr (Spanned (A.ELam ps e) s) = do
+  push
+  ps' <- traverse renamePattern ps
+  e' <- renameExpr e
+  pop
+  pure $ Spanned (ELam ps' e') s
+renameExpr _ = undefined
 
-renameExpr :: Spanned A.Expr -> Env -> ResState (Spanned Expr, Env)
--- renameExpr (Spanned (A.ELit lit) s) env = pure $ Ok (Spanned (ELit (renameLit lit)) s, env)
--- renameExpr (Spanned (A.EVar (Spanned x _)) s) env =
---   case lookupVar x env of
---     Ok resId -> pure $ Ok (Spanned (EVar (Spanned resId s)) s, env)
---     Err e -> pure $ Err e
--- renameExpr (Spanned (A.EApp f arg) s) env = undefined
-renameExpr _ _ = undefined
-
-renamePattern :: Spanned A.Pattern -> Env -> Spanned Pattern
-renamePattern _ _ = undefined
+renamePattern :: Spanned A.Pattern -> ResState (Spanned Pattern)
+renamePattern (Spanned (A.PVar (Spanned v s)) s') = do
+  v' <- define v
+  pure $ Spanned (PVar (Spanned v' s)) s'
+renamePattern _ = undefined
 
 renameLit :: Spanned A.Lit -> Spanned Lit
 renameLit (Spanned (A.LInt i) s) = Spanned (LInt i) s
