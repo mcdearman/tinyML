@@ -54,6 +54,7 @@ data BinOp
   | BMul
   | BDiv
   | BMod
+  | BPow
   | BAnd
   | BOr
   | BEq
@@ -71,6 +72,7 @@ binOpName BSub = "__sub__"
 binOpName BMul = "__mul__"
 binOpName BDiv = "__div__"
 binOpName BMod = "__mod__"
+binOpName BPow = "__pow__"
 binOpName BAnd = "__and__"
 binOpName BOr = "__or__"
 binOpName BEq = "__eq__"
