@@ -1,3 +1,4 @@
+[compiler]
 builtins = [
     "__neg__",
     "__not__",
