@@ -149,7 +149,11 @@ renameExpr (Spanned (A.EUnary op e) s) = do
   n <- lookupOrDefine $ A.unOpName (value op)
   e' <- renameExpr e
   pure $ Spanned (EApp (Spanned (EVar (Spanned n s)) s) e') s
-renameExpr (Spanned (A.EBinary op e1 e2) s) = undefined
+renameExpr (Spanned (A.EBinary op e1 e2) s) = do
+  n <- lookupOrDefine $ A.binOpName (value op)
+  e1' <- renameExpr e1
+  e2' <- renameExpr e2
+  pure $ Spanned (EApp (Spanned (EApp (Spanned (EVar (Spanned n s)) s) e1') s) e2') s
 renameExpr (Spanned (A.EMatch e cs) s) = do
   e' <- renameExpr e
   cs' <- traverse (\(p, e'') -> (,) <$> renamePattern p <*> renameExpr e'') cs
