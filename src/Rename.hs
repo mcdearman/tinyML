@@ -108,6 +108,13 @@ renameDecl (Spanned (A.DFn (Spanned n s) ps e) s') = do
   e' <- renameExpr e
   pop
   pure $ Spanned (DFn (Spanned n' s) ps' e') s'
+renameDecl (Spanned (A.DFnMatch (Spanned n s) t cs) s') = do
+  n' <- define n
+  t' <- traverse renameTypeHint t
+  push
+  cs' <- traverse (\(ps, e) -> (,) <$> traverse renamePattern ps <*> renameExpr e) cs
+  pop
+  pure $ Spanned (DFnMatch (Spanned n' s) t' cs') s'
 renameDecl _ = undefined
 
 renameExpr :: Spanned A.Expr -> ResState (Spanned Expr)
@@ -169,6 +176,34 @@ renameExpr (Spanned (A.ETuple es) s) = do
   pure $ Spanned (ETuple es') s
 renameExpr (Spanned (A.ERecord n fs) s) = undefined
 renameExpr (Spanned A.EUnit s) = pure $ Spanned EUnit s
+
+renameTypeHint :: Spanned A.TypeHint -> ResState (Spanned TypeHint)
+renameTypeHint (Spanned A.THInt s) = pure $ Spanned THInt s
+renameTypeHint (Spanned A.THBool s) = pure $ Spanned THBool s
+renameTypeHint (Spanned A.THString s) = pure $ Spanned THString s
+renameTypeHint (Spanned (A.THVar v) s) = pure $ Spanned (THVar v) s
+renameTypeHint (Spanned (A.THIdent n) s) = do
+  n' <- lookupOrDefine (value n)
+  pure $ Spanned (THIdent (Spanned n' s)) s
+renameTypeHint (Spanned (A.THKind n ts) s) = do
+  n' <- lookupOrDefine (value n)
+  ts' <- traverse renameTypeHint ts
+  pure $ Spanned (THKind (Spanned n' s) ts') s
+renameTypeHint (Spanned (A.THList t) s) = do
+  t' <- renameTypeHint t
+  pure $ Spanned (THList t') s
+renameTypeHint (Spanned (A.THArray t) s) = do
+  t' <- renameTypeHint t
+  pure $ Spanned (THArray t') s
+renameTypeHint (Spanned (A.THTuple ts) s) = do
+  ts' <- traverse renameTypeHint ts
+  pure $ Spanned (THTuple ts') s
+renameTypeHint (Spanned (A.THArrow t1 t2) s) = do
+  t1' <- renameTypeHint t1
+  t2' <- renameTypeHint t2
+  pure $ Spanned (THArrow t1' t2') s
+renameTypeHint (Spanned (A.THRecord n fs) s) = undefined
+renameTypeHint (Spanned A.THUnit s) = pure $ Spanned THUnit s
 
 renamePattern :: Spanned A.Pattern -> ResState (Spanned Pattern)
 renamePattern (Spanned (A.PVar (Spanned v s)) s') = do
