@@ -18,7 +18,6 @@ executable tinyML
     import:           warnings
     main-is:          Main.hs
     other-modules: 
-        Config
         Span
         Spanned
         Token
