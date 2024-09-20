@@ -31,20 +31,18 @@ type ResState a = State Resolver a
 defaultEnv :: Env
 defaultEnv = Env []
 
-push :: ResState Env
+push :: ResState ()
 push = do
   r@Resolver {env = Env fs} <- get
   put r {env = Env $ [] : fs}
-  pure $ env r
 
-pop :: ResState Env
+pop :: ResState ()
 pop = do
   r@Resolver {env = Env fs} <- get
   case fs of
     [] -> error "cannot pop empty environment"
     _ : fs' -> do
       put r {env = Env fs'}
-      pure $ env r
 
 define :: Text -> ResState ResId
 define n = do
