@@ -41,12 +41,20 @@ push = do
   put s {ctx = Context $ Map.empty : fs}
 
 define :: Text -> Scheme -> InferState ()
-define n s = todo
+define n s = do
+  modify' $ \s'@Solver {ctx = Context fs} -> s' {ctx = Context $ Map.insert n s (head fs) : tail fs}
 
-lookupCtx :: Text -> InferState (Maybe Scheme)
+lookupCtx :: Text -> InferState Scheme
 lookupCtx n = do
-  Context fs <- gets ctx
-  pure $ foldr ((<|>) . Map.lookup n) Nothing fs
+  Solver {ctx = Context fs} <- get
+  case lookup' n fs of
+    Just s -> pure s
+    Nothing -> error "unbound variable"
+  where
+    lookup' _ [] = Nothing
+    lookup' n' (m : ms) = case Map.lookup n m of
+      Just s -> Just s
+      Nothing -> lookup' n' ms
 
 data Scheme = Scheme [TyVar] Ty
 
