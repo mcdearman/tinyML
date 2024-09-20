@@ -18,6 +18,7 @@ executable tinyML
     import:           warnings
     main-is:          Main.hs
     other-modules: 
+        Config
         Span
         Spanned
         Token
@@ -27,6 +28,8 @@ executable tinyML
         Parser
         NIR
         Rename
+        Ty
+        TIR
         Infer
         Core
         Eval

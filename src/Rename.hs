@@ -97,7 +97,7 @@ renameModule :: Spanned A.Module -> ResState (Spanned Module)
 renameModule (Spanned (A.Module (Spanned n s) ds) s') = do
   n' <- lookupOrDefine n
   ds' <- traverse renameDecl ds
-  pure $ Spanned (Module (Spanned n' s) ds') s'
+  pure $ Spanned (Module (Spanned (n, n') s) ds') s'
 
 renameDecl :: Spanned A.Decl -> ResState (Spanned Decl)
 renameDecl (Spanned (A.DDef p e) s) = do
@@ -110,21 +110,21 @@ renameDecl (Spanned (A.DFn (Spanned n s) ps e) s') = do
   ps' <- traverse renamePattern ps
   e' <- renameExpr e
   pop
-  pure $ Spanned (DFn (Spanned n' s) ps' e') s'
+  pure $ Spanned (DFn (Spanned (n, n') s) ps' e') s'
 renameDecl (Spanned (A.DFnMatch (Spanned n s) t cs) s') = do
   n' <- define n
   t' <- traverse renameTypeHint t
   push
   cs' <- traverse (\(ps, e) -> (,) <$> traverse renamePattern ps <*> renameExpr e) cs
   pop
-  pure $ Spanned (DFnMatch (Spanned n' s) t' cs') s'
+  pure $ Spanned (DFnMatch (Spanned (n, n') s) t' cs') s'
 renameDecl _ = undefined
 
 renameExpr :: Spanned A.Expr -> ResState (Spanned Expr)
 renameExpr (Spanned (A.ELit lit) s) = pure $ Spanned (ELit (renameLit lit)) s
 renameExpr (Spanned (A.EVar v) s) = do
   v' <- lookupVar v
-  pure $ Spanned (EVar (Spanned v' s)) s
+  pure $ Spanned (EVar (Spanned (value v, v') s)) s
 renameExpr (Spanned (A.EApp f arg) s) = do
   f' <- renameExpr f
   arg' <- renameExpr arg
@@ -149,7 +149,7 @@ renameExpr (Spanned (A.EFn (Spanned n s) ps e1 e2) s') = do
   e1' <- renameExpr e1
   e2' <- renameExpr e2
   pop
-  pure $ Spanned (EFn (Spanned n' s) ps' e1' e2') s'
+  pure $ Spanned (EFn (Spanned (n, n') s) ps' e1' e2') s'
 renameExpr (Spanned (A.EIf c t e) s) = do
   c' <- renameExpr c
   t' <- renameExpr t
@@ -158,12 +158,12 @@ renameExpr (Spanned (A.EIf c t e) s) = do
 renameExpr (Spanned (A.EUnary op e) s) = do
   n <- lookupOrDefine $ A.unOpName (value op)
   e' <- renameExpr e
-  pure $ Spanned (EApp (Spanned (EVar (Spanned n s)) s) e') s
+  pure $ Spanned (EApp (Spanned (EVar (Spanned (A.unOpName (value op), n) s)) s) e') s
 renameExpr (Spanned (A.EBinary op e1 e2) s) = do
   n <- lookupOrDefine $ A.binOpName (value op)
   e1' <- renameExpr e1
   e2' <- renameExpr e2
-  pure $ Spanned (EApp (Spanned (EApp (Spanned (EVar (Spanned n s)) s) e1') s) e2') s
+  pure $ Spanned (EApp (Spanned (EApp (Spanned (EVar (Spanned (A.binOpName (value op), n) s)) s) e1') s) e2') s
 renameExpr (Spanned (A.EMatch e cs) s) = do
   e' <- renameExpr e
   cs' <- traverse (\(p, e'') -> (,) <$> renamePattern p <*> renameExpr e'') cs
@@ -187,11 +187,11 @@ renameTypeHint (Spanned A.THString s) = pure $ Spanned THString s
 renameTypeHint (Spanned (A.THVar v) s) = pure $ Spanned (THVar v) s
 renameTypeHint (Spanned (A.THIdent n) s) = do
   n' <- lookupOrDefine (value n)
-  pure $ Spanned (THIdent (Spanned n' s)) s
+  pure $ Spanned (THIdent (Spanned (value n, n') s)) s
 renameTypeHint (Spanned (A.THKind n ts) s) = do
   n' <- lookupOrDefine (value n)
   ts' <- traverse renameTypeHint ts
-  pure $ Spanned (THKind (Spanned n' s) ts') s
+  pure $ Spanned (THKind (Spanned (value n, n') s) ts') s
 renameTypeHint (Spanned (A.THList t) s) = do
   t' <- renameTypeHint t
   pure $ Spanned (THList t') s
@@ -213,7 +213,7 @@ renamePattern (Spanned A.PWildcard s) = pure $ Spanned PWildcard s
 renamePattern (Spanned (A.PLit lit) s) = pure $ Spanned (PLit (renameLit lit)) s
 renamePattern (Spanned (A.PVar (Spanned v s)) s') = do
   v' <- define v
-  pure $ Spanned (PVar (Spanned v' s)) s'
+  pure $ Spanned (PVar (Spanned (v, v') s)) s'
 renamePattern (Spanned (A.PPair p1 p2) s) = do
   p1' <- renamePattern p1
   p2' <- renamePattern p2

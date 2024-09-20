@@ -56,8 +56,7 @@ def map 'a 'b (f : 'a -> 'b) (xs : ['a]) : ['b] =
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-def (.) : 'a 'b 'c. ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
-  | f . g = \x -> f (g x)
+def compose 'a 'b 'c (f : 'b -> 'c) -> (g : 'a -> 'b) : 'a -> 'c = \x -> f (g x)
 
 data Option 'a = None | Some 'a
 

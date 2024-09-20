@@ -38,28 +38,6 @@ data Expr
   | EUnit
   deriving (Show, Eq)
 
-data UnOp
-  = UNeg
-  | UNot
-  deriving (Show, Eq)
-
-data BinOp
-  = BAdd
-  | BSub
-  | BMul
-  | BDiv
-  | BMod
-  | BAnd
-  | BOr
-  | BEq
-  | BNeq
-  | BLt
-  | BGt
-  | BLeq
-  | BGeq
-  | BPair
-  deriving (Show, Eq)
-
 data TypeHint
   = THInt
   | THBool
@@ -86,7 +64,7 @@ data Pattern
 
 type TyVar = Spanned Text
 
-type Name = Spanned ResId
+type Name = Spanned (Text, ResId)
 
 type ResId = Unique
 
