@@ -56,7 +56,16 @@ def map 'a 'b (f : 'a -> 'b) (xs : ['a]) : ['b] =
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-def compose 'a 'b 'c (f : 'b -> 'c) -> (g : 'a -> 'b) : 'a -> 'c = \x -> f (g x)
+def compose 'a 'b 'c 
+  (f : 'b -> 'c) 
+  (g : 'a -> 'b) 
+  : 'a -> 'c = \x -> f (g x)
+
+-- unicode support
+def π = 3.14159
+
+def (∘) 'a 'b 'c. ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
+  | f ∘ g = compose f g
 
 data Option 'a = None | Some 'a
 
