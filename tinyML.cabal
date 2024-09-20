@@ -44,7 +44,7 @@ executable tinyML
         RecordWildCards
         GADTs
     build-depends:    
-        base ^>=4.17.2.1,
+        base,
         megaparsec,
         parser-combinators,
         text,
