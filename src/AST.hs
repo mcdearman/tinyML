@@ -79,8 +79,8 @@ binOpName BEq = "__eq__"
 binOpName BNeq = "__neq__"
 binOpName BLt = "__lt__"
 binOpName BGt = "__gt__"
-binOpName BLeq = "__leq__"
-binOpName BGeq = "__geq__"
+binOpName BLeq = "__lte__"
+binOpName BGeq = "__gte__"
 binOpName BPair = "__pair__"
 
 data TypeHint
