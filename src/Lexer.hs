@@ -33,6 +33,7 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Token
 import TokenStream
+import Control.Monad.Combinators (manyTill_)
 
 type Lexer = Parsec Void Text
 
@@ -117,7 +118,7 @@ token :: Lexer (WithPos Token)
 token =
   lexemeWithPos $
     choice
-      [ TComment <$ string "--" <* manyTill L.charLiteral (char '\n'),
+      [ TComment <$ string "--" <* manyTill_ L.charLiteral (char '\n'),
         try real <|> int,
         bool,
         str,
