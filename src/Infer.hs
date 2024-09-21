@@ -56,6 +56,9 @@ lookupCtx n = do
       Just s -> Just s
       Nothing -> lookup' n' ms
 
+pushError :: InferError -> InferState ()
+pushError e = modify' $ \s@Solver {errors = es} -> s {errors = e : es}
+
 data Scheme = Scheme [TyVar] Ty
 
 type InferState a = State Solver a
@@ -71,3 +74,7 @@ genDeclConstraints d = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState ()
 genExprConstraints e = todo
+
+unify :: Spanned Ty -> Spanned Ty -> InferState ()
+unify t1 t2 = do
+  pushError $ UnificationError t1 t2
