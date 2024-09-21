@@ -1,6 +1,6 @@
 module Main where
 
-import Control.Monad.State (runState)
+import Control.Monad.State (runState, evalState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
 import Lexer (lexMML)
@@ -55,5 +55,6 @@ collectLines acc = do
 main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
-  let defaultResolver = Resolver {resId = Id 0, env = defaultEnv, errors = []}
+  let emptyRes = Resolver {resId = Id 0, env = Env [], errors = []}
+  let defaultResolver = evalState emptyRes defaultEnv
   runInputT settings (repl defaultResolver)

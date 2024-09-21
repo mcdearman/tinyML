@@ -49,8 +49,11 @@ builtins =
     "__pair__"
   ]
 
-defaultEnv :: Env
-defaultEnv = Env []
+defaultEnv :: ResState Env
+defaultEnv = do
+  let f = [(n, Id i) | (i, n) <- zip [0 ..] builtins]
+  modify' $ \r -> r {resId = Id $ length builtins}
+  pure $ Env [f]
 
 push :: ResState ()
 push = do
