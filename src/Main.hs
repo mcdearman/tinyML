@@ -55,6 +55,6 @@ collectLines acc = do
 main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
-  let emptyRes = Resolver {resId = Id 0, env = Env [], errors = []}
-  let defaultResolver = evalState emptyRes defaultEnv
+  -- let emptyRes = Resolver {resId = Id 0, env = Env [], errors = []}
+  let defaultResolver = evalState (mempty Resolver) defaultEnv
   runInputT settings (repl defaultResolver)
