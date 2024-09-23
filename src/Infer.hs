@@ -76,16 +76,16 @@ genDeclConstraints :: Spanned N.Decl -> InferState ()
 genDeclConstraints d = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
--- genExprConstraints (Spanned (N.ELit l) s) = pure $ Spanned (ELit (genLitConstraints l)) s
+genExprConstraints l@(Spanned (N.ELit _) s) = pure $ genLit <$> l
 -- genExprConstraints (Spanned (N.EVar n) _) = do
 --   v <- lookupCtx (snd (value n))
 --   pure ()
 genExprConstraints e = todo
 
-genLitConstraints :: Spanned N.Lit -> Spanned Lit
-genLitConstraints (Spanned (N.LInt i) s) = Spanned (LInt i) s
-genLitConstraints (Spanned (N.LBool b) s) = Spanned (LBool b) s
-genLitConstraints (Spanned (N.LString st) s) = Spanned (LString st) s
+genLit :: Spanned N.Lit -> Typed Lit
+genLit (Spanned (N.LInt i) s) = Typed (Spanned (LInt i) s) TInt
+genLit (Spanned (N.LBool b) s) = Typed (Spanned (LBool b) s) TBool
+genLit (Spanned (N.LString st) s) = Typed (Spanned (LString st) s) TString
 
 unify :: Spanned Ty -> Spanned Ty -> InferState ()
 unify (Spanned TInt _) (Spanned TInt _) = pure ()
