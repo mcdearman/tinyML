@@ -73,6 +73,10 @@ genDeclConstraints :: Spanned N.Decl -> InferState ()
 genDeclConstraints d = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState ()
+genExprConstraints (Spanned (N.ELit _) _) = pure ()
+-- genExprConstraints (Spanned (N.EVar n) _) = do
+--   s <- lookupCtx (value n)
+--   pure ()
 genExprConstraints e = todo
 
 unify :: Spanned Ty -> Spanned Ty -> InferState ()
