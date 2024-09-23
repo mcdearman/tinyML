@@ -61,7 +61,7 @@ builtins =
 defaultEnv :: ResState Env
 defaultEnv = do
   let f = [(n, Id i) | (i, n) <- zip [0 ..] builtins]
-  modify' $ \r -> r {resId = Id $ length builtins}
+  modify' $ \r -> r {resId = Id $ length builtins, env = Env [f]}
   pure $ Env [f]
 
 push :: ResState ()

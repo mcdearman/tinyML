@@ -16,8 +16,8 @@ data Ty
   | TTuple [Ty]
   | TRecord [(String, Ty)]
   | TCon String [Ty]
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
-newtype TyVar = TyVar Unique deriving (Show, Eq)
+newtype TyVar = TyVar Unique deriving (Show, Eq, Ord)
 
 data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)

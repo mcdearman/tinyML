@@ -21,6 +21,9 @@ repl r = do
     Just "env" -> do
       outputStrLn $ unpack $ (toStrict . pShow) (env r)
       repl r
+    Just "res" -> do
+      outputStrLn $ unpack $ (toStrict . pShow) r
+      repl r
     Just i -> case lexMML (pack i) of
       Left err -> outputStrLn $ "Lexer error: " ++ unpack (pack (errorBundlePretty err))
       Right d -> case parseStream d of

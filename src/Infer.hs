@@ -76,5 +76,17 @@ genExprConstraints :: Spanned N.Expr -> InferState ()
 genExprConstraints e = todo
 
 unify :: Spanned Ty -> Spanned Ty -> InferState ()
+unify (Spanned TInt _) (Spanned TInt _) = pure ()
+unify (Spanned TBool _) (Spanned TBool _) = pure ()
+unify (Spanned TChar _) (Spanned TChar _) = pure ()
+unify (Spanned TString _) (Spanned TString _) = pure ()
+unify (Spanned TUnit _) (Spanned TUnit _) = pure ()
+unify (Spanned (TVar v1) _) t2 = bind v1 t2
+unify t1 (Spanned (TVar v2) _) = bind v2 t1
 unify t1 t2 = do
   pushError $ UnificationError t1 t2
+
+bind :: TyVar -> Spanned Ty -> InferState ()
+bind v t = do
+  s@Solver {subst = su} <- get
+  put s {subst = Map.insert v (value t) su}
