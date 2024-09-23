@@ -67,6 +67,10 @@ def π = 3.14159
 def (∘) 'a 'b 'c. ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
   | f ∘ g = compose f g
 
+-- or we can do this
+infixr 9 ∘
+def (∘) = compose
+
 data Option 'a = None | Some 'a
 
 data Either 'a 'b = Left 'a | Right 'b
