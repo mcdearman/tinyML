@@ -22,7 +22,6 @@ data Decl
   | DTypeSyn Name [TyVar] (Spanned Ty)
   | DImport Path
   deriving (Show, Eq)
-
 data Expr
   = ELit Lit
   | EVar Name

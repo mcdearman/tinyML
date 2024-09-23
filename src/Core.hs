@@ -11,7 +11,7 @@ data Program
 data Module = Module Unique [Typed Decl]
 
 data Decl
-  = DDef (Typed Pattern) (Typed Expr)
+  = DDef (Typed Name) (Typed Expr)
 
 data Expr
   = ELit Lit

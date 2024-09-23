@@ -8,12 +8,15 @@ import qualified Data.Map as Map
 import Data.Text (Text)
 import qualified NIR as N
 import Spanned
+import TIR
 import Ty
+import Unique
 
 data InferError = UnificationError (Spanned Ty) (Spanned Ty)
 
 data Solver = Solver
   { constraints :: [Constraint],
+    tyVarCounter :: Unique,
     subst :: Subst,
     ctx :: Context,
     errors :: [InferError]
@@ -23,7 +26,7 @@ data Constraint = Eq Ty Ty
 
 type Subst = Map TyVar Ty
 
-newtype Context = Context [Map Text Scheme]
+newtype Context = Context [Map Unique Scheme]
 
 defaultCtx :: Context
 defaultCtx = Context []
@@ -40,11 +43,11 @@ push = do
   s@Solver {constraints = _, subst = _, ctx = Context fs, errors = _} <- get
   put s {ctx = Context $ Map.empty : fs}
 
-define :: Text -> Scheme -> InferState ()
+define :: Unique -> Scheme -> InferState ()
 define n s = do
   modify' $ \s'@Solver {ctx = Context fs} -> s' {ctx = Context $ Map.insert n s (head fs) : tail fs}
 
-lookupCtx :: Text -> InferState Scheme
+lookupCtx :: Unique -> InferState Scheme
 lookupCtx n = do
   Solver {ctx = Context fs} <- get
   case lookup' n fs of
@@ -72,12 +75,17 @@ genModuleConstraints m = todo
 genDeclConstraints :: Spanned N.Decl -> InferState ()
 genDeclConstraints d = todo
 
-genExprConstraints :: Spanned N.Expr -> InferState ()
-genExprConstraints (Spanned (N.ELit _) _) = pure ()
+genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
+-- genExprConstraints (Spanned (N.ELit l) s) = pure $ Spanned (ELit (genLitConstraints l)) s
 -- genExprConstraints (Spanned (N.EVar n) _) = do
---   s <- lookupCtx (value n)
+--   v <- lookupCtx (snd (value n))
 --   pure ()
 genExprConstraints e = todo
+
+genLitConstraints :: Spanned N.Lit -> Spanned Lit
+genLitConstraints (Spanned (N.LInt i) s) = Spanned (LInt i) s
+genLitConstraints (Spanned (N.LBool b) s) = Spanned (LBool b) s
+genLitConstraints (Spanned (N.LString st) s) = Spanned (LString st) s
 
 unify :: Spanned Ty -> Spanned Ty -> InferState ()
 unify (Spanned TInt _) (Spanned TInt _) = pure ()
