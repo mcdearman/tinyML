@@ -32,6 +32,9 @@ instance Semigroup Resolver where
 instance Monoid Resolver where
   mempty = Resolver (Id 0) (Env []) []
 
+defaultResolver :: Resolver
+defaultResolver = execState defaultEnv (mempty :: Resolver)
+
 type ResState a = State Resolver a
 
 builtins :: [Text]
@@ -182,11 +185,11 @@ renameExpr (Spanned (A.EIf c t e) s) = do
   e' <- renameExpr e
   pure $ Spanned (EIf c' t' e') s
 renameExpr (Spanned (A.EUnary op e) s) = do
-  n <- lookupOrDefine $ A.unOpName (value op)
+  n <- lookupVar $ A.unOpName <$> op
   e' <- renameExpr e
   pure $ Spanned (EApp (Spanned (EVar (Spanned (A.unOpName (value op), n) s)) s) e') s
 renameExpr (Spanned (A.EBinary op e1 e2) s) = do
-  n <- lookupOrDefine $ A.binOpName (value op)
+  n <- lookupVar $ A.binOpName <$> op
   e1' <- renameExpr e1
   e2' <- renameExpr e2
   pure $ Spanned (EApp (Spanned (EApp (Spanned (EVar (Spanned (A.binOpName (value op), n) s)) s) e1') s) e2') s
