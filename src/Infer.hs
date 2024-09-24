@@ -95,9 +95,9 @@ genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit
 genExprConstraints (Spanned (N.ELit (N.LBool b)) s) = pure $ Typed (Spanned (ELit (LBool b)) s) TBool
 genExprConstraints (Spanned (N.ELit (N.LString t)) s) = pure $ Typed (Spanned (ELit (LString t)) s) TString
 genExprConstraints (Spanned (N.EVar n) s) = do
-  v <- lookupCtx (snd (value n))
-  x <- inst v
-  pure $ Typed (Spanned (EVar n) s) x
+  p <- lookupCtx (snd (value n))
+  v <- inst p
+  pure $ Typed (Spanned (EVar n) s) v
 genExprConstraints e = todo
 
 inst :: Scheme -> InferState Ty
