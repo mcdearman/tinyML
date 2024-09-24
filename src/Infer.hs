@@ -62,8 +62,8 @@ lookupCtx n = do
 
 freshVar :: InferState Ty
 freshVar = do
-  s@Solver {tyVarCounter = c} <- get
-  put s {tyVarCounter = c + 1}
+  s@Solver {tyVarCounter = c@(Id v)} <- get
+  put s {tyVarCounter = Id (v + 1)}
   pure $ TVar (TyVar c)
 
 applySubst :: Subst -> Ty -> Ty
