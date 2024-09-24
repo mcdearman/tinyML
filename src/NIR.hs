@@ -23,7 +23,7 @@ data Decl
   deriving (Show, Eq)
 
 data Expr
-  = ELit (Spanned Lit)
+  = ELit Lit
   | EVar Name
   | EApp (Spanned Expr) (Spanned Expr)
   | ELam [Spanned Pattern] (Spanned Expr)
@@ -55,7 +55,7 @@ data TypeHint
 
 data Pattern
   = PWildcard
-  | PLit (Spanned Lit)
+  | PLit Lit
   | PVar Name
   | PPair (Spanned Pattern) (Spanned Pattern)
   | PList [Spanned Pattern]

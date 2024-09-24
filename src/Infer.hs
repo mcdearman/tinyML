@@ -12,7 +12,7 @@ import TIR
 import Ty
 import Unique
 
-data InferError = UnificationError (Spanned Ty) (Spanned Ty)
+data InferError = UnificationError Ty Ty
 
 data Solver = Solver
   { constraints :: [Constraint],
@@ -76,29 +76,32 @@ genDeclConstraints :: Spanned N.Decl -> InferState ()
 genDeclConstraints d = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
-genExprConstraints l@(Spanned (N.ELit _) s) = pure $ genLit <$> l
+genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit (LInt i)) s) TInt
+genExprConstraints (Spanned (N.ELit (N.LBool b)) s) = pure $ Typed (Spanned (ELit (LBool b)) s) TBool
+genExprConstraints (Spanned (N.ELit (N.LString t)) s) = pure $ Typed (Spanned (ELit (LString t)) s) TString
 -- genExprConstraints (Spanned (N.EVar n) _) = do
 --   v <- lookupCtx (snd (value n))
 --   pure ()
 genExprConstraints e = todo
 
-genLit :: Spanned N.Lit -> Typed Lit
-genLit (Spanned (N.LInt i) s) = Typed (Spanned (LInt i) s) TInt
-genLit (Spanned (N.LBool b) s) = Typed (Spanned (LBool b) s) TBool
-genLit (Spanned (N.LString st) s) = Typed (Spanned (LString st) s) TString
-
-unify :: Spanned Ty -> Spanned Ty -> InferState ()
-unify (Spanned TInt _) (Spanned TInt _) = pure ()
-unify (Spanned TBool _) (Spanned TBool _) = pure ()
-unify (Spanned TChar _) (Spanned TChar _) = pure ()
-unify (Spanned TString _) (Spanned TString _) = pure ()
-unify (Spanned TUnit _) (Spanned TUnit _) = pure ()
-unify (Spanned (TVar v1) _) t2 = bind v1 t2
-unify t1 (Spanned (TVar v2) _) = bind v2 t1
+unify :: Ty -> Ty -> InferState ()
+unify TInt TInt = pure ()
+unify TBool TBool = pure ()
+unify TChar TChar = pure ()
+unify TString TString = pure ()
+unify TUnit TUnit = pure ()
+unify (TVar v1) t2 = bind v1 t2
+unify t1 (TVar v2) = bind v2 t1
+unify (TArrow t1 t2) (TArrow t1' t2') = do
+  unify t1 t1'
+  unify t2 t2'
+unify (TList t1) (TList t2) = unify t1 t2
+unify (TArray t1) (TArray t2) = unify t1 t2
+unify (TTuple ts1) (TTuple ts2) = zipWithM_ unify ts1 ts2
 unify t1 t2 = do
   pushError $ UnificationError t1 t2
 
-bind :: TyVar -> Spanned Ty -> InferState ()
+bind :: TyVar -> Ty -> InferState ()
 bind v t = do
   s@Solver {subst = su} <- get
-  put s {subst = Map.insert v (value t) su}
+  put s {subst = Map.insert v t su}

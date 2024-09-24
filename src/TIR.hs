@@ -40,7 +40,7 @@ data Expr
 
 data Pattern
   = PWildcard
-  | PLit (Typed Lit)
+  | PLit Lit
   | PVar Name
   | PPair (Typed Pattern) (Typed Pattern)
   | PList [Typed Pattern]

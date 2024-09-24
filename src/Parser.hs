@@ -150,7 +150,7 @@ pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
     wildcard = Spanned PWildcard . span <$> tokenWithSpan TUnderscore
     litP = do
       l <- lit
-      pure $ Spanned (PLit l) (span l)
+      pure $ Spanned (PLit (value l)) (span l)
     varP = do
       i <- ident
       pure $ Spanned (PVar i) (span i)
@@ -216,7 +216,7 @@ expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
   where
     unit' = Spanned EUnit . span <$> unit
-    litExpr = (\l -> Spanned (ELit l) (span l)) <$> lit
+    litExpr = (\l -> Spanned (ELit (value l)) (span l)) <$> lit
     varExpr = (\i -> Spanned (EVar i) (span i)) <$> ident
 
     simple :: Parser (Spanned Expr)

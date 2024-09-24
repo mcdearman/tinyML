@@ -252,7 +252,7 @@ renamePattern (Spanned (A.PList ps) s) = do
   pure $ Spanned (PList ps') s
 renamePattern (Spanned A.PUnit s) = pure $ Spanned PUnit s
 
-renameLit :: Spanned A.Lit -> Spanned Lit
-renameLit (Spanned (A.LInt i) s) = Spanned (LInt i) s
-renameLit (Spanned (A.LBool b) s) = Spanned (LBool b) s
-renameLit (Spanned (A.LString c) s) = Spanned (LString c) s
+renameLit :: A.Lit -> Lit
+renameLit (A.LInt i) = LInt i
+renameLit (A.LBool b) = LBool b
+renameLit (A.LString t) = LString t
