@@ -60,6 +60,20 @@ lookupCtx n = do
       Just s -> Just s
       Nothing -> lookup' n' ms
 
+freshVar :: InferState Ty
+freshVar = do
+  s@Solver {tyVarCounter = c} <- get
+  put s {tyVarCounter = c + 1}
+  pure $ TVar (TyVar c)
+
+applySubst :: Subst -> Ty -> Ty
+applySubst s (TVar v) = Map.findWithDefault (TVar v) v s
+applySubst s (TArrow t1 t2) = TArrow (applySubst s t1) (applySubst s t2)
+applySubst s (TList t) = TList (applySubst s t)
+applySubst s (TArray t) = TArray (applySubst s t)
+applySubst s (TTuple ts) = TTuple (fmap (applySubst s) ts)
+applySubst _ t = t
+
 pushError :: InferError -> InferState ()
 pushError e = modify' $ \s@Solver {errors = es} -> s {errors = e : es}
 
@@ -80,10 +94,17 @@ genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
 genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit (LInt i)) s) TInt
 genExprConstraints (Spanned (N.ELit (N.LBool b)) s) = pure $ Typed (Spanned (ELit (LBool b)) s) TBool
 genExprConstraints (Spanned (N.ELit (N.LString t)) s) = pure $ Typed (Spanned (ELit (LString t)) s) TString
--- genExprConstraints (Spanned (N.EVar n) _) = do
---   v <- lookupCtx (snd (value n))
---   pure ()
+genExprConstraints (Spanned (N.EVar n) s) = do
+  v <- lookupCtx (snd (value n))
+  x <- inst v
+  pure $ Typed (Spanned (EVar n) s) x
 genExprConstraints e = todo
+
+inst :: Scheme -> InferState Ty
+inst (Scheme vars t) = do
+  vars' <- replicateM (length vars) freshVar
+  let s = Map.fromList $ zip vars vars'
+  pure $ applySubst s t
 
 unify :: Ty -> Ty -> InferState ()
 unify TInt TInt = pure ()
