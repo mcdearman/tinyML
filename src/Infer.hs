@@ -1,6 +1,7 @@
 module Infer where
 
 import Control.Applicative
+import Control.Monad
 import Control.Monad.State
 import Control.Placeholder (todo)
 import Data.Map (Map)
