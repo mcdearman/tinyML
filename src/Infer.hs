@@ -13,7 +13,7 @@ import TIR
 import Ty
 import Unique
 
-data InferError = UnificationError Ty Ty
+data InferError = UnificationError Ty Ty deriving (Show, Eq)
 
 data Solver = Solver
   { constraints :: [Constraint],
@@ -22,12 +22,13 @@ data Solver = Solver
     ctx :: Context,
     errors :: [InferError]
   }
+  deriving (Show)
 
-data Constraint = Eq Ty Ty
+data Constraint = Eq Ty Ty deriving (Show, Eq)
 
 type Subst = Map TyVar Ty
 
-newtype Context = Context [Map Unique Scheme]
+newtype Context = Context [Map Unique Scheme] deriving (Show)
 
 defaultCtx :: Context
 defaultCtx = Context []
@@ -87,7 +88,7 @@ pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c 
 pushError :: InferError -> InferState ()
 pushError e = modify' $ \s@Solver {errors = es} -> s {errors = e : es}
 
-data Scheme = Scheme [TyVar] Ty
+data Scheme = Scheme [TyVar] Ty deriving (Show)
 
 type InferState a = State Solver a
 

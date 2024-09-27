@@ -1,6 +1,7 @@
 module Lexer where
 
 import Control.Applicative (empty, (<|>))
+import Control.Monad.Combinators (manyTill_)
 import Data.Functor (($>))
 import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
@@ -33,7 +34,6 @@ import Text.Megaparsec.Char
 import qualified Text.Megaparsec.Char.Lexer as L
 import Token
 import TokenStream
-import Control.Monad.Combinators (manyTill_)
 
 type Lexer = Parsec Void Text
 
