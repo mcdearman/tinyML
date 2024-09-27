@@ -39,7 +39,7 @@ do
 end 
 
 -- fn match
-def map : 'a 'b. ('a -> 'b, ['a]) -> ['b]
+def map : 'a 'b. ('a -> 'b) -> ['a] -> ['b]
   | f [] = []
   | f (x :: xs) = f x :: map f xs
 
@@ -64,7 +64,7 @@ def compose 'a 'b 'c
 -- unicode support
 def π = 3.14159
 
-def (∘) 'a 'b 'c. ('b -> 'c, 'a -> 'b) -> 'a -> 'c
+def (∘) 'a 'b 'c. ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
   | f ∘ g = compose f g
 
 data Option 'a = None | Some 'a
@@ -87,19 +87,8 @@ let p = { name = "John", age = 30 } in p.name
 -- sum type
 data Shape = Circle Float | Rectangle Float Float
 
--- Impl Blocks and Methods
-data List 'a = Empty | Pair 'a (List 'a)
+-- methods with pipe
+[1, 2, 3]
+  |> List.map (\x -> x + 1)
+  |> List.filter (\x -> x % 2 = 0)
 
-impl List 'a with
-  def map 'b self (f : 'a -> 'b) : List 'b = 
-    match self with
-    | Empty -> Empty
-    | Pair x xs -> Pair (f x) (xs.map f)
-
-  def filter self (f : 'a -> Bool) : List 'a =
-    match self with
-    | Empty -> Empty
-    | Pair x xs -> 
-      if f x then Pair x (xs.filter f)
-      else xs.filter f
-end

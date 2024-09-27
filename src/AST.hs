@@ -64,6 +64,7 @@ data BinOp
   | BLeq
   | BGeq
   | BPair
+  | BPipe
   deriving (Show, Eq)
 
 binOpName :: BinOp -> Text
@@ -82,6 +83,7 @@ binOpName BGt = "__gt__"
 binOpName BLeq = "__lte__"
 binOpName BGeq = "__gte__"
 binOpName BPair = "__pair__"
+binOpName BPipe = "__pipe__"
 
 data TypeHint
   = THInt

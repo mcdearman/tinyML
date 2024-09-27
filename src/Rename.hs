@@ -3,6 +3,8 @@ module Rename where
 import qualified AST as A
 import Control.Monad.State
 import Control.Placeholder (todo)
+import Data.Map (Map)
+import qualified Data.Map as Map
 import Data.Text (Text)
 import NIR
 import Span
@@ -17,7 +19,7 @@ newtype Env = Env [Frame] deriving (Show, Eq)
 instance Semigroup Env where
   Env fs <> Env fs' = Env (fs <> fs')
 
-type Frame = [(Text, ResId)]
+type Frame = Map Text ResId
 
 data Resolver = Resolver
   { resId :: ResId,
@@ -55,33 +57,40 @@ builtins =
     "__gte__",
     "__and__",
     "__or__",
-    "__pair__"
+    "__pair__",
+    "__pipe__"
   ]
 
 defaultEnv :: ResState Env
 defaultEnv = do
-  let f = [(n, Id i) | (i, n) <- zip [0 ..] builtins]
+  let f = Map.fromList [(n, Id i) | (i, n) <- zip [0 ..] builtins]
   modify' $ \r -> r {resId = Id $ length builtins, env = Env [f]}
   pure $ Env [f]
 
 push :: ResState ()
 push = do
   r@Resolver {env = Env fs} <- get
-  put r {env = Env $ [] : fs}
+  put r {env = Env $ Map.empty : fs}
 
 pop :: ResState ()
 pop = do
   r@Resolver {env = Env fs} <- get
   case fs of
     [] -> error "cannot pop empty environment"
+    _ : [] -> error "cannot pop top-level environment"
     _ : fs' -> do
       put r {env = Env fs'}
 
 define :: Text -> ResState ResId
 define n = do
-  r@Resolver {resId = i, env = Env fs, errors = _} <- get
-  let Id i' = i
-  put r {resId = Id $ i' + 1, env = Env $ [(n, i)] : fs}
+  r@Resolver {resId = i@(Id i'), env = Env fs, errors = _} <- get
+  case fs of
+    [] -> do
+      let f = Map.singleton n i
+      put r {resId = Id $ i' + 1, env = Env [f]}
+    f : fs' -> do
+      let f' = Map.insert n i f
+      put r {resId = Id $ i' + 1, env = Env $ f' : fs'}
   pure i
 
 lookupOrDefine :: Text -> ResState ResId
@@ -102,7 +111,7 @@ lookupVar n = do
 
 lookup' :: Text -> Env -> Maybe ResId
 lookup' _ (Env []) = Nothing
-lookup' n' (Env (f : fs)) = case lookup n' f of
+lookup' n' (Env (f : fs)) = case Map.lookup n' f of
   Just i -> Just i
   Nothing -> lookup' n' (Env fs)
 
@@ -163,7 +172,7 @@ renameExpr (Spanned (A.ELam ps e) s) = do
   ps' <- traverse renamePattern ps
   e' <- renameExpr e
   pop
-  pure $ Spanned (ELam ps' e') s
+  pure $ foldr (\p expr -> Spanned (ELam p expr) s) e' ps'
 renameExpr (Spanned (A.ELet p e1 e2) s) = do
   e1' <- renameExpr e1
   push

@@ -37,6 +37,7 @@ pop = do
   s@Solver {constraints = _, subst = _, ctx = Context fs, errors = _} <- get
   case fs of
     [] -> error "cannot pop empty context"
+    _ : [] -> error "cannot pop top-level context"
     _ : fs' -> put s {ctx = Context fs'}
 
 push :: InferState ()
@@ -45,8 +46,14 @@ push = do
   put s {ctx = Context $ Map.empty : fs}
 
 define :: Unique -> Scheme -> InferState ()
-define n s = do
-  modify' $ \s'@Solver {ctx = Context fs} -> s' {ctx = Context $ Map.insert n s (head fs) : tail fs}
+define n scm = do
+  s@Solver {ctx = Context fs} <- get
+  case fs of
+    [] -> do
+      let f = Map.singleton n scm
+      put s {ctx = Context [f]}
+    (f : fs') -> put s {ctx = Context $ Map.insert n scm f : fs'}
+  pure ()
 
 lookupCtx :: Unique -> InferState Scheme
 lookupCtx n = do
@@ -74,6 +81,9 @@ applySubst s (TArray t) = TArray (applySubst s t)
 applySubst s (TTuple ts) = TTuple (fmap (applySubst s) ts)
 applySubst _ t = t
 
+pushConstraint :: Constraint -> InferState ()
+pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c : cs}
+
 pushError :: InferError -> InferState ()
 pushError e = modify' $ \s@Solver {errors = es} -> s {errors = e : es}
 
@@ -98,6 +108,12 @@ genExprConstraints (Spanned (N.EVar n) s) = do
   p <- lookupCtx (snd (value n))
   v <- inst p
   pure $ Typed (Spanned (EVar n) s) v
+genExprConstraints (Spanned (N.EApp e1 e2) s) = do
+  e1'@(Typed _ t1) <- genExprConstraints e1
+  e2'@(Typed _ t2) <- genExprConstraints e2
+  v <- freshVar
+  pushConstraint $ Eq t1 (TArrow t2 v)
+  pure $ Typed (Spanned (EApp e1' e2') s) v
 genExprConstraints e = todo
 
 inst :: Scheme -> InferState Ty

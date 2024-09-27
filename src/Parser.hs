@@ -141,7 +141,8 @@ operatorTable =
     [ binary TAnd (\s l r -> Spanned (EBinary (Spanned BAnd s) l r) (span l <> span r)),
       binary TOr (\s l r -> Spanned (EBinary (Spanned BOr s) l r) (span l <> span r))
     ],
-    [binary TDoubleColon (\s l r -> Spanned (EBinary (Spanned BPair s) l r) (span l <> span r))]
+    [binary TDoubleColon (\s l r -> Spanned (EBinary (Spanned BPair s) l r) (span l <> span r))],
+    [binary TPipe (\s l r -> Spanned (EBinary (Spanned BPipe s) l r) (span l <> span r))]
   ]
 
 pattern' :: Parser (Spanned Pattern)
@@ -272,7 +273,7 @@ expr = makeExprParser apply operatorTable
                    <$> pattern'
                    <*> (tokenWithSpan TArrow *> expr)
                )
-          )
+        )
           `sepEndBy1` tokenWithSpan TBar
       pure $ Spanned (EMatch e cases) (span start <> span (snd (last cases)))
 

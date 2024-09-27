@@ -26,7 +26,7 @@ data Expr
   = ELit Lit
   | EVar Name
   | EApp (Spanned Expr) (Spanned Expr)
-  | ELam [Spanned Pattern] (Spanned Expr)
+  | ELam (Spanned Pattern) (Spanned Expr)
   | ELet (Spanned Pattern) (Spanned Expr) (Spanned Expr)
   | EFn Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
   | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
