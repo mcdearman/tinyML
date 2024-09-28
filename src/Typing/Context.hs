@@ -1,17 +1,23 @@
-module Typing.Context (module Typing.Types, freeVars, pop, push, define, lookup) where
+module Typing.Context
+  ( module Typing.Types,
+    freeVars,
+    pop,
+    push,
+    define,
+    lookup,
+    applySubst,
+  )
+where
 
 import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
-import Typing.Scheme
+import qualified Typing.Scheme as Scheme
 import qualified Typing.Ty as Ty
 import Typing.Types
 import Unique
 import Prelude hiding (lookup)
-
-defaultCtx :: Context
-defaultCtx = Context []
 
 freeVars :: Context -> Set TyVar
 freeVars (Context fs) = Set.unions $ fmap freeVarsMap fs
@@ -53,3 +59,6 @@ lookup n = do
     lookup' n' (m : ms) = case Map.lookup n m of
       Just s -> Just s
       Nothing -> lookup' n' ms
+
+applySubst :: Subst -> Context -> Context
+applySubst s (Context fs) = Context $ fmap (fmap (Scheme.applySubst s)) fs

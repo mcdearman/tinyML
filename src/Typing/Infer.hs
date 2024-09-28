@@ -19,8 +19,23 @@ genConstraints p = todo
 genModuleConstraints :: Spanned N.Module -> InferState ()
 genModuleConstraints m = todo
 
-genDeclConstraints :: Spanned N.Decl -> InferState ()
-genDeclConstraints d = todo
+genDeclConstraints :: Spanned N.Decl -> InferState (Typed Decl)
+genDeclConstraints (Spanned (N.DDef p e) s) = do
+  v <- TVar <$> Solver.freshVar
+  e'@(Typed _ te) <- genExprConstraints e
+  p'@(Typed _ tp) <- genPatternConstraints p v True
+  Solver.pushConstraint $ Eq v te
+  Solver.pushConstraint $ Eq tp v
+  pure $ Typed (Spanned (DDef p' e') s) v
+genDeclConstraints (Spanned (N.DFn n ps e) s) = do
+  v <- TVar <$> Solver.freshVar
+  vps <- forM ps $ \_ -> Solver.freshVar
+  ps' <- forM ps $ \p -> genPatternConstraints p v True
+  Ctx.define (snd (value n)) (Scheme vps v)
+  e'@(Typed _ te) <- genExprConstraints e
+  Solver.pushConstraint $ Eq v (TArrow te v)
+  pure $ Typed (Spanned (DFn n ps' e') s) v
+genDeclConstraints _ = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
 genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit (LInt i)) s) TInt
@@ -33,12 +48,12 @@ genExprConstraints (Spanned (N.EVar n) s) = do
 genExprConstraints (Spanned (N.EApp e1 e2) s) = do
   e1'@(Typed _ t1) <- genExprConstraints e1
   e2'@(Typed _ t2) <- genExprConstraints e2
-  v <- Solver.freshVar
+  v <- TVar <$> Solver.freshVar
   Solver.pushConstraint $ Eq t1 (TArrow t2 v)
   pure $ Typed (Spanned (EApp e1' e2') s) v
 genExprConstraints (Spanned (N.ELam p e) s) = do
   Ctx.push
-  v <- Solver.freshVar
+  v <- TVar <$> Solver.freshVar
   p' <- genPatternConstraints p v False
   e'@(Typed _ te) <- genExprConstraints e
   Ctx.pop
@@ -67,3 +82,14 @@ genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
   ps' <- forM ps $ \p -> genPatternConstraints p ty gen
   pure $ Typed (Spanned (PList ps') s) ty
 genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
+
+solveConstraints :: InferState ()
+solveConstraints = todo
+
+infer :: Spanned N.Program -> InferState (Typed Program)
+infer p = do
+  genConstraints p
+  solveConstraints
+  Solver {subst = s, ctx = c} <- get
+  pure $ applySubstProgram s p
+  todo

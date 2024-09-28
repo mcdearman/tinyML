@@ -1,11 +1,48 @@
 module Compiler where
 
-import Data.Text (Text)
-import Rename (Resolver)
+import Control.Monad.State
+import Control.Placeholder (todo)
+import Data.Text (Text, pack)
+import Data.Text.Lazy (toStrict)
+import Lexer (lexMML)
+import Parser (parseStream)
+import Rename
+import Text.Megaparsec (errorBundlePretty)
+import Text.Pretty.Simple (pShow)
+import Typing.Solver
 
 data Compiler = Compiler
   { src :: Text,
     flags :: [Text],
-    resolver :: Resolver
+    resolver :: Resolver,
+    solver :: Solver
   }
   deriving (Show)
+
+defaultCompiler :: Compiler
+defaultCompiler =
+  Compiler
+    { src = "",
+      flags = [],
+      resolver = defaultResolver,
+      solver = defaultSolver
+    }
+
+type CompilerState a = State Compiler a
+
+run :: Text -> CompilerState Text
+run src = do
+  Compiler {src = _, flags = f, resolver = r, solver = sl} <- get
+  put $ Compiler {src = src, flags = f, resolver = r, solver = sl}
+  case lexMML src of
+    Left err -> pure $ pack $ "Lexer error: " ++ errorBundlePretty err
+    Right d -> case parseStream d of
+      Left err -> pure $ pack $ "Parser error: " ++ errorBundlePretty err
+      Right p -> do
+        let (nir, r') = runState (renameProgram p) r
+        case r' of
+          Resolver {errors = []} -> do
+            put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
+            pure $ (toStrict . pShow) nir
+          Resolver {errors = e} -> do
+            pure $ pack $ "Resolver errors: " ++ show e

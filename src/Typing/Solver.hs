@@ -1,14 +1,25 @@
-module Typing.Solver (module Typing.Types, freshVar, pushConstraint, pushError) where
+module Typing.Solver (module Typing.Types, defaultSolver, freshVar, pushConstraint, pushError) where
 
 import Control.Monad.State
+import qualified Data.Map as Map
 import Typing.Types
 import Unique
 
-freshVar :: InferState Ty
+defaultSolver :: Solver
+defaultSolver =
+  Solver
+    { constraints = [],
+      tyVarCounter = Id 0,
+      subst = Map.empty,
+      ctx = Context [],
+      errors = []
+    }
+
+freshVar :: InferState TyVar
 freshVar = do
   s@Solver {tyVarCounter = c@(Id v)} <- get
   put s {tyVarCounter = Id (v + 1)}
-  pure $ TVar (TyVar c)
+  pure $ TyVar c
 
 pushConstraint :: Constraint -> InferState ()
 pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c : cs}

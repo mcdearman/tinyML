@@ -1,5 +1,7 @@
 module Main where
 
+import Compiler (Compiler)
+import qualified Compiler as Compiler
 import Control.Monad.State (evalState, runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
@@ -9,35 +11,25 @@ import Rename
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
-import Unique
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
 
-repl :: Resolver -> InputT IO ()
-repl r = do
+repl :: Compiler -> InputT IO ()
+repl c = do
   input <- getMultilineInput ""
+  let r = Compiler.resolver c
   case input of
     Just "env" -> do
-      outputStrLn $ unpack $ (toStrict . pShow) (env r)
-      repl r
-    Just "res" -> do
       outputStrLn $ unpack $ (toStrict . pShow) r
-      repl r
-    Just i -> case lexMML (pack i) of
-      Left err -> outputStrLn $ "Lexer error: " ++ unpack (pack (errorBundlePretty err))
-      Right d -> case parseStream d of
-        Left err -> outputStrLn $ "Parser error: " ++ unpack (pack (errorBundlePretty err))
-        Right p -> do
-          outputStrLn $ unpack $ (toStrict . pShow) p
-          let (nir, res) = runState (renameProgram p) r
-          case res of
-            Resolver {errors = []} -> do
-              outputStrLn $ unpack $ (toStrict . pShow) nir
-              repl res
-            Resolver {errors = e} -> do
-              outputStrLn $ "Resolver errors: " ++ show e
-              repl r
+      repl c
+    Just "res" -> do
+      outputStrLn $ unpack $ (toStrict . pShow) ()
+      repl c
+    Just src -> do
+      let (out, c') = runState (Compiler.run (pack src)) c
+      outputStrLn $ unpack out
+      repl c'
     Nothing -> return ()
 
 getMultilineInput :: String -> InputT IO (Maybe String)
@@ -58,4 +50,4 @@ collectLines acc = do
 main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
-  runInputT settings (repl defaultResolver)
+  runInputT settings (repl Compiler.defaultCompiler)
