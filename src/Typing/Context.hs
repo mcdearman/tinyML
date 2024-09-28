@@ -1,51 +1,23 @@
-module Typing.Context where
+module Typing.Context (module Typing.Types, freeVars, pop, push, define, lookup) where
 
 import Control.Monad.State
-import Data.Map
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
 import Typing.Scheme
-import Typing.Ty
+import qualified Typing.Ty as Ty
+import Typing.Types
 import Unique
-
-data InferError = UnificationError Ty Ty deriving (Show, Eq)
-
-data Solver = Solver
-  { constraints :: [Constraint],
-    tyVarCounter :: Unique,
-    subst :: Subst,
-    ctx :: Context,
-    errors :: [InferError]
-  }
-  deriving (Show)
-
-data Constraint = Eq Ty Ty deriving (Show, Eq)
-
-type InferState a = State Solver a
-
-freshVar :: InferState Ty
-freshVar = do
-  s@Solver {tyVarCounter = c@(Id v)} <- get
-  put s {tyVarCounter = Id (v + 1)}
-  pure $ TVar (TyVar c)
-
-pushConstraint :: Constraint -> InferState ()
-pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c : cs}
-
-pushError :: InferError -> InferState ()
-pushError e = modify' $ \s@Solver {errors = es} -> s {errors = e : es}
-
-newtype Context = Context [Map Unique Scheme] deriving (Show)
+import Prelude hiding (lookup)
 
 defaultCtx :: Context
 defaultCtx = Context []
 
-freeVarsCtx :: Context -> Set TyVar
-freeVarsCtx (Context fs) = Set.unions $ fmap freeVarsMap fs
+freeVars :: Context -> Set TyVar
+freeVars (Context fs) = Set.unions $ fmap freeVarsMap fs
   where
     freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
-    freeVarsScheme (Scheme vars t) = freeVars t `Set.difference` Set.fromList vars
+    freeVarsScheme (Scheme vars t) = Ty.freeVars t `Set.difference` Set.fromList vars
 
 pop :: InferState ()
 pop = do

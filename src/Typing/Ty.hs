@@ -1,26 +1,13 @@
-module Typing.Ty where
+module Typing.Ty (module Typing.Types, freeVars, applySubst, generalize, unify) where
 
-import Data.Map
+import Control.Monad
+import Control.Monad.State
+import Control.Placeholder (todo)
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
-import Spanned
-import Unique
-
-data Ty
-  = TInt
-  | TBool
-  | TChar
-  | TString
-  | TUnit
-  | TVar TyVar
-  | TArrow Ty Ty
-  | TList Ty
-  | TArray Ty
-  | TTuple [Ty]
-  | TRecord [(String, Ty)]
-  | TCon String [Ty]
-  deriving (Show, Eq, Ord)
+import Typing.Solver as Solver
+import Typing.Types
 
 freeVars :: Ty -> Set TyVar
 freeVars (TVar v) = Set.singleton v
@@ -30,8 +17,6 @@ freeVars (TArray t) = freeVars t
 freeVars (TTuple ts) = Set.unions $ fmap freeVars ts
 freeVars _ = Set.empty
 
-type Subst = Map TyVar Ty
-
 applySubst :: Subst -> Ty -> Ty
 applySubst s (TVar v) = Map.findWithDefault (TVar v) v s
 applySubst s (TArrow t1 t2) = TArrow (applySubst s t1) (applySubst s t2)
@@ -40,6 +25,29 @@ applySubst s (TArray t) = TArray (applySubst s t)
 applySubst s (TTuple ts) = TTuple (fmap (applySubst s) ts)
 applySubst _ t = t
 
-newtype TyVar = TyVar Unique deriving (Show, Eq, Ord)
+generalize :: Ty -> InferState Scheme
+generalize t = do
+  Solver {subst = s, ctx = c} <- get
+  todo
 
-data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)
+unify :: Ty -> Ty -> InferState ()
+unify TInt TInt = pure ()
+unify TBool TBool = pure ()
+unify TChar TChar = pure ()
+unify TString TString = pure ()
+unify TUnit TUnit = pure ()
+unify (TVar v1) t2 = bind v1 t2
+unify t1 (TVar v2) = bind v2 t1
+unify (TArrow t1 t2) (TArrow t1' t2') = do
+  unify t1 t1'
+  unify t2 t2'
+unify (TList t1) (TList t2) = unify t1 t2
+unify (TArray t1) (TArray t2) = unify t1 t2
+unify (TTuple ts1) (TTuple ts2) = zipWithM_ unify ts1 ts2
+unify t1 t2 = do
+  Solver.pushError $ UnificationError t1 t2
+
+bind :: TyVar -> Ty -> InferState ()
+bind v t = do
+  s@Solver {subst = su} <- get
+  put s {subst = Map.insert v t su}
