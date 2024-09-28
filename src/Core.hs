@@ -1,7 +1,7 @@
 module Core where
 
 import Spanned
-import Ty
+import Typing.Ty
 import Unique (Unique)
 
 data Program

@@ -27,9 +27,11 @@ executable tinyML
         Parser
         NIR
         Rename
-        Ty
-        TIR
-        Infer
+        Typing.Context
+        Typing.Infer
+        Typing.Scheme
+        Typing.TIR
+        Typing.Ty
         Core
         Compiler
         Eval

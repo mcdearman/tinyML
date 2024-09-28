@@ -1,9 +1,9 @@
-module TIR where
+module Typing.TIR where
 
 import Data.Array
 import Data.Text
 import Spanned
-import Ty
+import Typing.Ty
 import Unique
 
 data Program
@@ -22,11 +22,12 @@ data Decl
   | DTypeSyn Name [TyVar] (Spanned Ty)
   | DImport Path
   deriving (Show, Eq)
+
 data Expr
   = ELit Lit
   | EVar Name
   | EApp (Typed Expr) (Typed Expr)
-  | ELam (Typed Expr) (Typed Expr)
+  | ELam (Typed Pattern) (Typed Expr)
   | ELet (Typed Pattern) (Typed Expr) (Typed Expr)
   | EFn Name [Typed Pattern] (Typed Expr) (Typed Expr)
   | EIf (Typed Expr) (Typed Expr) (Typed Expr)
