@@ -13,8 +13,14 @@ import Typing.TIR
 import qualified Typing.Ty as Ty
 import Typing.Types
 
-genConstraints :: Spanned N.Program -> InferState ()
-genConstraints p = todo
+genConstraints :: Spanned N.Program -> InferState (Spanned Program)
+genConstraints (Spanned (N.PRepl (Left d)) s) = do
+  d' <- genDeclConstraints d
+  pure $ Spanned (PRepl (Left d')) s
+genConstraints (Spanned (N.PRepl (Right e)) s) = do
+  d' <- genExprConstraints e
+  pure $ Spanned (PRepl (Right d')) s
+genConstraints (Spanned (N.PFile n m) s) = todo
 
 genModuleConstraints :: Spanned N.Module -> InferState ()
 genModuleConstraints m = todo
@@ -84,12 +90,15 @@ genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
 genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
 
 solveConstraints :: InferState ()
-solveConstraints = todo
+solveConstraints = do
+  Solver {constraints = cs} <- get
+  forM_ cs $ \case
+    Eq t1 t2 -> Ty.unify t1 t2
+    _ -> todo
 
-infer :: Spanned N.Program -> InferState (Typed Program)
+infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
-  genConstraints p
+  p' <- genConstraints p
   solveConstraints
   Solver {subst = s, ctx = c} <- get
-  pure $ applySubstProgram s p
-  todo
+  pure $ applySubstProgram s p'

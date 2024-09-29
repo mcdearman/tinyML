@@ -9,6 +9,7 @@ import Parser (parseStream)
 import Rename
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
+import Typing.Infer
 import Typing.Solver
 
 data Compiler = Compiler
@@ -43,6 +44,8 @@ run src = do
         case r' of
           Resolver {errors = []} -> do
             put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
-            pure $ (toStrict . pShow) nir
+            let (tir, sl') = runState (infer nir) sl
+            put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
+            pure $ (toStrict . pShow) tir
           Resolver {errors = e} -> do
             pure $ pack $ "Resolver errors: " ++ show e

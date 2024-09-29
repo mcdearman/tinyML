@@ -14,12 +14,12 @@ data Program
   | PRepl (Either (Typed Decl) (Typed Expr))
   deriving (Show)
 
-applySubstProgram :: Subst -> Typed Program -> Typed Program
-applySubstProgram s (Typed (Spanned (PFile n m) sp) t) = todo
-applySubstProgram s (Typed (Spanned (PRepl (Left d)) sp) t) =
-  Typed (Spanned (PRepl (Left (applySubstDecl s d))) sp) (Ty.applySubst s t)
-applySubstProgram s (Typed (Spanned (PRepl (Right e)) sp) t) =
-  Typed (Spanned (PRepl (Right (applySubstExpr s e))) sp) (Ty.applySubst s t)
+applySubstProgram :: Subst -> Spanned Program -> Spanned Program
+applySubstProgram s (Spanned (PFile n m) sp) = todo
+applySubstProgram s (Spanned (PRepl (Left d)) sp) =
+  Spanned (PRepl (Left (applySubstDecl s d))) sp
+applySubstProgram s (Spanned (PRepl (Right e)) sp) =
+  Spanned (PRepl (Right (applySubstExpr s e))) sp
 
 data Module = Module Name [Typed Decl] deriving (Show)
 
