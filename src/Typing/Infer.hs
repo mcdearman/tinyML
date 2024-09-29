@@ -74,11 +74,10 @@ genPatternConstraints (Spanned (N.PLit (N.LString t)) s) _ _ = pure $ Typed (Spa
 genPatternConstraints (Spanned (N.PVar n) s) ty False = do
   Ctx.define (snd (value n)) (Scheme [] ty)
   pure $ Typed (Spanned (PVar n) s) ty
-genPatternConstraints (Spanned (N.PVar n) s) ty True = do
-  p <- Ctx.lookup (snd (value n))
-  v <- Scheme.inst p
-  Solver.pushConstraint $ Eq ty v
-  pure $ Typed (Spanned (PVar n) s) v
+genPatternConstraints (Spanned (N.PVar n@(Spanned (_, id) _)) s) ty True = do
+  scm <- Ty.generalize ty
+  Ctx.define id scm
+  pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do
   p1'@(Typed _ t1) <- genPatternConstraints p1 ty gen
   p2'@(Typed _ t2) <- genPatternConstraints p2 ty gen
@@ -99,6 +98,7 @@ solveConstraints = do
 infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
   p' <- genConstraints p
-  solveConstraints
+  -- solveConstraints
   Solver {subst = s, ctx = c} <- get
-  pure $ applySubstProgram s p'
+  -- pure $ applySubstProgram s p'
+  pure $ p'

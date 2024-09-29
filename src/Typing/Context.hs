@@ -19,7 +19,7 @@ import Typing.Types
 import Unique
 import Prelude hiding (lookup)
 
-freeVars :: Context -> Set TyVar
+freeVars :: Context -> [TyVar]
 freeVars (Context fs) = Set.unions $ fmap freeVarsMap fs
   where
     freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
@@ -53,7 +53,7 @@ lookup n = do
   Solver {ctx = Context fs} <- get
   case lookup' n fs of
     Just s -> pure s
-    Nothing -> error "unbound variable"
+    Nothing -> error $ "unbound variable" <> show n
   where
     lookup' _ [] = Nothing
     lookup' n' (m : ms) = case Map.lookup n m of

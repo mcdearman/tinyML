@@ -9,13 +9,13 @@ import qualified Data.Set as Set
 import Typing.Solver as Solver
 import Typing.Types
 
-freeVars :: Ty -> Set TyVar
-freeVars (TVar v) = Set.singleton v
-freeVars (TArrow t1 t2) = freeVars t1 `Set.union` freeVars t2
+freeVars :: Ty -> [TyVar]
+freeVars (TVar v) = [v]
+freeVars (TArrow t1 t2) = freeVars t1 ++ freeVars t2
 freeVars (TList t) = freeVars t
 freeVars (TArray t) = freeVars t
-freeVars (TTuple ts) = Set.unions $ fmap freeVars ts
-freeVars _ = Set.empty
+-- freeVars (TTuple ts) = Set.unions $ fmap freeVars ts
+freeVars _ = []
 
 applySubst :: Subst -> Ty -> Ty
 applySubst s (TVar v) = Map.findWithDefault (TVar v) v s
@@ -27,8 +27,8 @@ applySubst _ t = t
 
 generalize :: Ty -> InferState Scheme
 generalize t = do
-  Solver {subst = s, ctx = c} <- get
-  todo
+  Solver {ctx = c} <- get
+  pure $ Scheme (freeVars t \\ Ctx.freeVars c) t
 
 unify :: Ty -> Ty -> InferState ()
 unify TInt TInt = pure ()
