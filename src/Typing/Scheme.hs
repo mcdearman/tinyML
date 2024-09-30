@@ -1,6 +1,7 @@
-module Typing.Scheme (module Typing.Types, inst, applySubst) where
+module Typing.Scheme (module Typing.Types, inst, applySubst, freeVars) where
 
-import Control.Monad (replicateM)
+import Control.Monad (forM, replicateM)
+import Data.Function ((&))
 import qualified Data.Map as Map
 import Typing.Solver
 import qualified Typing.Ty as Ty
@@ -14,3 +15,6 @@ inst (Scheme vars t) = do
 
 applySubst :: Subst -> Scheme -> Scheme
 applySubst s (Scheme vars t) = Scheme vars (Ty.applySubst s t)
+
+freeVars :: Scheme -> [TyVar]
+freeVars (Scheme vars t) = t & Ty.freeVars & filter (`notElem` vars)

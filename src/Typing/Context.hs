@@ -10,6 +10,7 @@ module Typing.Context
 where
 
 import Control.Monad.State
+import Data.Function ((&))
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
@@ -20,10 +21,13 @@ import Unique
 import Prelude hiding (lookup)
 
 freeVars :: Context -> [TyVar]
-freeVars (Context fs) = Set.unions $ fmap freeVarsMap fs
-  where
-    freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
-    freeVarsScheme (Scheme vars t) = Ty.freeVars t `Set.difference` Set.fromList vars
+freeVars (Context fs) = Set.toList $ Set.unions $ fmap Ty.freeVars fs
+
+--   freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
+--   freeVarsScheme (Scheme vars t) = Ty.freeVars t `Set.difference` Set.fromList vars
+
+-- freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
+-- freeVarseme (Scheme vars t) = Ty.freeVars t `Set.difference` Set.fromList vars
 
 pop :: InferState ()
 pop = do

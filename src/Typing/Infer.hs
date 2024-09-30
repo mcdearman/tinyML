@@ -3,7 +3,7 @@ module Typing.Infer where
 import Control.Monad
 import Control.Monad.State
 import Control.Placeholder (todo)
-import qualified Data.Map as Map
+import Data.List ((\\))
 import qualified NIR as N
 import Spanned
 import qualified Typing.Context as Ctx
@@ -12,6 +12,11 @@ import qualified Typing.Solver as Solver
 import Typing.TIR
 import qualified Typing.Ty as Ty
 import Typing.Types
+
+generalize :: Ty -> InferState Scheme
+generalize t = do
+  Solver {ctx = c} <- get
+  pure $ Scheme (Ty.freeVars t \\ Ctx.freeVars c) t
 
 genConstraints :: Spanned N.Program -> InferState (Spanned Program)
 genConstraints (Spanned (N.PRepl (Left d)) s) = do
@@ -75,7 +80,7 @@ genPatternConstraints (Spanned (N.PVar n) s) ty False = do
   Ctx.define (snd (value n)) (Scheme [] ty)
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PVar n@(Spanned (_, id) _)) s) ty True = do
-  scm <- Ty.generalize ty
+  scm <- generalize ty
   Ctx.define id scm
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do

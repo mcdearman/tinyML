@@ -1,21 +1,20 @@
-module Typing.Ty (module Typing.Types, freeVars, applySubst, generalize, unify) where
+module Typing.Ty (module Typing.Types, freeVars, applySubst, unify) where
 
 import Control.Monad
 import Control.Monad.State
-import Control.Placeholder (todo)
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
 import Typing.Solver as Solver
 import Typing.Types
 
-freeVars :: Ty -> [TyVar]
-freeVars (TVar v) = [v]
-freeVars (TArrow t1 t2) = freeVars t1 ++ freeVars t2
+freeVars :: Ty -> Set TyVar
+freeVars (TVar v) = Set.singleton v
+freeVars (TArrow t1 t2) = freeVars t1 `Set.union` freeVars t2
 freeVars (TList t) = freeVars t
 freeVars (TArray t) = freeVars t
--- freeVars (TTuple ts) = Set.unions $ fmap freeVars ts
-freeVars _ = []
+freeVars (TTuple ts) = Set.unions $ fmap freeVars ts
+freeVars _ = Set.empty
 
 applySubst :: Subst -> Ty -> Ty
 applySubst s (TVar v) = Map.findWithDefault (TVar v) v s
@@ -24,11 +23,6 @@ applySubst s (TList t) = TList (applySubst s t)
 applySubst s (TArray t) = TArray (applySubst s t)
 applySubst s (TTuple ts) = TTuple (fmap (applySubst s) ts)
 applySubst _ t = t
-
-generalize :: Ty -> InferState Scheme
-generalize t = do
-  Solver {ctx = c} <- get
-  pure $ Scheme (freeVars t \\ Ctx.freeVars c) t
 
 unify :: Ty -> Ty -> InferState ()
 unify TInt TInt = pure ()
