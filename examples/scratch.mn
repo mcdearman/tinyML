@@ -91,3 +91,11 @@ data Shape = Circle Float | Rectangle Float Float
 [1, 2, 3]
   |> List.map (+ 1)
   |> List.filter ((= 0) ∘ (% 2))
+
+def freeVars (Context fs) =
+  fs
+    |> map (Map.elems)
+    |> List.concat
+    |> map Scheme.freeVars
+    |> Set.unions
+

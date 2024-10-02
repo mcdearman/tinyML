@@ -1,12 +1,14 @@
 module Typing.Solver (module Typing.Types, defaultSolver, freshVar, pushConstraint, pushError) where
 
 import Control.Monad.State
+import Data.Map
 import qualified Data.Map as Map
+import NIR (Name)
 import Typing.Types
 import Unique
 
-defaultSolver :: Solver
-defaultSolver =
+defaultSolver :: Map Name Scheme -> Solver
+defaultSolver builtins =
   Solver
     { constraints = [],
       tyVarCounter = Id 0,

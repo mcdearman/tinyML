@@ -40,8 +40,8 @@ applySubstDecl s (Typed (Spanned (DFn n ps e) sp) t) =
   Typed (Spanned (DFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e)) sp) (Ty.applySubst s t)
 applySubstDecl s (Typed (Spanned (DFnMatch n pes) sp) t) =
   Typed (Spanned (DFnMatch n (fmap (\(ps, e) -> (fmap (applySubstPattern s) ps, applySubstExpr s e)) pes)) sp) (Ty.applySubst s t)
-applySubstDecl s (Typed (Spanned (DRecordDef n vs fs) sp) t) =
-  Typed (Spanned (DRecordDef n vs (fmap (\(n, t) -> (n, fmap (Ty.applySubst s) t)) fs)) sp) (Ty.applySubst s t)
+-- applySubstDecl s (Typed (Spanned (DRecordDef n vs fs) sp) t) =
+--   Typed (Spanned (DRecordDef n vs (fmap (\(n, t) -> (n, fmap (Ty.applySubst s) t)) fs)) sp) (Ty.applySubst s t)
 applySubstDecl _ _ = todo
 
 data Expr

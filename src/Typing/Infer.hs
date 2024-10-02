@@ -79,9 +79,9 @@ genPatternConstraints (Spanned (N.PLit (N.LString t)) s) _ _ = pure $ Typed (Spa
 genPatternConstraints (Spanned (N.PVar n) s) ty False = do
   Ctx.define (snd (value n)) (Scheme [] ty)
   pure $ Typed (Spanned (PVar n) s) ty
-genPatternConstraints (Spanned (N.PVar n@(Spanned (_, id) _)) s) ty True = do
+genPatternConstraints (Spanned (N.PVar n@(Spanned (_, i) _)) s) ty True = do
   scm <- generalize ty
-  Ctx.define id scm
+  Ctx.define i scm
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do
   p1'@(Typed _ t1) <- genPatternConstraints p1 ty gen
@@ -98,12 +98,11 @@ solveConstraints = do
   Solver {constraints = cs} <- get
   forM_ cs $ \case
     Eq t1 t2 -> Ty.unify t1 t2
-    _ -> todo
 
 infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
   p' <- genConstraints p
-  -- solveConstraints
-  Solver {subst = s, ctx = c} <- get
-  -- pure $ applySubstProgram s p'
-  pure $ p'
+  solveConstraints
+  s@Solver {subst = sub, ctx = c} <- get
+  put s {ctx = Ctx.applySubst sub c}
+  pure $ applySubstProgram sub p'

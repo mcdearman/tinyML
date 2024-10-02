@@ -2,15 +2,32 @@ module Compiler where
 
 import Control.Monad.State
 import Control.Placeholder (todo)
+import Data.Function ((&))
+import Data.Map
+import qualified Data.Map as Map
 import Data.Text (Text, pack)
 import Data.Text.Lazy (toStrict)
 import Lexer (lexMML)
+import qualified NIR as NIR
 import Parser (parseStream)
 import Rename
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 import Typing.Infer
 import Typing.Solver
+import Unique
+
+builtins :: InferState (Map NIR.ResId Scheme)
+builtins =
+  Map.empty
+    & Map.insert (Id 0) (Scheme [] $ TArrow TInt TInt)
+    & Map.insert (Id 1) (Scheme [] $ TArrow TBool TBool)
+    & Map.insert (Id 2) (Scheme [] $ TArrow TInt TInt)
+    & Map.insert (Id 3) (Scheme [] $ TArrow TInt TInt)
+    & Map.insert (Id 4) (Scheme [] $ TArrow TInt TInt)
+    & Map.insert (Id 5) (Scheme [] $ TArrow TInt TInt)
+    & Map.insert (Id 6) (Scheme [] $ TArrow TInt TInt)
+    & Map.insert (Id 7) (Scheme [] $ TArrow TInt TInt)
 
 data Compiler = Compiler
   { src :: Text,
