@@ -3,7 +3,7 @@ module Typing.Infer where
 import Control.Monad
 import Control.Monad.State
 import Control.Placeholder (todo)
-import Data.List ((\\))
+import qualified Data.Set as Set
 import qualified NIR as N
 import Spanned
 import qualified Typing.Context as Ctx
@@ -16,7 +16,7 @@ import Typing.Types
 generalize :: Ty -> InferState Scheme
 generalize t = do
   Solver {ctx = c} <- get
-  pure $ Scheme (Ty.freeVars t \\ Ctx.freeVars c) t
+  pure $ Scheme (Set.toList (Ty.freeVars t `Set.difference` Ctx.freeVars c)) t
 
 genConstraints :: Spanned N.Program -> InferState (Spanned Program)
 genConstraints (Spanned (N.PRepl (Left d)) s) = do

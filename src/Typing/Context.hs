@@ -15,19 +15,17 @@ import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
 import qualified Typing.Scheme as Scheme
-import qualified Typing.Ty as Ty
 import Typing.Types
 import Unique
 import Prelude hiding (lookup)
 
-freeVars :: Context -> [TyVar]
-freeVars (Context fs) = Set.toList $ Set.unions $ fmap Ty.freeVars fs
-
---   freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
---   freeVarsScheme (Scheme vars t) = Ty.freeVars t `Set.difference` Set.fromList vars
-
--- freeVarsMap = Set.unions . fmap freeVarsScheme . Map.elems
--- freeVarseme (Scheme vars t) = Ty.freeVars t `Set.difference` Set.fromList vars
+freeVars :: Context -> Set TyVar
+freeVars (Context fs) =
+  fs
+    & (<$>) (Map.elems)
+    & concat
+    & (<$>) Scheme.freeVars
+    & Set.unions
 
 pop :: InferState ()
 pop = do

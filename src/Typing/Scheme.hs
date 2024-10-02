@@ -3,6 +3,8 @@ module Typing.Scheme (module Typing.Types, inst, applySubst, freeVars) where
 import Control.Monad (forM, replicateM)
 import Data.Function ((&))
 import qualified Data.Map as Map
+import Data.Set (Set)
+import qualified Data.Set as Set
 import Typing.Solver
 import qualified Typing.Ty as Ty
 import Typing.Types
@@ -16,5 +18,5 @@ inst (Scheme vars t) = do
 applySubst :: Subst -> Scheme -> Scheme
 applySubst s (Scheme vars t) = Scheme vars (Ty.applySubst s t)
 
-freeVars :: Scheme -> [TyVar]
-freeVars (Scheme vars t) = t & Ty.freeVars & filter (`notElem` vars)
+freeVars :: Scheme -> Set TyVar
+freeVars (Scheme vars t) = t & Ty.freeVars & Set.filter (`notElem` vars)
