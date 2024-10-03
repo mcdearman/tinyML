@@ -7,8 +7,8 @@ import NIR (Name)
 import Typing.Types
 import Unique
 
-defaultSolver :: Map Name Scheme -> Solver
-defaultSolver builtins =
+defaultSolver :: Solver
+defaultSolver =
   Solver
     { constraints = [],
       tyVarCounter = Id 0,
