@@ -1,7 +1,6 @@
 module Typing.Solver (module Typing.Types, defaultSolver, freshVar, pushConstraint, pushError) where
 
 import Control.Monad.State
-import Control.Placeholder (todo)
 import Data.Function ((&))
 import qualified Data.Map as Map
 import Typing.Types
@@ -13,12 +12,12 @@ builtins = do
         Map.empty
           & Map.insert (Id 0) (Scheme [] $ TArrow TInt TInt)
           & Map.insert (Id 1) (Scheme [] $ TArrow TBool TBool)
-          & Map.insert (Id 2) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 3) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 4) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 5) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 6) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 7) (Scheme [] $ TArrow TInt TInt)
+          & Map.insert (Id 2) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
+          & Map.insert (Id 3) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
+          & Map.insert (Id 4) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
+          & Map.insert (Id 5) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
+          & Map.insert (Id 6) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
+          & Map.insert (Id 7) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
           & Map.insert (Id 10) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
           & Map.insert (Id 11) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
           & Map.insert (Id 12) (Scheme [] $ TArrow TInt (TArrow TInt TBool))

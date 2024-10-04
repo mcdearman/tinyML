@@ -11,6 +11,8 @@ import Rename
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
+import Typing.Solver (Solver (Solver))
+import qualified Typing.Solver as Solver
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
@@ -19,12 +21,21 @@ repl :: Compiler -> InputT IO ()
 repl c = do
   input <- getMultilineInput ""
   let r = Compiler.resolver c
+  let s = Compiler.solver c
+  let ctx = Solver.ctx s
+  let cs = Solver.constraints s
   case input of
     Just "env" -> do
       outputStrLn $ unpack $ (toStrict . pShow) r
       repl c
     Just "res" -> do
       outputStrLn $ unpack $ (toStrict . pShow) ()
+      repl c
+    Just "ctx" -> do
+      outputStrLn $ unpack $ (toStrict . pShow) ctx
+      repl c
+    Just "constraints" -> do
+      outputStrLn $ unpack $ (toStrict . pShow) cs
       repl c
     Just src -> do
       let (out, c') = runState (Compiler.run (pack src)) c
