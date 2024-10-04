@@ -87,6 +87,13 @@ let p = { name = "John", age = 30 } in p.name
 -- sum type
 data Shape = Circle Float | Rectangle Float Float
 
+-- pipe
+def (|>) : 'a 'b. 'a -> ('a -> 'b) -> 'b
+  | x |> f = f x
+
+def (::) : 'a. 'a -> ['a] -> ['a]
+  | x :: xs = x :: xs
+
 -- methods with pipe
 [1, 2, 3]
   |> List.map (+ 1)

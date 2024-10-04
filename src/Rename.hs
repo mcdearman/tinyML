@@ -55,8 +55,6 @@ builtins =
     "__gt__",
     "__lte__",
     "__gte__",
-    "__and__",
-    "__or__",
     "__pair__",
     "__pipe__"
   ]

@@ -17,22 +17,6 @@ import Typing.Infer
 import Typing.Solver
 import Unique
 
-builtins :: InferState (Map NIR.ResId Scheme)
-builtins =
-  do
-    let m = Map.empty
-    & Map.insert (Id 0) (Scheme [] $ TArrow TInt TInt)
-    & Map.insert (Id 1) (Scheme [] $ TArrow TBool TBool)
-    & Map.insert (Id 2) (Scheme [] $ TArrow TInt TInt)
-    & Map.insert (Id 3) (Scheme [] $ TArrow TInt TInt)
-    & Map.insert (Id 4) (Scheme [] $ TArrow TInt TInt)
-    & Map.insert (Id 5) (Scheme [] $ TArrow TInt TInt)
-    & Map.insert (Id 6) (Scheme [] $ TArrow TInt TInt)
-    & Map.insert (Id 7) (Scheme [] $ TArrow TInt TInt)
-
--- var <- freshVar
--- pure $ Map.insert (Id 8) (Scheme [var] $ TArrow (TVar var) (TVar var)) m
-
 data Compiler = Compiler
   { src :: Text,
     flags :: [Text],
