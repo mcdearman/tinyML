@@ -24,6 +24,7 @@ repl c = do
   let s = Compiler.solver c
   let ctx = Solver.ctx s
   let cs = Solver.constraints s
+  let sub = Solver.subst s
   case input of
     Just "env" -> do
       outputStrLn $ unpack $ (toStrict . pShow) r
@@ -36,6 +37,9 @@ repl c = do
       repl c
     Just "constraints" -> do
       outputStrLn $ unpack $ (toStrict . pShow) cs
+      repl c
+    Just "sub" -> do
+      outputStrLn $ unpack $ (toStrict . pShow) sub
       repl c
     Just src -> do
       let (out, c') = runState (Compiler.run (pack src)) c

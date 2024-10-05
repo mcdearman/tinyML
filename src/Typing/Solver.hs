@@ -3,6 +3,8 @@ module Typing.Solver (module Typing.Types, defaultSolver, freshVar, pushConstrai
 import Control.Monad.State
 import Data.Function ((&))
 import qualified Data.Map as Map
+import Span
+import Spanned
 import Typing.Types
 import Unique
 
@@ -22,14 +24,14 @@ builtins = do
           & Map.insert (Id 11) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
           & Map.insert (Id 12) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
           & Map.insert (Id 13) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-  v1 <- freshVar
+  v1 <- freshVar $ NoLoc
   let m1 = Map.insert (Id 8) (Scheme [v1] $ TArrow (TVar v1) (TVar v1)) m
-  v2 <- freshVar
+  v2 <- freshVar $ NoLoc
   let m2 = Map.insert (Id 9) (Scheme [v2] $ TArrow (TVar v2) (TVar v2)) m1
-  v3 <- freshVar
+  v3 <- freshVar $ NoLoc
   let m3 = Map.insert (Id 14) (Scheme [v3] $ TArrow (TVar v3) (TArrow (TList (TVar v3)) (TList (TVar v3)))) m2
-  v4 <- freshVar
-  v5 <- freshVar
+  v4 <- freshVar $ NoLoc
+  v5 <- freshVar $ NoLoc
   let m4 =
         Map.insert
           (Id 15)
@@ -52,11 +54,11 @@ defaultSolver =
           }
    in execState builtins s
 
-freshVar :: InferState TyVar
-freshVar = do
+freshVar :: Span -> InferState TyVar
+freshVar sp = do
   s@Solver {tyVarCounter = c@(Id v)} <- get
   put s {tyVarCounter = Id (v + 1)}
-  pure $ TyVar c
+  pure $ TyVar (Spanned c sp)
 
 pushConstraint :: Constraint -> InferState ()
 pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c : cs}

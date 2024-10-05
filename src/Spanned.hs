@@ -6,7 +6,7 @@ data Spanned a = Spanned
   { value :: a,
     span :: Span
   }
-  deriving (Show, Eq)
+  deriving (Show, Eq, Ord)
 
 instance Functor Spanned where
   fmap f (Spanned v s) = Spanned (f v) s

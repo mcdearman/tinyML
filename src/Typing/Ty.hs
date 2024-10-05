@@ -5,6 +5,10 @@ import Control.Monad.State
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
+import Data.Text (unpack)
+import Data.Text.Lazy (toStrict)
+import Debug.Trace (trace)
+import Text.Pretty.Simple
 import Typing.Solver as Solver
 import Typing.Types
 
@@ -24,24 +28,46 @@ applySubst s (TArray t) = TArray (applySubst s t)
 applySubst s (TTuple ts) = TTuple (fmap (applySubst s) ts)
 applySubst _ t = t
 
+-- unify :: Ty -> Ty -> InferState ()
+-- unify TInt TInt = pure ()
+-- unify TBool TBool = pure ()
+-- unify TChar TChar = pure ()
+-- unify TString TString = pure ()
+-- unify TUnit TUnit = pure ()
+-- unify (TVar v1) t2 = bind v1 t2
+-- unify t1 (TVar v2) = bind v2 t1
+-- unify (TArrow t1 t2) (TArrow t1' t2') = do
+--   unify t1 t1'
+--   unify t2 t2'
+-- unify (TList t1) (TList t2) = unify t1 t2
+-- unify (TArray t1) (TArray t2) = unify t1 t2
+-- unify (TTuple ts1) (TTuple ts2) = zipWithM_ unify ts1 ts2
+-- unify t1 t2 = do
+--   Solver.pushError $ UnificationError t1 t2
+
 unify :: Ty -> Ty -> InferState ()
-unify TInt TInt = pure ()
-unify TBool TBool = pure ()
-unify TChar TChar = pure ()
-unify TString TString = pure ()
-unify TUnit TUnit = pure ()
-unify (TVar v1) t2 = bind v1 t2
-unify t1 (TVar v2) = bind v2 t1
-unify (TArrow t1 t2) (TArrow t1' t2') = do
-  unify t1 t1'
-  unify t2 t2'
-unify (TList t1) (TList t2) = unify t1 t2
-unify (TArray t1) (TArray t2) = unify t1 t2
-unify (TTuple ts1) (TTuple ts2) = zipWithM_ unify ts1 ts2
 unify t1 t2 = do
-  Solver.pushError $ UnificationError t1 t2
+  trace ("unify " ++ (unpack . toStrict $ pShow t1) ++ " and\n" ++ (unpack . toStrict $ pShow t2)) $ pure ()
+  case (t1, t2) of
+    (TInt, TInt) -> pure ()
+    (TBool, TBool) -> pure ()
+    (TChar, TChar) -> pure ()
+    (TString, TString) -> pure ()
+    (TUnit, TUnit) -> pure ()
+    (TVar v1, t2) -> bind v1 t2
+    (t1, TVar v2) -> bind v2 t1
+    (TArrow t1 t2, TArrow t1' t2') -> do
+      unify t1 t1'
+      unify t2 t2'
+    (TList t1, TList t2) -> unify t1 t2
+    (TArray t1, TArray t2) -> unify t1 t2
+    (TTuple ts1, TTuple ts2) -> zipWithM_ unify ts1 ts2
+    _ -> do
+      trace "unification error" $ pure ()
+      Solver.pushError $ UnificationError t1 t2
 
 bind :: TyVar -> Ty -> InferState ()
 bind v t = do
   s@Solver {subst = su} <- get
+  trace ("bind " ++ show v ++ " to " ++ show t ++ "gives " ++ (show $ Map.insert v t su)) $ pure ()
   put s {subst = Map.insert v t su}

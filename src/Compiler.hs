@@ -50,7 +50,13 @@ run src = do
           Resolver {errors = []} -> do
             put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
             let (tir, sl') = runState (infer nir) sl
-            put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
-            pure $ (toStrict . pShow) tir
-          Resolver {errors = e} -> do
-            pure $ pack $ "Resolver errors: " ++ show e
+            case sl' of
+              Solver {errors = []} -> do
+                put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
+                pure $ (toStrict . pShow) tir
+              Solver {errors = es} -> do
+                put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
+                pure $ pack $ "Type errors: " ++ show es
+          Resolver {errors = es} -> do
+            put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
+            pure $ pack $ "Resolver errors: " ++ show es

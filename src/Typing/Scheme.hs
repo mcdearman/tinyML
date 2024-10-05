@@ -1,17 +1,18 @@
 module Typing.Scheme (module Typing.Types, inst, applySubst, freeVars) where
 
-import Control.Monad (forM, replicateM)
+import Control.Monad (forM)
 import Data.Function ((&))
 import qualified Data.Map as Map
 import Data.Set (Set)
 import qualified Data.Set as Set
+import Spanned
 import Typing.Solver
 import qualified Typing.Ty as Ty
 import Typing.Types
 
 inst :: Scheme -> InferState Ty
 inst (Scheme vars t) = do
-  vars' <- replicateM (length vars) (TVar <$> freshVar)
+  vars' <- forM vars $ \(TyVar (Spanned _ sp)) -> TVar <$> freshVar sp
   let s = Map.fromList $ zip vars vars'
   pure $ Ty.applySubst s t
 

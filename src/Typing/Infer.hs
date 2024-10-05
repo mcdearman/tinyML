@@ -4,8 +4,12 @@ import Control.Monad
 import Control.Monad.State
 import Control.Placeholder (todo)
 import qualified Data.Set as Set
+import Data.Text (unpack)
+import Data.Text.Lazy (toStrict)
+import Debug.Trace (trace)
 import qualified NIR as N
 import Spanned
+import Text.Pretty.Simple
 import qualified Typing.Context as Ctx
 import qualified Typing.Scheme as Scheme
 import qualified Typing.Solver as Solver
@@ -32,15 +36,15 @@ genModuleConstraints m = todo
 
 genDeclConstraints :: Spanned N.Decl -> InferState (Typed Decl)
 genDeclConstraints (Spanned (N.DDef p e) s) = do
-  v <- TVar <$> Solver.freshVar
+  v <- TVar <$> Solver.freshVar s
   e'@(Typed _ te) <- genExprConstraints e
   p'@(Typed _ tp) <- genPatternConstraints p v True
   Solver.pushConstraint $ Eq v te
   Solver.pushConstraint $ Eq tp v
   pure $ Typed (Spanned (DDef p' e') s) v
 genDeclConstraints (Spanned (N.DFn n ps e) s) = do
-  v <- TVar <$> Solver.freshVar
-  vps <- forM ps $ \_ -> Solver.freshVar
+  v <- TVar <$> Solver.freshVar s
+  vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
   ps' <- forM ps $ \p -> genPatternConstraints p v True
   Ctx.define (snd (value n)) (Scheme vps v)
   e'@(Typed _ te) <- genExprConstraints e
@@ -59,12 +63,14 @@ genExprConstraints (Spanned (N.EVar n) s) = do
 genExprConstraints (Spanned (N.EApp e1 e2) s) = do
   e1'@(Typed _ t1) <- genExprConstraints e1
   e2'@(Typed _ t2) <- genExprConstraints e2
-  v <- TVar <$> Solver.freshVar
+  v <- TVar <$> Solver.freshVar s
+  -- trace ("genExprConstraints: EApp " ++ (unpack . toStrict $ pShow t1) ++ "\n" ++ (unpack . toStrict $ pShow (TArrow t2 v))) $
+  --   pure ()
   Solver.pushConstraint $ Eq t1 (TArrow t2 v)
   pure $ Typed (Spanned (EApp e1' e2') s) v
-genExprConstraints (Spanned (N.ELam p e) s) = do
+genExprConstraints (Spanned (N.ELam p@(Spanned _ sp) e) s) = do
   Ctx.push
-  v <- TVar <$> Solver.freshVar
+  v <- TVar <$> Solver.freshVar sp
   p' <- genPatternConstraints p v False
   e'@(Typed _ te) <- genExprConstraints e
   Ctx.pop

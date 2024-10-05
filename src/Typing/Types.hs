@@ -37,7 +37,7 @@ data Ty
 
 type Subst = Map TyVar Ty
 
-newtype TyVar = TyVar Unique deriving (Show, Eq, Ord)
+newtype TyVar = TyVar (Spanned Unique) deriving (Show, Eq, Ord)
 
 data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)
 
