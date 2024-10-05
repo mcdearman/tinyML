@@ -54,11 +54,11 @@ defaultSolver =
           }
    in execState builtins s
 
-freshVar :: Span -> InferState TyVar
+freshVar :: Span -> InferState (Spanned TyVar)
 freshVar sp = do
   s@Solver {tyVarCounter = c@(Id v)} <- get
   put s {tyVarCounter = Id (v + 1)}
-  pure $ TyVar (Spanned c sp)
+  pure $ Spanned (TyVar c) sp
 
 pushConstraint :: Constraint -> InferState ()
 pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c : cs}

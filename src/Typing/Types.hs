@@ -26,7 +26,7 @@ data Ty
   | TChar
   | TString
   | TUnit
-  | TVar TyVar
+  | TVar (Spanned TyVar)
   | TArrow Ty Ty
   | TList Ty
   | TArray Ty
@@ -35,12 +35,12 @@ data Ty
   | TCon String [Ty]
   deriving (Show, Eq, Ord)
 
-type Subst = Map TyVar Ty
+type Subst = Map (Spanned TyVar) Ty
 
-newtype TyVar = TyVar (Spanned Unique) deriving (Show, Eq, Ord)
+newtype TyVar = TyVar Unique deriving (Show, Eq, Ord)
 
 data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)
 
 newtype Context = Context [Map Unique Scheme] deriving (Show)
 
-data Scheme = Scheme [TyVar] Ty deriving (Show)
+data Scheme = Scheme [Spanned TyVar] Ty deriving (Show)

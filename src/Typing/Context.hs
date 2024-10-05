@@ -18,8 +18,9 @@ import qualified Typing.Scheme as Scheme
 import Typing.Types
 import Unique
 import Prelude hiding (lookup)
+import Spanned
 
-freeVars :: Context -> Set TyVar
+freeVars :: Context -> Set (Spanned TyVar)
 freeVars (Context fs) =
   fs
     & (<$>) (Map.elems)
