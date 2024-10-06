@@ -1,7 +1,7 @@
 module Rename where
 
 import qualified AST as A
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Control.Placeholder (todo)
 import Data.Map (Map)
 import qualified Data.Map as Map

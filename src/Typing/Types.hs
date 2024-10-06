@@ -1,6 +1,6 @@
 module Typing.Types where
 
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Data.Map
 import Data.Text (pack, unpack)
 import Pretty

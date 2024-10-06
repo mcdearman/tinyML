@@ -2,18 +2,18 @@ module Main where
 
 import Compiler (Compiler)
 import qualified Compiler as Compiler
-import Control.Monad.State (evalState, runState)
+import Control.Monad.State.Strict (evalState, runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
 import Lexer (lexMML)
 import Parser
+import Pretty
 import Rename
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 import Typing.Solver (Solver (Solver))
 import qualified Typing.Solver as Solver
-import Pretty
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}

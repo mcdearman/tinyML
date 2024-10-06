@@ -1,6 +1,6 @@
 module Compiler where
 
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Control.Placeholder (todo)
 import Data.Function ((&))
 import Data.Map

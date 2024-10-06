@@ -1,14 +1,13 @@
 module Typing.Ty (module Typing.Types, freeVars, applySubst, unify) where
 
 import Control.Monad
-import Control.Monad.State
+import Control.Monad.State.Strict
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
 import Data.Text
-import Data.Text (unpack)
 import Data.Text.Lazy (toStrict)
-import Debug.Trace (trace)
+import Debug.Trace (trace, traceM)
 import Pretty
 import Spanned
 import Text.Pretty.Simple
@@ -43,8 +42,10 @@ unify t1 t2 = do
     (TArrow tp tr, TArrow tp' tr') -> do
       unify tp tp'
       unify tr tr'
-    (TVar v1, _) -> trace ("bind left: " ++ unpack (pretty v1) ++ " to " ++ unpack (pretty t2)) (bind v1 t2)
-    (_, TVar v2) -> trace ("bind right: " ++ unpack (pretty v2) ++ " to " ++ unpack (pretty t1)) (bind v2 t1)
+    -- (TVar v1, _) -> trace ("bind left: " ++ unpack (pretty v1) ++ " to " ++ unpack (pretty t2)) (bind v1 t2)
+    -- (_, TVar v2) -> trace ("bind right: " ++ unpack (pretty v2) ++ " to " ++ unpack (pretty t1)) (bind v2 t1)
+    (TVar v1, _) -> bind v1 t2
+    (_, TVar v2) -> bind v2 t1
     (TList t, TList t') -> unify t t'
     (TArray t, TArray t') -> unify t t'
     (TTuple ts1, TTuple ts2) -> zipWithM_ unify ts1 ts2
@@ -54,11 +55,12 @@ unify t1 t2 = do
 
 bind :: Spanned TyVar -> Ty -> InferState ()
 bind v t
-  | t == TVar v = trace "bind eq" (pure ())
+  | t == TVar v = traceM "bind eq"
   | Set.member v (freeVars t) = do
-      trace ("occurs check failed: " ++ (unpack . toStrict $ pShow v) ++ " in " ++ (unpack . toStrict $ pShow t)) $ pure ()
+      traceM ("occurs check failed: " ++ (unpack . toStrict $ pShow v) ++ " in " ++ (unpack . toStrict $ pShow t))
       Solver.pushError $ UnificationError (TVar v) t
   | otherwise = do
-      s@Solver {subst = su} <- get
-      trace ("bind " ++ show v ++ " to " ++ show t ++ " gives " ++ (show $ Map.insert v t su)) $ pure ()
+      s <- get
+      let su = subst s
+      traceM ("bind " ++ (unpack $ pretty v) ++ " to " ++ (unpack $ pretty t) ++ " gives " ++ (show $ Map.insert v t su))
       put s {subst = Map.insert v t su}

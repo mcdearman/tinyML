@@ -1,6 +1,6 @@
 module Typing.Solver (module Typing.Types, defaultSolver, freshVar, pushConstraint, pushError) where
 
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Data.Function ((&))
 import qualified Data.Map as Map
 import Span
