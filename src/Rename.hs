@@ -28,14 +28,8 @@ data Resolver = Resolver
   }
   deriving (Show, Eq)
 
-instance Semigroup Resolver where
-  r1 <> r2 = Resolver (resId r1 <> resId r2) (env r1 <> env r2) (errors r1 <> errors r2)
-
-instance Monoid Resolver where
-  mempty = Resolver (Id 0) (Env []) []
-
 defaultResolver :: Resolver
-defaultResolver = execState defaultEnv (mempty :: Resolver)
+defaultResolver = execState defaultEnv (Resolver (Id 0) (Env []) [])
 
 type ResState a = State Resolver a
 

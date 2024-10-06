@@ -19,6 +19,7 @@ executable tinyML
     main-is:          Main.hs
     other-modules: 
         Span
+        Pretty
         Spanned
         Token
         TokenStream

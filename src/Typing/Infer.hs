@@ -36,12 +36,12 @@ genModuleConstraints m = todo
 
 genDeclConstraints :: Spanned N.Decl -> InferState (Typed Decl)
 genDeclConstraints (Spanned (N.DDef p e) s) = do
-  v <- TVar <$> Solver.freshVar s
+  -- v <- TVar <$> Solver.freshVar s
   e'@(Typed _ te) <- genExprConstraints e
-  p'@(Typed _ tp) <- genPatternConstraints p v True
-  Solver.pushConstraint $ Eq v te
-  Solver.pushConstraint $ Eq tp v
-  pure $ Typed (Spanned (DDef p' e') s) v
+  p'@(Typed _ tp) <- genPatternConstraints p te True
+  Solver.pushConstraint $ Eq tp te
+  -- Solver.pushConstraint $ Eq tp v
+  pure $ Typed (Spanned (DDef p' e') s) te
 genDeclConstraints (Spanned (N.DFn n ps e) s) = do
   v <- TVar <$> Solver.freshVar s
   vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp

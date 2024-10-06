@@ -13,6 +13,7 @@ import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 import Typing.Solver (Solver (Solver))
 import qualified Typing.Solver as Solver
+import Pretty
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
@@ -36,7 +37,7 @@ repl c = do
       outputStrLn $ unpack $ (toStrict . pShow) ctx
       repl c
     Just "constraints" -> do
-      outputStrLn $ unpack $ (toStrict . pShow) cs
+      outputStrLn $ unpack $ pretty cs
       repl c
     Just "sub" -> do
       outputStrLn $ unpack $ (toStrict . pShow) sub
