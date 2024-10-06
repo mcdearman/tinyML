@@ -42,23 +42,19 @@ unify t1 t2 = do
     (TArrow tp tr, TArrow tp' tr') -> do
       unify tp tp'
       unify tr tr'
-    -- (TVar v1, _) -> trace ("bind left: " ++ unpack (pretty v1) ++ " to " ++ unpack (pretty t2)) (bind v1 t2)
-    -- (_, TVar v2) -> trace ("bind right: " ++ unpack (pretty v2) ++ " to " ++ unpack (pretty t1)) (bind v2 t1)
     (TVar v1, _) -> bind v1 t2
     (_, TVar v2) -> bind v2 t1
     (TList t, TList t') -> unify t t'
     (TArray t, TArray t') -> unify t t'
     (TTuple ts1, TTuple ts2) -> zipWithM_ unify ts1 ts2
     _ -> do
-      -- trace "unification error" $ pure ()
       Solver.pushError $ UnificationError t1 t2
 
 bind :: Spanned TyVar -> Ty -> InferState ()
 bind v t
-  | t == TVar v = traceM "bind eq"
+  | t == TVar v = pure ()
   | Set.member v (freeVars t) = do
-      traceM ("occurs check failed: " ++ (unpack . toStrict $ pShow v) ++ " in " ++ (unpack . toStrict $ pShow t))
-      Solver.pushError $ UnificationError (TVar v) t
+      Solver.pushError $ Occurs (TVar v) t
   | otherwise = do
       s <- get
       let su = subst s

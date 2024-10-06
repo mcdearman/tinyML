@@ -104,10 +104,3 @@ def freeVars (Context fs) =
     |> map (Map.elems)
     |> List.concat
     |> map Scheme.freeVars
-
-t5 @ 0..8 = Bool -> t6 @ 0..8
-Int -> Int -> Int = Int -> t5 @ 0..8
-
-error:
-t5 @ 0..8 = Int -> t6 @ 0..8
-Int -> Int -> Int = Bool -> t5 @ 0..8

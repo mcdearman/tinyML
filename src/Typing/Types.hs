@@ -7,7 +7,7 @@ import Pretty
 import Spanned
 import Unique
 
-data InferError = UnificationError Ty Ty deriving (Show, Eq)
+data InferError = UnificationError Ty Ty | Occurs Ty Ty deriving (Show, Eq)
 
 data Solver = Solver
   { constraints :: [Constraint],
