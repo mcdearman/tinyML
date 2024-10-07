@@ -6,11 +6,9 @@ import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
 import Data.Text
-import Data.Text.Lazy (toStrict)
 import Debug.Trace (trace, traceM)
 import Pretty
 import Spanned
-import Text.Pretty.Simple
 import Typing.Solver as Solver
 import Typing.Types
 

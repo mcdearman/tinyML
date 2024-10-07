@@ -30,6 +30,7 @@ executable tinyML
         Rename
 
         Typing.Context
+        Typing.Constraint
         Typing.Infer
         Typing.Scheme
         Typing.Solver

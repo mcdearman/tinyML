@@ -10,12 +10,20 @@ import Debug.Trace (trace)
 import qualified NIR as N
 import Spanned
 import Text.Pretty.Simple
+import qualified Typing.Constraint as Constraint
 import qualified Typing.Context as Ctx
 import qualified Typing.Scheme as Scheme
 import qualified Typing.Solver as Solver
 import Typing.TIR
 import qualified Typing.Ty as Ty
 import Typing.Types
+  ( Constraint (Eq),
+    InferState,
+    Scheme (..),
+    Solver (Solver, constraints, ctx, subst),
+    Ty (TArrow, TBool, TInt, TList, TString, TUnit, TVar),
+    Typed (..),
+  )
 
 generalize :: Ty -> InferState Scheme
 generalize t = do
@@ -102,8 +110,13 @@ genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) T
 solveConstraints :: InferState ()
 solveConstraints = do
   Solver {constraints = cs} <- get
-  forM_ cs $ \case
-    Eq t1 t2 -> Ty.unify t1 t2
+  go cs
+  where
+    go [] = pure ()
+    go (Eq t1 t2 : cs) = do
+      Ty.unify t1 t2
+      Solver {subst = sub} <- get
+      go $ Constraint.applySubst sub <$> cs
 
 infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do

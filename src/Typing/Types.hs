@@ -23,7 +23,7 @@ data Constraint = Eq Ty Ty deriving (Show, Eq)
 instance Pretty Constraint where
   pretty (Eq t1 t2) = pretty t1 <> " = " <> pretty t2
 
-type InferState a = State Solver a
+type InferState = State Solver
 
 data Ty
   = TInt
@@ -51,7 +51,7 @@ instance Pretty Ty where
     TArrow _ _ -> pack $ "(" ++ unpack (pretty t1) ++ ") -> " ++ unpack (pretty t2)
     _ -> pack $ unpack (pretty t1) ++ " -> " ++ unpack (pretty t2)
   pretty (TList t) = pack $ "[" ++ unpack (pretty t) ++ "]"
-  pretty (TArray t) = pack $ "Array " ++ unpack (pretty t)
+  pretty (TArray t) = pack $ "#[" ++ unpack (pretty t) ++ "]"
   pretty (TTuple ts) = pack $ "(" ++ unwords (fmap show ts) ++ ")"
   pretty (TRecord fs) = pack $ "{" ++ unwords (fmap (\(n, t) -> n ++ ": " ++ show t) fs) ++ "}"
   pretty (TCon n ts) = pack $ n ++ " " ++ unwords (fmap show ts)
