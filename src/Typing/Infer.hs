@@ -109,8 +109,8 @@ genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) T
 
 solveConstraints :: InferState ()
 solveConstraints = do
-  Solver {constraints = cs} <- get
-  go cs
+  Solver {constraints = cs, subst = sub} <- get
+  go $ Constraint.applySubst sub <$> cs
   where
     go [] = pure ()
     go (Eq t1 t2 : cs) = do
@@ -123,5 +123,5 @@ infer p = do
   p' <- genConstraints p
   solveConstraints
   s@Solver {subst = sub, ctx = c} <- get
-  put s {ctx = Ctx.applySubst sub c}
+  put s {ctx = Ctx.applySubst sub c, constraints = []}
   pure $ applySubstProgram sub p'

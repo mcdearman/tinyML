@@ -15,6 +15,7 @@ import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 import Typing.Infer
 import Typing.Solver
+import qualified Typing.Solver as Solver
 import Unique
 
 data Compiler = Compiler
@@ -50,12 +51,13 @@ run src = do
           Resolver {errors = []} -> do
             put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
             let (tir, sl') = runState (infer nir) sl
+            let sl'' = sl' & \s -> s {Solver.errors = []}
             case sl' of
               Solver {errors = []} -> do
                 put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
                 pure $ (toStrict . pShow) tir
               Solver {errors = es} -> do
-                put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
+                put $ Compiler {src = src, flags = f, resolver = r', solver = sl''}
                 pure $ pack $ "Type errors: " ++ show es
           Resolver {errors = es} -> do
             put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
