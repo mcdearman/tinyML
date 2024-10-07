@@ -4,12 +4,8 @@ import Control.Monad
 import Control.Monad.State
 import Control.Placeholder (todo)
 import qualified Data.Set as Set
-import Data.Text (unpack)
-import Data.Text.Lazy (toStrict)
-import Debug.Trace (trace)
 import qualified NIR as N
 import Spanned
-import Text.Pretty.Simple
 import qualified Typing.Constraint as Constraint
 import qualified Typing.Context as Ctx
 import qualified Typing.Scheme as Scheme
@@ -17,13 +13,6 @@ import qualified Typing.Solver as Solver
 import Typing.TIR
 import qualified Typing.Ty as Ty
 import Typing.Types
-  ( Constraint (Eq),
-    InferState,
-    Scheme (..),
-    Solver (Solver, constraints, ctx, subst),
-    Ty (TArrow, TBool, TInt, TList, TString, TUnit, TVar),
-    Typed (..),
-  )
 
 generalize :: Ty -> InferState Scheme
 generalize t = do
@@ -44,20 +33,22 @@ genModuleConstraints m = todo
 
 genDeclConstraints :: Spanned N.Decl -> InferState (Typed Decl)
 genDeclConstraints (Spanned (N.DDef p e) s) = do
-  -- v <- TVar <$> Solver.freshVar s
   e'@(Typed _ te) <- genExprConstraints e
   p'@(Typed _ tp) <- genPatternConstraints p te True
   Solver.pushConstraint $ Eq tp te
-  -- Solver.pushConstraint $ Eq tp v
   pure $ Typed (Spanned (DDef p' e') s) te
 genDeclConstraints (Spanned (N.DFn n ps e) s) = do
   v <- TVar <$> Solver.freshVar s
   vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
-  ps' <- forM ps $ \p -> genPatternConstraints p v True
   Ctx.define (snd (value n)) (Scheme vps v)
+  Ctx.push
+  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) True
   e'@(Typed _ te) <- genExprConstraints e
-  Solver.pushConstraint $ Eq v (TArrow te v)
-  pure $ Typed (Spanned (DFn n ps' e') s) v
+  let ty = foldr (\pv t -> TArrow (TVar pv) t) te vps
+  Solver.pushConstraint $ Eq v ty
+  forM_ (zip ps' vps) $ \ ~(Typed _ t, pv) -> Solver.pushConstraint $ Eq t (TVar pv)
+  Ctx.pop
+  pure $ Typed (Spanned (DFn n ps' e') s) ty
 genDeclConstraints _ = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
@@ -83,6 +74,42 @@ genExprConstraints (Spanned (N.ELam p@(Spanned _ sp) e) s) = do
   e'@(Typed _ te) <- genExprConstraints e
   Ctx.pop
   pure $ Typed (Spanned (ELam p' e') s) (TArrow v te)
+genExprConstraints (Spanned (N.ELet p e1 e2) s) = do
+  e1'@(Typed _ t1) <- genExprConstraints e1
+  p'@(Typed _ tp) <- genPatternConstraints p t1 True
+  e2'@(Typed _ t2) <- genExprConstraints e2
+  Solver.pushConstraint $ Eq tp t1
+  pure $ Typed (Spanned (ELet p' e1' e2') s) t2
+genExprConstraints (Spanned (N.EFn n ps e1 e2) s) = do
+  v <- TVar <$> Solver.freshVar s
+  vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
+  ps' <- forM ps $ \p -> genPatternConstraints p v True
+  Ctx.define (snd (value n)) (Scheme vps v)
+  e1'@(Typed _ te1) <- genExprConstraints e1
+  e2'@(Typed _ te2) <- genExprConstraints e2
+  Solver.pushConstraint $ Eq v (TArrow te1 te2)
+  pure $ Typed (Spanned (EFn n ps' e1' e2') s) v
+genExprConstraints (Spanned (N.EIf c t e) s) = do
+  c'@(Typed _ tc) <- genExprConstraints c
+  t'@(Typed _ tt) <- genExprConstraints t
+  e'@(Typed _ te) <- genExprConstraints e
+  Solver.pushConstraint $ Eq tc TBool
+  Solver.pushConstraint $ Eq tt te
+  pure $ Typed (Spanned (EIf c' t' e') s) tt
+genExprConstraints (Spanned (N.EMatch e cs) s) = todo
+genExprConstraints (Spanned (N.EList es) s) = do
+  v <- TVar <$> Solver.freshVar s
+  es' <- forM es $ \e -> genExprConstraints e
+  forM_ es' $ \ ~(Typed _ t) -> Solver.pushConstraint $ Eq v t
+  pure $ Typed (Spanned (EList es') s) (TList v)
+genExprConstraints (Spanned (N.EArray es) s) = do
+  v <- TVar <$> Solver.freshVar s
+  es' <- forM es $ \e -> genExprConstraints e
+  forM_ es' $ \ ~(Typed _ t) -> Solver.pushConstraint $ Eq v t
+  pure $ Typed (Spanned (EArray es') s) (TArray v)
+-- genExprConstraints (Spanned (N.ETuple es) s) = do
+--   es' <- forM es $ \e -> genExprConstraints e
+--   pure $ Typed (Spanned (ETuple es') s) (TTuple $ fmap (Ty.typeOf . value) es')
 genExprConstraints e = todo
 
 genPatternConstraints :: Spanned N.Pattern -> Ty -> Bool -> InferState (Typed Pattern)

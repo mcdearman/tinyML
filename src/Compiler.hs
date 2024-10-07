@@ -11,6 +11,7 @@ import Lexer (lexMML)
 import qualified NIR as NIR
 import Parser (parseStream)
 import Rename
+import qualified Rename as Resolver
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 import Typing.Infer
@@ -47,6 +48,7 @@ run src = do
       Left err -> pure $ pack $ "Parser error: " ++ errorBundlePretty err
       Right p -> do
         let (nir, r') = runState (renameProgram p) r
+        let r'' = r' & \res -> res {Resolver.errors = []}
         case r' of
           Resolver {errors = []} -> do
             put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
@@ -60,5 +62,5 @@ run src = do
                 put $ Compiler {src = src, flags = f, resolver = r', solver = sl''}
                 pure $ pack $ "Type errors: " ++ show es
           Resolver {errors = es} -> do
-            put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
+            put $ Compiler {src = src, flags = f, resolver = r'', solver = sl}
             pure $ pack $ "Resolver errors: " ++ show es
