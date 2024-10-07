@@ -56,5 +56,5 @@ bind v t
   | otherwise = do
       s <- get
       let su = subst s
-      traceM ("bind " ++ (unpack $ pretty v) ++ " to " ++ (unpack $ pretty t) ++ " gives " ++ (show $ Map.insert v t su))
+      -- traceM ("bind " ++ (unpack $ pretty v) ++ " to " ++ (unpack $ pretty t) ++ " gives " ++ (show $ Map.insert v t su))
       put s {subst = Map.insert v t su}
