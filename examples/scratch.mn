@@ -92,15 +92,9 @@ def (|>) : 'a 'b. 'a -> ('a -> 'b) -> 'b
   | x |> f = f x
 
 def (::) : 'a. 'a -> ['a] -> ['a]
-  | x :: xs = x :: xs
+  | x :: xs = Pair x xs
 
 -- methods with pipe
 [1, 2, 3]
-  |> List.map (+ 1)
-  |> List.filter ((= 0) ∘ (% 2))
-
-def freeVars (Context fs) =
-  fs
-    |> map (Map.elems)
-    |> List.concat
-    |> map Scheme.freeVars
+  |> map (+ 1)
+  |> filter ((= 0) ∘ (% 2))
