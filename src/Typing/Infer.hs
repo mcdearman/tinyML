@@ -42,11 +42,9 @@ genDeclConstraints (Spanned (N.DFn n ps e) s) = do
   vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
   Ctx.define (snd (value n)) (Scheme vps v)
   Ctx.push
-  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) True
+  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
   e'@(Typed _ te) <- genExprConstraints e
   let ty = foldr (\pv t -> TArrow (TVar pv) t) te vps
-  Solver.pushConstraint $ Eq v ty
-  forM_ (zip ps' vps) $ \ ~(Typed _ t, pv) -> Solver.pushConstraint $ Eq t (TVar pv)
   Ctx.pop
   pure $ Typed (Spanned (DFn n ps' e') s) ty
 genDeclConstraints _ = todo

@@ -19,6 +19,7 @@ data Expr
   | EApp (Typed Expr) (Typed Expr)
   | ELam (Typed Pattern) (Typed Expr)
   | ELet (Typed Pattern) (Typed Expr) (Typed Expr) Bool
+  | Join (Typed Expr) (Typed Expr)
   | EMatch (Typed Expr) [(Typed Pattern, Typed Expr)]
   | ECtorApp Name [Typed Expr]
   | ERecord [(Name, Typed Expr)]
