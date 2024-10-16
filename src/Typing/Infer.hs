@@ -4,8 +4,12 @@ import Control.Monad
 import Control.Monad.State
 import Control.Placeholder (todo)
 import qualified Data.Set as Set
+import Data.Text (unpack)
+import Data.Text.Lazy (toStrict)
+import Debug.Trace (trace)
 import qualified NIR as N
 import Spanned
+import Text.Pretty.Simple (pShow)
 import qualified Typing.Constraint as Constraint
 import qualified Typing.Context as Ctx
 import qualified Typing.Scheme as Scheme
@@ -45,6 +49,7 @@ genDeclConstraints (Spanned (N.DFn n ps e) s) = do
   ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
   e'@(Typed _ te) <- genExprConstraints e
   let ty = foldr (\pv t -> TArrow (TVar pv) t) te vps
+  Solver.pushConstraint $ Eq v ty
   Ctx.pop
   pure $ Typed (Spanned (DFn n ps' e') s) ty
 genDeclConstraints _ = todo
@@ -57,14 +62,16 @@ genExprConstraints (Spanned (N.EVar n) s) = do
   p <- Ctx.lookup (snd (value n))
   v <- Scheme.inst p
   pure $ Typed (Spanned (EVar n) s) v
-genExprConstraints (Spanned (N.EApp e1 e2) s) = do
-  e1'@(Typed _ t1) <- genExprConstraints e1
-  e2'@(Typed _ t2) <- genExprConstraints e2
+genExprConstraints (Spanned (N.EApp f arg) s) = do
+  ~f'@(Typed _ tf) <- genExprConstraints f
+  ~arg'@(Typed _ targ) <- genExprConstraints arg
   v <- TVar <$> Solver.freshVar s
+  let ty = TArrow targ v
+  Solver.pushConstraint $ Eq tf ty
   -- trace ("genExprConstraints: EApp " ++ (unpack . toStrict $ pShow t1) ++ "\n" ++ (unpack . toStrict $ pShow (TArrow t2 v))) $
   --   pure ()
-  Solver.pushConstraint $ Eq t1 (TArrow t2 v)
-  pure $ Typed (Spanned (EApp e1' e2') s) v
+  Solver.pushConstraint $ Eq tf ty
+  pure $ Typed (Spanned (EApp f' arg') s) v
 genExprConstraints (Spanned (N.ELam p@(Spanned _ sp) e) s) = do
   Ctx.push
   v <- TVar <$> Solver.freshVar sp
@@ -147,6 +154,7 @@ infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
   p' <- genConstraints p
   solveConstraints
-  s@Solver {subst = sub, ctx = c} <- get
+  s@Solver {subst = sub, ctx = c, constraints = cs} <- get
+  -- trace ("constraints: " ++ (unpack $ toStrict $ pShow cs)) pure ()
   put s {ctx = Ctx.applySubst sub c, constraints = []}
   pure $ applySubstProgram sub p'

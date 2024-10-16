@@ -3,7 +3,11 @@ module Typing.TIR where
 import Control.Placeholder (todo)
 import Data.Array
 import Data.Text
+import Data.Text.Lazy (toStrict)
+import Debug.Trace (trace)
+import Pretty
 import Spanned
+import Text.Pretty.Simple (pShow)
 import Typing.Ty (applySubst)
 import qualified Typing.Ty as Ty
 import Typing.Types
@@ -74,7 +78,7 @@ applySubstExpr s (Typed (Spanned (EFn n ps e1 e2) sp) t) =
 applySubstExpr s (Typed (Spanned (EIf e1 e2 e3) sp) t) =
   Typed (Spanned (EIf (applySubstExpr s e1) (applySubstExpr s e2) (applySubstExpr s e3)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EMatch e ps) sp) t) =
-  Typed (Spanned (EMatch (applySubstExpr s e) (fmap (\(p, e) -> (applySubstPattern s p, applySubstExpr s e)) ps)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EMatch (applySubstExpr s e) (fmap (\(p, e') -> (applySubstPattern s p, applySubstExpr s e')) ps)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EList es) sp) t) =
   Typed (Spanned (EList (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EArray es) sp) t) =
@@ -82,7 +86,7 @@ applySubstExpr s (Typed (Spanned (EArray es) sp) t) =
 applySubstExpr s (Typed (Spanned (ETuple es) sp) t) =
   Typed (Spanned (ETuple (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (ERecord n fs) sp) t) =
-  Typed (Spanned (ERecord n (fmap (\(n, e) -> (n, applySubstExpr s e)) fs)) sp) (Ty.applySubst s t)
+  Typed (Spanned (ERecord n (fmap (\(n', e) -> (n', applySubstExpr s e)) fs)) sp) (Ty.applySubst s t)
 applySubstExpr _ e = e
 
 data Pattern
@@ -94,14 +98,25 @@ data Pattern
   | PUnit
   deriving (Show, Eq)
 
+-- applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
+-- applySubstPattern s (Typed p@(Spanned PWildcard _) t) = Typed p (Ty.applySubst s t)
+-- applySubstPattern s (Typed p@(Spanned (PVar _) _) t) = Typed p (Ty.applySubst s t)
+-- applySubstPattern s (Typed (Spanned (PPair p1 p2) sp) t) =
+--   Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
+-- applySubstPattern s (Typed (Spanned (PList ps) sp) t) =
+--   Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
+-- applySubstPattern _ p = p
 applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
-applySubstPattern s (Typed p@(Spanned PWildcard _) t) = Typed p (Ty.applySubst s t)
-applySubstPattern s (Typed p@(Spanned (PVar _) _) t) = Typed p (Ty.applySubst s t)
-applySubstPattern s (Typed (Spanned (PPair p1 p2) sp) t) =
-  Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
-applySubstPattern s (Typed (Spanned (PList ps) sp) t) =
-  Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
-applySubstPattern _ p = p
+applySubstPattern s p =
+  trace ("applySubstPattern " ++ show p) $
+    case p of
+      (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (Ty.applySubst s t)
+      (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (Ty.applySubst s t)
+      (Typed (Spanned (PPair p1 p2) sp) t) ->
+        Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
+      (Typed (Spanned (PList ps) sp) t) ->
+        Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
+      _ -> p
 
 type Name = Spanned (Text, ResId)
 
