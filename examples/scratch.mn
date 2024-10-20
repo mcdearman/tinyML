@@ -38,6 +38,21 @@ do
   pure (x + y)
 end 
 
+def fib n = 
+  if n < 2 then n
+  else fib (n - 1) + fib (n - 2)
+
+def fib : Int -> Int
+  | 0 = 0
+  | 1 = 1
+  | n = fib (n - 1) + fib (n - 2)
+
+def fib n =
+  let loop i a b = 
+    if i = 0 then a
+    else loop (i - 1) b (a + b)
+  in loop n 0 1
+
 -- fn match
 def map : 'a 'b. ('a -> 'b) -> ['a] -> ['b]
   | f [] = []
