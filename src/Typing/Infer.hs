@@ -1,3 +1,5 @@
+{-# OPTIONS_GHC -Wno-name-shadowing #-}
+
 module Typing.Infer where
 
 import Control.Monad
@@ -139,22 +141,22 @@ genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
   pure $ Typed (Spanned (PList ps') s) ty
 genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
 
-solveConstraints :: InferState ()
-solveConstraints = do
+solveConstraints :: Spanned Program -> InferState (Spanned Program)
+solveConstraints p = do
   Solver {constraints = cs, subst = sub} <- get
-  go $ Constraint.applySubst sub <$> cs
+  go (Constraint.applySubst sub <$> cs) p
   where
-    go [] = pure ()
-    go (Eq t1 t2 : cs) = do
+    go [] p = pure p
+    go (Eq t1 t2 : cs) p = do
       Ty.unify t1 t2
       Solver {subst = sub} <- get
-      go $ Constraint.applySubst sub <$> cs
+      go (Constraint.applySubst sub <$> cs) (applySubstProgram sub p)
 
 infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
   p' <- genConstraints p
-  solveConstraints
+  p'' <- solveConstraints p'
   s@Solver {subst = sub, ctx = c, constraints = cs} <- get
   -- trace ("constraints: " ++ (unpack $ toStrict $ pShow cs)) pure ()
   put s {ctx = Ctx.applySubst sub c, constraints = []}
-  pure $ applySubstProgram sub p'
+  pure $ p''
