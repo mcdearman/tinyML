@@ -156,7 +156,6 @@ infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
   p' <- genConstraints p
   p'' <- solveConstraints p'
-  s@Solver {subst = sub, ctx = c, constraints = cs} <- get
-  -- trace ("constraints: " ++ (unpack $ toStrict $ pShow cs)) pure ()
+  s@Solver {subst = sub, ctx = c} <- get
   put s {ctx = Ctx.applySubst sub c, constraints = []}
   pure $ p''
