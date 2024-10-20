@@ -108,15 +108,15 @@ data Pattern
 -- applySubstPattern _ p = p
 applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
 applySubstPattern s p =
-  trace ("applySubstPattern " ++ show p) $
-    case p of
-      (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (Ty.applySubst s t)
-      (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (Ty.applySubst s t)
-      (Typed (Spanned (PPair p1 p2) sp) t) ->
-        Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
-      (Typed (Spanned (PList ps) sp) t) ->
-        Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
-      _ -> p
+  -- trace ("applySubstPattern " ++ show p) $
+  case p of
+    (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (Ty.applySubst s t)
+    (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (Ty.applySubst s t)
+    (Typed (Spanned (PPair p1 p2) sp) t) ->
+      Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
+    (Typed (Spanned (PList ps) sp) t) ->
+      Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
+    _ -> p
 
 type Name = Spanned (Text, ResId)
 

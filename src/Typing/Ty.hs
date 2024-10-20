@@ -30,7 +30,7 @@ applySubst _ t = t
 
 unify :: Ty -> Ty -> InferState ()
 unify t1 t2 = do
-  trace ("unify " ++ (unpack $ pretty t1) ++ " and " ++ (unpack $ pretty t2)) $ pure ()
+  -- trace ("unify " ++ (unpack $ pretty t1) ++ " and " ++ (unpack $ pretty t2)) $ pure ()
   case (t1, t2) of
     (TInt, TInt) -> pure ()
     (TBool, TBool) -> pure ()
