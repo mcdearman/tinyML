@@ -48,7 +48,7 @@ def fib : Int -> Int
   | n = fib (n - 1) + fib (n - 2)
 
 def fib n =
-  let loop i a b = 
+  let loop i a b = -- loop : Int -> Int -> Int -> Int
     if i = 0 then a
     else loop (i - 1) b (a + b)
   in loop n 0 1

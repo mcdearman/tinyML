@@ -25,7 +25,7 @@ builtins = do
           & Map.insert (Id 12) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
           & Map.insert (Id 13) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
   v1 <- freshVar $ NoLoc
-  let m1 = Map.insert (Id 8) (Scheme [v1] $ TArrow (TVar v1) (TVar v1)) m
+  let m1 = Map.insert (Id 8) (Scheme [v1] $ TArrow (TVar v1) (TArrow (TVar v1) (TVar v1))) m
   v2 <- freshVar $ NoLoc
   let m2 = Map.insert (Id 9) (Scheme [v2] $ TArrow (TVar v2) (TVar v2)) m1
   v3 <- freshVar $ NoLoc

@@ -83,19 +83,31 @@ genExprConstraints (Spanned (N.ELam p@(Spanned _ sp) e) s) = do
   pure $ Typed (Spanned (ELam p' e') s) (TArrow v te)
 genExprConstraints (Spanned (N.ELet p e1 e2) s) = do
   e1'@(Typed _ t1) <- genExprConstraints e1
+  Ctx.push
   p'@(Typed _ tp) <- genPatternConstraints p t1 True
   e2'@(Typed _ t2) <- genExprConstraints e2
   Solver.pushConstraint $ Eq tp t1
+  Ctx.pop
   pure $ Typed (Spanned (ELet p' e1' e2') s) t2
-genExprConstraints (Spanned (N.EFn n ps e1 e2) s) = do
+genExprConstraints (Spanned (N.EFn n ps e b) s) = do
+  -- trace "genExprConstraints: EFn" $ pure ()
   v <- TVar <$> Solver.freshVar s
+  -- trace ("var: " ++ (unpack . toStrict $ pShow v)) $ pure ()
   vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
-  ps' <- forM ps $ \p -> genPatternConstraints p v True
+  -- trace ("vps: " ++ (unpack . toStrict $ pShow vps)) $ pure ()
+  Ctx.push
   Ctx.define (snd (value n)) (Scheme vps v)
-  e1'@(Typed _ te1) <- genExprConstraints e1
-  e2'@(Typed _ te2) <- genExprConstraints e2
-  Solver.pushConstraint $ Eq v (TArrow te1 te2)
-  pure $ Typed (Spanned (EFn n ps' e1' e2') s) v
+  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
+  -- trace ("ps: " ++ (unpack . toStrict $ pShow ps')) $ pure ()
+  e'@(Typed _ te) <- genExprConstraints e
+  -- trace ("e: " ++ (unpack . toStrict $ pShow e')) $ pure ()
+  b'@(Typed _ tb) <- genExprConstraints b
+  -- trace ("b: " ++ (unpack . toStrict $ pShow b')) $ pure ()
+  let ty = foldr (\pv t -> TArrow (TVar pv) t) te vps
+  Solver.pushConstraint $ Eq v ty
+  -- trace ("ty: " ++ (unpack . toStrict $ pShow ty)) $ pure ()
+  Ctx.pop
+  pure $ Typed (Spanned (EFn n ps' e' b') s) tb
 genExprConstraints (Spanned (N.EIf c t e) s) = do
   c'@(Typed _ tc) <- genExprConstraints c
   t'@(Typed _ tt) <- genExprConstraints t
@@ -156,6 +168,7 @@ infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
   p' <- genConstraints p
   p'' <- solveConstraints p'
-  s@Solver {subst = sub, ctx = c} <- get
+  s@Solver {subst = sub, ctx = c, constraints = cs} <- get
+  -- trace ("constraints: " ++ (unpack . toStrict $ pShow cs)) $ pure ()
   put s {ctx = Ctx.applySubst sub c, constraints = []}
   pure $ p''

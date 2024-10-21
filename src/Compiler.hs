@@ -5,8 +5,9 @@ import Control.Placeholder (todo)
 import Data.Function ((&))
 import Data.Map
 import qualified Data.Map as Map
-import Data.Text (Text, pack)
+import Data.Text (Text, pack, unpack)
 import Data.Text.Lazy (toStrict)
+import Debug.Trace (trace)
 import Lexer (lexMML)
 import qualified NIR as NIR
 import Parser (parseStream)
@@ -52,6 +53,7 @@ run src = do
         case r' of
           Resolver {errors = []} -> do
             put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
+            -- trace (unpack . toStrict $ pShow nir) $ pure ()
             let (tir, sl') = runState (infer nir) sl
             let sl'' = sl' & \s -> s {Solver.errors = []}
             case sl' of
