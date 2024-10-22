@@ -1,0 +1,609 @@
+constraints: [ Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 5 )
+            , span = SrcLoc
+                { start = 0
+                , end = 61
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 6 )
+                , span = SrcLoc
+                    { start = 8
+                    , end = 9
+                    }
+                }
+            )
+        )
+        ( TArrow
+            ( TVar
+                ( Spanned
+                    { value = TyVar
+                        ( Id 7 )
+                    , span = SrcLoc
+                        { start = 10
+                        , end = 11
+                        }
+                    }
+                )
+            )
+            ( TVar
+                ( Spanned
+                    { value = TyVar
+                        ( Id 6 )
+                    , span = SrcLoc
+                        { start = 8
+                        , end = 9
+                        }
+                    }
+                )
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 19 )
+            , span = SrcLoc
+                { start = 52
+                , end = 58
+                }
+            }
+        )
+    )
+    ( TArrow TInt
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 20 )
+                , span = SrcLoc
+                    { start = 52
+                    , end = 61
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 19 )
+            , span = SrcLoc
+                { start = 52
+                , end = 58
+                }
+            }
+        )
+    )
+    ( TArrow TInt
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 20 )
+                , span = SrcLoc
+                    { start = 52
+                    , end = 61
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 5 )
+            , span = SrcLoc
+                { start = 0
+                , end = 61
+                }
+            }
+        )
+    )
+    ( TArrow TInt
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 19 )
+                , span = SrcLoc
+                    { start = 52
+                    , end = 58
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 5 )
+            , span = SrcLoc
+                { start = 0
+                , end = 61
+                }
+            }
+        )
+    )
+    ( TArrow TInt
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 19 )
+                , span = SrcLoc
+                    { start = 52
+                    , end = 58
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 6 )
+            , span = SrcLoc
+                { start = 8
+                , end = 9
+                }
+            }
+        )
+    )
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 16 )
+            , span = SrcLoc
+                { start = 35
+                , end = 48
+                }
+            }
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 10 )
+            , span = SrcLoc
+                { start = 17
+                , end = 22
+                }
+            }
+        )
+    ) TBool
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 13 )
+            , span = SrcLoc
+                { start = 35
+                , end = 40
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 15 )
+                , span = SrcLoc
+                    { start = 41
+                    , end = 48
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 16 )
+                , span = SrcLoc
+                    { start = 35
+                    , end = 48
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 13 )
+            , span = SrcLoc
+                { start = 35
+                , end = 40
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 15 )
+                , span = SrcLoc
+                    { start = 41
+                    , end = 48
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 16 )
+                , span = SrcLoc
+                    { start = 35
+                    , end = 48
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 14 )
+            , span = SrcLoc
+                { start = 41
+                , end = 48
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 7 )
+                , span = SrcLoc
+                    { start = 10
+                    , end = 11
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 15 )
+                , span = SrcLoc
+                    { start = 41
+                    , end = 48
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 14 )
+            , span = SrcLoc
+                { start = 41
+                , end = 48
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 7 )
+                , span = SrcLoc
+                    { start = 10
+                    , end = 11
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 15 )
+                , span = SrcLoc
+                    { start = 41
+                    , end = 48
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TArrow TInt ( TArrow TInt TInt ) )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 6 )
+                , span = SrcLoc
+                    { start = 8
+                    , end = 9
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 14 )
+                , span = SrcLoc
+                    { start = 41
+                    , end = 48
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TArrow TInt ( TArrow TInt TInt ) )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 6 )
+                , span = SrcLoc
+                    { start = 8
+                    , end = 9
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 14 )
+                , span = SrcLoc
+                    { start = 41
+                    , end = 48
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 5 )
+            , span = SrcLoc
+                { start = 0
+                , end = 61
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 7 )
+                , span = SrcLoc
+                    { start = 10
+                    , end = 11
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 13 )
+                , span = SrcLoc
+                    { start = 35
+                    , end = 40
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 5 )
+            , span = SrcLoc
+                { start = 0
+                , end = 61
+                }
+            }
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 7 )
+                , span = SrcLoc
+                    { start = 10
+                    , end = 11
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 13 )
+                , span = SrcLoc
+                    { start = 35
+                    , end = 40
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 9 )
+            , span = SrcLoc
+                { start = 17
+                , end = 22
+                }
+            }
+        )
+    )
+    ( TArrow TInt
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 10 )
+                , span = SrcLoc
+                    { start = 17
+                    , end = 22
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TVar
+        ( Spanned
+            { value = TyVar
+                ( Id 9 )
+            , span = SrcLoc
+                { start = 17
+                , end = 22
+                }
+            }
+        )
+    )
+    ( TArrow TInt
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 10 )
+                , span = SrcLoc
+                    { start = 17
+                    , end = 22
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 8 )
+                , span = NoLoc
+                }
+            )
+        )
+        ( TArrow
+            ( TVar
+                ( Spanned
+                    { value = TyVar
+                        ( Id 8 )
+                    , span = NoLoc
+                    }
+                )
+            )
+            ( TVar
+                ( Spanned
+                    { value = TyVar
+                        ( Id 8 )
+                    , span = NoLoc
+                    }
+                )
+            )
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 7 )
+                , span = SrcLoc
+                    { start = 10
+                    , end = 11
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 9 )
+                , span = SrcLoc
+                    { start = 17
+                    , end = 22
+                    }
+                }
+            )
+        )
+    )
+, Eq
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 8 )
+                , span = NoLoc
+                }
+            )
+        )
+        ( TArrow
+            ( TVar
+                ( Spanned
+                    { value = TyVar
+                        ( Id 8 )
+                    , span = NoLoc
+                    }
+                )
+            )
+            ( TVar
+                ( Spanned
+                    { value = TyVar
+                        ( Id 8 )
+                    , span = NoLoc
+                    }
+                )
+            )
+        )
+    )
+    ( TArrow
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 7 )
+                , span = SrcLoc
+                    { start = 10
+                    , end = 11
+                    }
+                }
+            )
+        )
+        ( TVar
+            ( Spanned
+                { value = TyVar
+                    ( Id 9 )
+                , span = SrcLoc
+                    { start = 17
+                    , end = 22
+                    }
+                }
+            )
+        )
+    )
+]
