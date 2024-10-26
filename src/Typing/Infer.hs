@@ -54,6 +54,7 @@ genDeclConstraints (Spanned (N.DFn n ps e) s) = do
   Solver.pushConstraint $ Eq v ty
   Ctx.pop
   pure $ Typed (Spanned (DFn n ps' e') s) ty
+genDeclConstraints (Spanned (N.DFnMatch n t cs) s) = todo
 genDeclConstraints _ = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
@@ -115,7 +116,17 @@ genExprConstraints (Spanned (N.EIf c t e) s) = do
   Solver.pushConstraint $ Eq tc TBool
   Solver.pushConstraint $ Eq tt te
   pure $ Typed (Spanned (EIf c' t' e') s) tt
-genExprConstraints (Spanned (N.EMatch e cs) s) = todo
+genExprConstraints (Spanned (N.EMatch e cs) s) = do
+  e'@(Typed _ te) <- genExprConstraints e
+  v <- TVar <$> Solver.freshVar s
+  cs' <- forM cs $ \(p, e) -> do
+    Ctx.push
+    p'@(Typed _ tp) <- genPatternConstraints p te True
+    e'@(Typed _ te') <- genExprConstraints e
+    Solver.pushConstraint $ Eq tp te
+    Ctx.pop
+    pure (p', e')
+  pure $ Typed (Spanned (EMatch e' cs') s) v
 genExprConstraints (Spanned (N.EList es) s) = do
   v <- TVar <$> Solver.freshVar s
   es' <- forM es $ \e -> genExprConstraints e
