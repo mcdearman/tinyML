@@ -155,13 +155,17 @@ genPatternConstraints (Spanned (N.PVar n@(Spanned (_, i) _)) s) ty True = do
   Ctx.define i scm
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do
+  v <- TVar <$> Solver.freshVar s
   p1'@(Typed _ t1) <- genPatternConstraints p1 ty gen
   p2'@(Typed _ t2) <- genPatternConstraints p2 ty gen
   Solver.pushConstraint $ Eq (TList t1) t2
   pure $ Typed (Spanned (PPair p1' p2') s) t2
 genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
-  ps' <- forM ps $ \p -> genPatternConstraints p ty gen
-  pure $ Typed (Spanned (PList ps') s) ty
+  v <- TVar <$> Solver.freshVar s
+  ps' <- forM ps $ \p -> do
+    Solver.pushConstraint $ Eq v ty
+    genPatternConstraints p v gen
+  pure $ Typed (Spanned (PList ps') s) (TList v)
 genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
 
 solveConstraints :: Spanned Program -> InferState (Spanned Program)
