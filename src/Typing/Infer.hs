@@ -119,11 +119,11 @@ genExprConstraints (Spanned (N.EIf c t e) s) = do
 genExprConstraints (Spanned (N.EMatch e cs) s) = do
   e'@(Typed _ te) <- genExprConstraints e
   v <- TVar <$> Solver.freshVar s
-  cs' <- forM cs $ \(p, e) -> do
+  cs' <- forM cs $ \(p, b) -> do
     Ctx.push
-    p'@(Typed _ tp) <- genPatternConstraints p te True
-    e'@(Typed _ te') <- genExprConstraints e
-    Solver.pushConstraint $ Eq tp te
+    p'@(Typed _ tp) <- genPatternConstraints p te False
+    b'@(Typed _ tb') <- genExprConstraints b
+    Solver.pushConstraint $ Eq v tb'
     Ctx.pop
     pure (p', e')
   pure $ Typed (Spanned (EMatch e' cs') s) v
