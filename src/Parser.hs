@@ -25,6 +25,7 @@ import Text.Megaparsec
     manyTill,
     parse,
     satisfy,
+    sepBy1,
     sepEndBy,
     sepEndBy1,
     some,
@@ -265,16 +266,14 @@ expr = makeExprParser apply operatorTable
     match :: Parser (Spanned Expr)
     match = do
       start <- tokenWithSpan TMatch
-      e <- expr
-      tokenWithSpan TWith
+      e <- expr <* tokenWithSpan TBar
       cases <-
-        ( tokenWithSpan TBar
-            *> ( (,)
-                   <$> pattern'
-                   <*> (tokenWithSpan TArrow *> expr)
-               )
+        ( ( (,)
+              <$> pattern'
+              <*> (tokenWithSpan TArrow *> expr)
+          )
         )
-          `sepEndBy1` tokenWithSpan TBar
+          `sepBy1` tokenWithSpan TBar
       pure $ Spanned (EMatch e cases) (span start <> span (snd (last cases)))
 
     list :: Parser (Spanned Expr)

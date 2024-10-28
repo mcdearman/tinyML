@@ -71,6 +71,11 @@ def map
   | f [] = []
   | f (x :: xs) = f x :: map f xs
 
+def map f xs = 
+  match xs
+  | [] -> []
+  | (x::xs) -> f x :: map f xs
+
 def map 'a 'b (f : 'a -> 'b) (xs : ['a]) : ['b] = 
   match xs with
   | [] -> []
