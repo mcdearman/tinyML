@@ -121,11 +121,11 @@ genExprConstraints (Spanned (N.EMatch e cs) s) = do
   v <- TVar <$> Solver.freshVar s
   cs' <- forM cs $ \(p, b) -> do
     Ctx.push
-    p'@(Typed _ tp) <- genPatternConstraints p te False
+    p' <- genPatternConstraints p te False
     b'@(Typed _ tb') <- genExprConstraints b
     Solver.pushConstraint $ Eq v tb'
     Ctx.pop
-    pure (p', e')
+    pure (p', b')
   pure $ Typed (Spanned (EMatch e' cs') s) v
 genExprConstraints (Spanned (N.EList es) s) = do
   v <- TVar <$> Solver.freshVar s
@@ -156,14 +156,13 @@ genPatternConstraints (Spanned (N.PVar n@(Spanned (_, i) _)) s) ty True = do
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do
   v <- TVar <$> Solver.freshVar s
-  p1'@(Typed _ t1) <- genPatternConstraints p1 ty gen
-  p2'@(Typed _ t2) <- genPatternConstraints p2 ty gen
+  p1'@(Typed _ t1) <- genPatternConstraints p1 v gen
+  p2'@(Typed _ t2) <- genPatternConstraints p2 (TList v) gen
   Solver.pushConstraint $ Eq (TList t1) t2
-  pure $ Typed (Spanned (PPair p1' p2') s) t2
+  pure $ Typed (Spanned (PPair p1' p2') s) (TList v)
 genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
   v <- TVar <$> Solver.freshVar s
   ps' <- forM ps $ \p -> do
-    Solver.pushConstraint $ Eq v ty
     genPatternConstraints p v gen
   pure $ Typed (Spanned (PList ps') s) (TList v)
 genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
