@@ -52,6 +52,7 @@ executable tinyML
         TypeFamilies
         RecordWildCards
         GADTs
+        StrictData
     build-depends:    
         base,
         megaparsec,
