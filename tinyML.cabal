@@ -54,6 +54,7 @@ executable tinyML
         RecordWildCards
         GADTs
         StrictData
+        BangPatterns
     build-depends:    
         base,
         megaparsec,
