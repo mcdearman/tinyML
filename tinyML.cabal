@@ -27,6 +27,7 @@ executable tinyML
         AST
         Parser
         NIR
+        Node
         Rename
 
         Typing.Context
