@@ -1,0 +1,7 @@
+pub class Iterator i where
+  next : i a -> Option (a, i a)
+  
+instance Iterator List where
+  next Empty = None
+  next (Pair x xs) = Some (x, xs)
+

@@ -1,0 +1,22 @@
+f x = x + 1
+
+-- is printed with Debug as:
+
+-- Fn @ 0..11
+--   name : f1 @ 0..1
+--   args : x1 @ 2..3
+--   body : Expr @ 6..11
+--     kind : Apply @ 6..11
+--       fun  : add @ 6..7
+--       args : x1 @ 10..11
+
+
+let f x = x + 1 in f 1
+
+-- is printed with Debug as:
+-- Expr @ 0..16
+--   kind : Fn @ 0..16
+--     name : f @ 0..1
+--     args : x @ 2..3
+--     expr : x + 1 @ 6..11
+--     body : f 1 @ 14..16

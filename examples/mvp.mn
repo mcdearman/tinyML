@@ -7,14 +7,14 @@
 -- value definition
 def x = 1
 
--- function definition
-def f x = x + 1
-
 -- lambda
 \a b -> a + b
 
 -- lambda application
 (\a b -> a + b) 1 2
+
+-- function definition
+def f x = x + 1
 
 -- function application
 f x
@@ -30,3 +30,12 @@ let x = 1 in x + 1
 
 -- let expression function definition
 let f x = x + 1 in f 1
+
+-- pretty debug print of decl
+def f x = x + 1
+
+Module @ 0..15
+  [
+    Def 
+  ]
+  

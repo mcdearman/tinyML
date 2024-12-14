@@ -1,0 +1,147 @@
+-- Bootstrapped compiler
+
+-- utils
+type Span = { start : Int, end : Int }
+
+spanToString span src = 
+  let start = span.start
+  let end = span.end
+  stringSub src start (end - start)
+
+spanToLineCol span src = 
+  let loop pos line col =
+    if pos >= span.start then
+      (line, col)
+    else if src[pos] = '\n' then
+      loop (pos + 1) (line + 1) 0
+    else
+      loop (pos + 1) line (col + 1)
+  in
+  loop 0 0 0
+
+lineColToString src = 
+  let (line, col) = spanToLineCol span src
+  format "{}:{}" (intToString line) (intToString col)
+
+-- Lexer
+type Token = { kind : TokenKind, span : Span }
+
+type TokenKind
+  = Eof
+  | Whitespace
+  | Comment
+  | Ident String
+  | Int Int
+  | Float Float
+  | Rational Rational
+  | String String
+  | Char Char
+  | Plus
+  | Minus
+  | Star
+  | Slash
+  | Percent
+  | Caret
+  | Backslash
+  | Arrow
+  | FatArrow
+  | Pipe
+  | PipeArrow
+  | Eq
+  | Lt
+  | Gt
+  | Neq
+  | Leq
+  | Geq
+  | LParen
+  | RParen
+  | LBrack
+  | RBrack
+  | LBrace
+  | RBrace
+  | Comma
+  | Period
+  | Colon
+  | Semicolon
+
+type Lexer = {
+  src : String,
+  pos : Int,
+}
+
+initLexer src = {
+  src = src,
+  pos = 0,
+}
+
+isWhitespace c = c = ' ' or c = '\t' or c = '\n' or c = '\r'
+
+isDigit c = c >= '0' and c <= '9'
+
+isAlpha c = 
+  (c >= 'a' and c <= 'z') or 
+  (c >= 'A' and c <= 'Z')
+
+is_alpha_num c = is_alpha c or is_digit c
+
+consumeWhitespace lexer =
+  let loop pos =
+    if pos < String.length lexer.src and 
+      (lexer.src[pos] = ' ' or 
+      lexer.src[pos] = '\t' or 
+      lexer.src[pos] = '\n') then
+      loop (pos + 1)
+    else
+      pos
+  in
+  { lexer with pos = loop lexer.pos }
+
+peekChar lexer = 
+  if lexer.pos < String.length lexer.src then
+    Some lexer.src[lexer.pos]
+  else
+    None
+
+nextToken : Lexer -> Token = 
+nextToken None -> { kind = Eof, span = { start = lexer.pos, end = lexer.pos } }
+nextToken Some c -> 
+  if isWhitespace c then
+    let start = lexer.pos
+    let lexer' = consumeWhitespace lexer
+    { kind = Whitespace, span = { start, end = lexer'.pos } }
+  else
+    let start = lexer.pos
+    let end = lexer.pos + 1
+    let lexer' = { lexer with pos = lexer.pos + 1 }
+    match c
+    | '+' -> { kind = Plus, span = Span { start, end } }
+    | '-' -> { kind = Minus, span = { start, end } }
+    | '*' -> { kind = Star, span = { start, end } }
+    | '/' -> { kind = Slash, span = { start, end } }
+    | '%' -> { kind = Percent, span = { start, end } }
+    | '^' -> { kind = Caret, span = { start, end } }
+    | '\\' -> { kind = Backslash, span = { start, end } }
+    | '(' -> { kind = LParen, span = { start, end } }
+    | ')' -> { kind = RParen, span = { start, end } }
+    | '[' -> { kind = LBrack, span = { start, end } }
+    | ']' -> { kind = RBrack, span = { start, end } }
+    | '{' -> { kind = LBrace, span = { start, end } }
+    | '}' -> { kind = RBrace, span = { start, end } }
+    | ',' -> { kind = Comma, span = { start, end } }
+    | '.' -> { kind = Period, span = { start, end } }
+    | ':' -> { kind = Colon, span = { start, end } }
+    | ';' -> { kind = Semicolon, span = { start, end } }
+    | _ -> error "unimplemented"
+
+type Expr
+  = Int Int
+  | Real Real
+  | Bool Bool
+  | Ident String 
+  | UnaryOp (UnaryOp, Expr)
+  | BinaryOp (BinaryOp, Expr, Expr)
+  | If (Expr, Expr, Expr)
+  | Let (String, Expr, Expr)
+  | Fn (String, List String, Expr)
+  | Lambda (String, Expr)
+  | Apply (Expr, Expr)

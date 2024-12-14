@@ -1,125 +1,222 @@
--- arithmetic operators
-1 + 2
-1 - 2
-1 * 2
-1 / 2
+-- main data types:
+42b -- Byte
+42 -- Int
+1/2 -- Rational
+1.0 -- Real
+"hello" -- String
+'a' -- Char
+true -- Bool
+() -- Unit
 
--- value definition
+-- Files are composed of declarations at the top level. In the notebook 
+-- or repl, you can use expressions at the top level. You can think of 
+-- this as a shorthand for `main args = <expr>`. In files, the main 
+-- function must be defined explicitly:
+main : [String] -> IO ()
+main args = print "Hello, World!"
+
+-- Bindings are immutable by default.
 def x = 1
+
+-- pattern binding
+[a, b, c] = [1, 2, 3]
+-- > error: top level irrefutable pattern binding is not allowed
+
+-- irrefutable pattern binding
+xs = [1, 2, 3]
+
+-- ints
+1
+
+-- booleans
+true
+
+-- Binary operators
+1 + 2 * 3^2 - 4 / 5 % 10
+
+-- Unary operators
+-1
+-- => -1
+
+not true
+-- => false
+
+-- Boolean operators
+true and false or true
+-- => true
+
+-- Comparison
+1 < 2 and 2 <= 3 and 3 > 2 and 3 >= 2 and 2 = 2 and 2 != 3
+
+-- if-then-else
+if 1 < 2 then 1 else 2
+
+-- let-in
+let x = 1 in x + 1
 
 -- function definition
 def f x = x + 1
 
--- lambda
-\a b -> a + b
+-- this is equivalent to
+def f = \x -> x + 1
 
--- lambda application
-(\a b -> a + b) 1 2
-
--- function application
-f x
-
--- negation
--x
-
--- not
-!x
-
--- let expression
-let x = 1 in x + 1
-
--- let expression function definition
+-- function expression
 let f x = x + 1 in f 1
 
--- do expression
-do
-  x <- foo;
-  y <- bar;
-  pure (x + y)
-end 
+-- function application
+f 1
 
+-- closure
+\x -> x + 1
+
+-- closure application
+(\x -> x + 1) 1
+
+-- nested let
+let x = 1 in let y = 2 in x + y
+
+-- recursion
 def fib n = 
-  if n < 2 then n
+  if n <= 1 then n 
+  else fib (n - 1) + fib (n - 2) 
+
+def gcd a b = 
+  if b = 0 then a 
+  else gcd b (a % b)
+
+-- with type annotations
+def gcd (a : Int) (b : Int) : Int =
+  if b = 0 then a 
+  else gcd b (a % b)
+
+def fib (n : Int) : Int =
+  if n <= 1 then n 
   else fib (n - 1) + fib (n - 2)
 
-def fib : Int -> Int
-  | 0 = 0
-  | 1 = 1
-  | n = fib (n - 1) + fib (n - 2)
+-- tail recursive fib
+def fib n = 
+  let loop a b i = 
+    if i = 0 then a 
+    else loop b (a + b) (i - 1)
+  in loop 0 1 n
 
-def fib n = match n with
+-- pattern match
+def fib n = 
+  match n
   | 0 -> 0
   | 1 -> 1
   | n -> fib (n - 1) + fib (n - 2)
 
-def fib n =
-  let loop i a b =
-    if i = 0 then a
-    else loop (i - 1) b (a + b)
-  in loop n 0 1
+def fact n =
+  let loop acc n =
+    if n = 0 then acc
+    else loop (acc * n) (n - 1)
+  in loop 1 n
 
--- fn match
-def map : 'a 'b. ('a -> 'b) -> ['a] -> ['b]
-  | f [] = []
-  | f (x :: xs) = f x :: map f xs
-
-def map : ('a -> 'b) -> ['a] -> ['b]
-  | f [] = []
-  | f (x :: xs) = f x :: map f xs
-
-def map
-  | f [] = []
-  | f (x :: xs) = f x :: map f xs
-
-def map f xs = 
-  match xs
-  | [] -> []
-  | (x::xs) -> f x :: map f xs
-
-def map 'a 'b (f : 'a -> 'b) (xs : ['a]) : ['b] = 
+def map a b. (f : a -> b) (xs : [a]) : [b] =
   match xs with
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-def compose 'a 'b 'c 
-  (f : 'b -> 'c) 
-  (g : 'a -> 'b) 
-  : 'a -> 'c = \x -> f (g x)
+pub def map f xs = match xs with
+  [] -> []
+  (x::xs) -> f x :: map f xs
 
--- unicode support
-def π = 3.14159
+map : a b. (a -> b) -> [a] -> [b]
+map f [] -> []
+map f (x::xs) -> f x :: map f xs
 
-def (∘) 'a 'b 'c. ('b -> 'c) -> ('a -> 'b) -> 'a -> 'c
-  | f ∘ g = compose f g
+def foldl a b. (f : a -> b -> a) (acc : a) (xs : [b]) : a =
+  match xs with
+  | [] = acc
+  | (x :: xs) = foldl f (f acc x) xs
 
-data Option 'a = None | Some 'a
+foldl : a b. (a -> b -> a) -> a -> [b] -> a
+foldl f acc [] -> acc
+foldl f acc (x::xs) -> foldl f (f acc x) xs
 
-data Either 'a 'b = Left 'a | Right 'b
+def foldl : a b. (a -> b -> a) -> a -> [b] -> a
+  | f acc [] -> acc
+  | f acc (x::xs) -> foldl f (f acc x) xs
 
-data Result 'a 'b = Ok 'a | Error 'b
+def foldl f acc xs = match xs with
+  [] -> acc
+  (x::xs) -> foldl f (f acc x) xs
 
-data List 'a = Empty | Pair 'a (List 'a)
+def foldr f acc xs = match xs with
+  | [] -> acc
+  | (x::xs) -> f x (foldr f acc xs)
 
--- record
+def binary_search (x : Int) (xs : #[Int] -> Int) : Int =
+  let loop l r =
+    if l > r then -1
+    else
+      let m = (l + r) / 2 in
+      if Array.get xs m = n then m
+      else if Array.get xs m < n then loop (m + 1) r
+      else loop l (m - 1)
+  in loop 0 (Array.len xs - 1)
+
+-- type alias
+type Point = (Int, Int)
+
+-- records
 data Person = { name : String, age : Int }
+def p = { name = "Alice", age = 30 }
 
--- record update
-let p = { name = "John", age = 30 } in p { age = 31 }
+-- records with public fields
+data Person = { pub name : String, pub age : Int }
 
--- record access
-let p = { name = "John", age = 30 } in p.name
+-- sum types
+data Option a = None | Some a
 
--- sum type
-data Shape = Circle Float | Rectangle Float Float
+data List a = Empty | Pair a (List a)
 
--- pipe
-def (|>) : 'a 'b. 'a -> ('a -> 'b) -> 'b
+data NonEmptyList a = NonEmpty a (List a)
+
+def (|>) : a b. a -> (a -> b) -> b
   | x |> f = f x
 
-def (::) : 'a. 'a -> ['a] -> ['a]
+-- possible uncurried version of sigs
+def (|>) : a b c. a (a ..b -> c) -> (..b -> c)
+  | x f -> f x _..
+
+def (::) : a. a -> [a] -> [a]
   | x :: xs = Pair x xs
 
 -- methods with pipe
 [1, 2, 3]
   |> map (+ 1)
   |> filter ((= 0) ∘ (% 2))
+
+-- type classes
+class Eq a where
+  def eq : a -> a -> Bool
+
+instance Eq Int where
+  def eq = prim_int_eq
+
+instance Eq (Option a) where
+  def eq : Eq a => Option a -> Option a -> Bool
+    | None None = true 
+    | (Some x) (Some y) = eq x y
+    |  _ _ = false
+
+class Ord a where
+  def compare : a -> a -> Ordering
+
+class Add a b where
+  type Output = a
+  add : a -> a -> Output
+
+class Iterator i where
+  next : i a -> Option (a, i a)
+
+class IntoIterator i where
+  into_iter : i a -> Iterator a
+
+instance IntoIterator [a] where
+  into_iter = ListIterator
+
+
+
