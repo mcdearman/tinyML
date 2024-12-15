@@ -141,7 +141,7 @@ token =
         TAnd <$ string "&&",
         TOr <$ string "||",
         try (TNeq <$ string "!=") <|> TBang <$ char '!',
-        try (TFatArrow <$ string "=>") <|> TEq <$ char '=',
+        try (TFatArrow <$ string "=>") <|> TEq <$ string "==" <|> TAssign <$ char '=',
         TLt <$ char '<',
         TGt <$ char '>',
         TLeq <$ string "<=",

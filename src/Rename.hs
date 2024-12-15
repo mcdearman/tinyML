@@ -116,12 +116,13 @@ renameProgram :: Spanned A.Program -> ResState (Spanned Program)
 renameProgram (Spanned (A.PFile name m) s) = do
   m' <- renameModule m
   pure $ Spanned (PFile name m') s
-renameProgram (Spanned (A.PRepl (Left d)) s) = do
-  d' <- renameDecl d
-  pure $ Spanned (PRepl (Left d')) s
-renameProgram (Spanned (A.PRepl (Right e)) s) = do
-  e' <- renameExpr e
-  pure $ Spanned (PRepl (Right e')) s
+
+-- renameProgram (Spanned (A.PRepl (Left d)) s) = do
+--   d' <- renameDecl d
+--   pure $ Spanned (PRepl (Left d')) s
+-- renameProgram (Spanned (A.PRepl (Right e)) s) = do
+--   e' <- renameExpr e
+--   pure $ Spanned (PRepl (Right e')) s
 
 renameModule :: Spanned A.Module -> ResState (Spanned Module)
 renameModule (Spanned (A.Module (Spanned n s) ds) s') = do

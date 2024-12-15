@@ -326,7 +326,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
     def = do
       start <- tokenWithSpan TDef
       p <- pattern'
-      e <- tokenWithSpan TEq *> expr
+      e <- tokenWithSpan TAssign *> expr
       pure $ Spanned (DDef p e) (span start <> span e)
 
     fn :: Parser (Spanned Decl)
@@ -334,7 +334,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
       start <- tokenWithSpan TDef
       i <- ident
       ps <- some pattern'
-      e <- tokenWithSpan TEq *> expr
+      e <- tokenWithSpan TAssign *> expr
       pure $ Spanned (DFn i ps e) (span start <> span e)
 
     fnMatch :: Parser (Spanned Decl)
@@ -346,7 +346,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
         tokenWithSpan TBar
           *> ( (,)
                  <$> some pattern'
-                 <*> (tokenWithSpan TEq *> expr)
+                 <*> (tokenWithSpan TAssign *> expr)
              )
             `sepEndBy1` tokenWithSpan TBar
       pure $ Spanned (DFnMatch i t cases) (span start <> span (snd (last cases)))
@@ -379,8 +379,25 @@ module' filename = Module (Spanned filename NoLoc) <$> many decl
 
 repl :: Parser (Spanned Program)
 repl = do
-  r <- (try (Left <$> decl) <|> Right <$> expr) <* eof
-  pure (Spanned (PRepl r) NoLoc)
+  r <- (try (Left <$> many decl) <|> Right <$> expr) <* eof
+  pure $ case r of
+    Left ds ->
+      Spanned
+        (PFile "" (Spanned (Module (Spanned "main" NoLoc) ds) NoLoc))
+        (case ds of [] -> NoLoc; d : _ -> span d <> span (last ds))
+    Right e ->
+      Spanned
+        ( PFile
+            ""
+            ( Spanned
+                ( Module
+                    (Spanned "main" NoLoc)
+                    [Spanned (DFn (Spanned "main" $ span e) [] e) (span e)]
+                )
+                (span e)
+            )
+        )
+        (span e)
 
 parseStream :: TokenStream -> Either (ParseErrorBundle TokenStream Void) (Spanned Program)
 parseStream = Text.Megaparsec.parse repl ""

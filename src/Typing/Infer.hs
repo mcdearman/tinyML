@@ -26,16 +26,14 @@ generalize t = do
   pure $ Scheme (Set.toList (Ty.freeVars t `Set.difference` Ctx.freeVars c)) t
 
 genConstraints :: Spanned N.Program -> InferState (Spanned Program)
-genConstraints (Spanned (N.PRepl (Left d)) s) = do
-  d' <- genDeclConstraints d
-  pure $ Spanned (PRepl (Left d')) s
-genConstraints (Spanned (N.PRepl (Right e)) s) = do
-  d' <- genExprConstraints e
-  pure $ Spanned (PRepl (Right d')) s
-genConstraints (Spanned (N.PFile n m) s) = todo
+genConstraints (Spanned (N.PFile n m) s) = do
+  m' <- genModuleConstraints m
+  pure $ Spanned (PFile n m') s
 
-genModuleConstraints :: Spanned N.Module -> InferState ()
-genModuleConstraints m = todo
+genModuleConstraints :: Spanned N.Module -> InferState (Spanned Module)
+genModuleConstraints (Spanned (N.Module n ds) s) = do
+  ds' <- forM ds genDeclConstraints
+  pure $ Spanned (Module n ds') s
 
 genDeclConstraints :: Spanned N.Decl -> InferState (Typed Decl)
 genDeclConstraints (Spanned (N.DDef p e) s) = do

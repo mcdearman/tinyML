@@ -15,17 +15,15 @@ import Unique
 
 data Program
   = PFile Text (Spanned Module)
-  | PRepl (Either (Typed Decl) (Typed Expr))
   deriving (Show)
 
 applySubstProgram :: Subst -> Spanned Program -> Spanned Program
-applySubstProgram s (Spanned (PFile n m) sp) = todo
-applySubstProgram s (Spanned (PRepl (Left d)) sp) =
-  Spanned (PRepl (Left (applySubstDecl s d))) sp
-applySubstProgram s (Spanned (PRepl (Right e)) sp) =
-  Spanned (PRepl (Right (applySubstExpr s e))) sp
+applySubstProgram s (Spanned (PFile n m) sp) = Spanned (PFile n (applySubstModule s m)) sp
 
 data Module = Module Name [Typed Decl] deriving (Show)
+
+applySubstModule :: Subst -> Spanned Module -> Spanned Module
+applySubstModule s (Spanned (Module n ds) sp) = Spanned (Module n (fmap (applySubstDecl s) ds)) sp
 
 data Decl
   = DDef (Typed Pattern) (Typed Expr)

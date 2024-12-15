@@ -7,7 +7,6 @@ import Unique (Unique)
 
 data Program
   = PFile Text (Spanned Module)
-  | PRepl (Either (Spanned Decl) (Spanned Expr))
   deriving (Show)
 
 data Module = Module Name [Spanned Decl] deriving (Show)

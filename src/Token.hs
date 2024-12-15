@@ -27,6 +27,7 @@ data Token
   | TSlash
   | TBackSlash
   | TPercent
+  | TAssign
   | TAnd
   | TOr
   | TBang
@@ -93,6 +94,7 @@ pShowToken TStar = "Star"
 pShowToken TSlash = "Slash"
 pShowToken TBackSlash = "BackSlash"
 pShowToken TPercent = "Percent"
+pShowToken TAssign = "Assign"
 pShowToken TAnd = "And"
 pShowToken TOr = "Or"
 pShowToken TBang = "Bang"

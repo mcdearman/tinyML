@@ -33,7 +33,9 @@ instance Stream TokenStream where
   chunkLength _ = length
   chunkEmpty _ = null
   take1_ (TokenStream _ []) = Nothing
-  take1_ (TokenStream src (t : ts)) = Just (t, TokenStream src ts)
+  take1_ (TokenStream src (t : ts)) = case val t of
+    T.TComment -> take1_ (TokenStream src ts)
+    _ -> Just (t, TokenStream src ts)
 
   takeN_ n ts@(TokenStream src s)
     | n <= 0 = Just ([], ts)
