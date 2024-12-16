@@ -143,6 +143,11 @@ def foldl f acc xs = match xs with
   [] -> acc
   (x::xs) -> foldl f (f acc x) xs
 
+def e5 : Int = foldl lcm 2520 [11..20]
+
+def e6 : Int = (square <| sum [1..100]) - (sum <| map square [1..100])
+  where square x = x * x
+
 def foldr f acc xs = match xs with
   | [] -> acc
   | (x::xs) -> f x (foldr f acc xs)
@@ -176,6 +181,9 @@ data NonEmptyList a = NonEmpty a (List a)
 
 def (|>) : a b. a -> (a -> b) -> b
   | x |> f = f x
+
+def (<|) : a b. (a -> b) -> a -> b
+  | f <| x = f x
 
 -- possible uncurried version of sigs
 def (|>) : a b c. a (a ..b -> c) -> (..b -> c)

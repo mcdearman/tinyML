@@ -67,3 +67,4 @@ main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
   runInputT settings (repl Compiler.defaultCompiler)
+
