@@ -148,6 +148,8 @@ def e5 : Int = foldl lcm 2520 [11..20]
 def e6 : Int = (square <| sum [1..100]) - (sum <| map square [1..100])
   where square x = x * x
 
+def e6 = ([1..100] |> map (**2) |> sum) - ([1..100] |> sum |> (**2))
+
 def foldr f acc xs = match xs with
   | [] -> acc
   | (x::xs) -> f x (foldr f acc xs)
