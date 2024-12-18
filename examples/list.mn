@@ -3,6 +3,10 @@ type List T
   = Pair { head : T, tail : List T }
   | Empty
 
+instance Iterator List where
+  next Empty = None
+  next (Pair x xs) = Some (x, xs)
+
 -- [len] takes a list [xs] and returns the number of elements in [xs].
 pub def len (xs : List a) : Int =
   match xs with

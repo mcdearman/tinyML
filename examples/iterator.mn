@@ -1,7 +1,32 @@
 pub class Iterator i where
-  next : i a -> Option (a, i a)
-  
-instance Iterator List where
-  next Empty = None
-  next (Pair x xs) = Some (x, xs)
+  type Item i
 
+  def next (iter : i) : Option (a, i)
+
+  @inline
+  def map (f : a -> b) (iter : i) : i b = 
+    MapIter { iter = iter, f = f }
+
+  @inline
+  def zip (iter1 : i, iter2 : i) : i (Item i, Item i) =
+    ZipIter { iter1 = iter1, iter2 = iter2 }
+  
+pub data MapIter i f { iter : i, f : f }
+
+instance Iterator (MapIter i f) where
+  type Item (MapIter i f) = f (Item i)
+
+  def next (iter : MapIter i f) : Option (Item i, MapIter i f) =
+    match next iter.iter with
+    | None -> None
+    | Some (x, xs) -> Some (iter.f x, MapIter { iter = xs, f = iter.f })
+
+pub data ZipIter i j { iter1 : i, iter2 : j }
+
+instance Iterator (ZipIter i j) where
+  type Item (ZipIter i j) = (Item i, Item j)
+
+  def next (iter : ZipIter i j) : Option ((Item i, Item j), ZipIter i j) =
+    match next iter.iter1, next iter.iter2 with
+    | Some (x, xs), Some (y, ys) -> Some ((x, y), ZipIter { iter1 = xs, iter2 = ys })
+    | _, _ -> None
