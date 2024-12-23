@@ -266,7 +266,7 @@ expr = makeExprParser apply operatorTable
     match :: Parser (Spanned Expr)
     match = do
       start <- tokenWithSpan TMatch
-      e <- expr <* tokenWithSpan TBar
+      e <- expr <* tokenWithSpan TWith <* tokenWithSpan TBar
       cases <-
         ( ( (,)
               <$> pattern'
