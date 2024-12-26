@@ -10,20 +10,16 @@ true -- Bool
 
 -- Files are composed of declarations at the top level. In the notebook 
 -- or repl, you can use expressions at the top level. You can think of 
--- this as a shorthand for `main args = <expr>`. In files, the main 
+-- this as a shorthand for `let main args = <expr>`. In files, the main 
 -- function must be defined explicitly:
-main : [String] -> IO ()
-main args = print "Hello, World!"
+main : #[String] -> ()
+main args = ()
 
 -- Bindings are immutable by default.
-def x = 1
+x = 1
 
 -- pattern binding
-[a, b, c] = [1, 2, 3]
--- > error: top level irrefutable pattern binding is not allowed
-
--- irrefutable pattern binding
-xs = [1, 2, 3]
+(a, b, c) = (1, 2, 3)
 
 -- ints
 1
@@ -55,10 +51,10 @@ if 1 < 2 then 1 else 2
 let x = 1 in x + 1
 
 -- function definition
-def f x = x + 1
+f x = x + 1
 
 -- this is equivalent to
-def f = \x -> x + 1
+f = \x -> x + 1
 
 -- function expression
 let f x = x + 1 in f 1
@@ -76,85 +72,95 @@ f 1
 let x = 1 in let y = 2 in x + y
 
 -- recursion
-def fib n = 
+fib n = 
   if n <= 1 then n 
   else fib (n - 1) + fib (n - 2) 
 
-def gcd a b = 
+gcd a b = 
   if b = 0 then a 
   else gcd b (a % b)
 
 -- with type annotations
-def gcd (a : Int) (b : Int) : Int =
+gcd (a : Int) (b : Int) : Int =
   if b = 0 then a 
   else gcd b (a % b)
 
-def fib (n : Int) : Int =
+fib (n : Int) : Int =
   if n <= 1 then n 
   else fib (n - 1) + fib (n - 2)
 
+lcm (a : Int) (b : Int) : Int =
+  a * b / gcd a b
+
+lcm a b = a * b / gcd a b
+
 -- tail recursive fib
-def fib n = 
+fib n = 
   let loop a b i = 
     if i = 0 then a 
     else loop b (a + b) (i - 1)
   in loop 0 1 n
 
 -- pattern match
-def fib n = 
+fib n = 
   match n
   | 0 -> 0
   | 1 -> 1
   | n -> fib (n - 1) + fib (n - 2)
 
-def fact n =
+fact n =
   let loop acc n =
     if n = 0 then acc
     else loop (acc * n) (n - 1)
   in loop 1 n
 
-def map a b. (f : a -> b) (xs : [a]) : [b] =
+map a b. (f : a -> b) (xs : [a]) : [b] =
   match xs with
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-pub def map f xs = match xs with
+map f xs = match xs with
   [] -> []
   (x::xs) -> f x :: map f xs
 
+-- or
 map : a b. (a -> b) -> [a] -> [b]
 map f [] -> []
 map f (x::xs) -> f x :: map f xs
 
-def foldl a b. (f : a -> b -> a) (acc : a) (xs : [b]) : a =
+foldl a b. (f : a -> b -> a) (acc : a) (xs : [b]) : a =
   match xs with
-  | [] = acc
-  | (x :: xs) = foldl f (f acc x) xs
+  | [] -> acc
+  | (x :: xs) -> foldl f (f acc x) xs
+
+foldl f acc xs =
+  match xs with
+  | [] -> acc
+  | (x :: xs) -> foldl f (f acc x) xs
+
+foldl = \f acc xs ->
+  match xs with
+  | [] -> acc
+  | (x :: xs) -> foldl f (f acc x) xs
 
 foldl : a b. (a -> b -> a) -> a -> [b] -> a
-foldl f acc [] -> acc
-foldl f acc (x::xs) -> foldl f (f acc x) xs
+  | f acc [] = acc
+  | f acc (x::xs) = foldl f (f acc x) xs
 
-def foldl : a b. (a -> b -> a) -> a -> [b] -> a
-  | f acc [] -> acc
-  | f acc (x::xs) -> foldl f (f acc x) xs
+-- possible uncurried version of sigs
+foldl : a b. [b] (a b -> a) a -> a
+  | [] f acc -> acc
+  | (x::xs) f acc -> foldl f (f acc x) xs
 
-def foldl f acc xs = match xs with
+foldl f acc xs = match xs with
   [] -> acc
   (x::xs) -> foldl f (f acc x) xs
 
-def e5 : Int = foldl lcm 2520 [11..20]
-
-def e6 : Int = (square <| sum [1..100]) - (sum <| map square [1..100])
-  where square x = x * x
-
-def e6 = ([1..100] |> map (**2) |> sum) - ([1..100] |> sum |> (**2))
-
-def foldr f acc xs = match xs with
+foldr f acc xs = match xs with
   | [] -> acc
   | (x::xs) -> f x (foldr f acc xs)
 
-def binary_search (x : Int) (xs : #[Int] -> Int) : Int =
+binary_search (x : Int) (xs : #[Int] -> Int) : Int =
   let loop l r =
     if l > r then -1
     else
@@ -169,7 +175,7 @@ type Point = (Int, Int)
 
 -- records
 data Person = { name : String, age : Int }
-def p = { name = "Alice", age = 30 }
+p = { name = "Alice", age = 30 }
 
 -- records with public fields
 data Person = { pub name : String, pub age : Int }
@@ -181,39 +187,46 @@ data List a = Empty | Pair a (List a)
 
 data NonEmptyList a = NonEmpty a (List a)
 
-def (|>) : a b. a -> (a -> b) -> b
+(|>) : a b. a -> (a -> b) -> b
   | x |> f = f x
 
-def (<|) : a b. (a -> b) -> a -> b
-  | f <| x = f x
-
 -- possible uncurried version of sigs
-def (|>) : a b c. a (a ..b -> c) -> (..b -> c)
+(|>) : a b c. a (a ..b -> c) -> (..b -> c)
   | x f -> f x _..
 
-def (::) : a. a -> [a] -> [a]
+(::) : a. a -> [a] -> [a]
   | x :: xs = Pair x xs
 
 -- methods with pipe
 [1, 2, 3]
+  |> into_iter
   |> map (+ 1)
   |> filter ((= 0) ∘ (% 2))
 
+-- into_iter postfix operator
+[1, 2, 3]!
+  |> map (+ 1)
+  |> filter ((= 0) ∘ (% 2))
+  |> reduce (+)
+
+-- iterator comprehensions
+[for x in [1, 2, 3] if x % 2 = 0]
+
 -- type classes
 class Eq a where
-  def eq : a -> a -> Bool
+  eq : a -> a -> Bool
 
 instance Eq Int where
-  def eq = prim_int_eq
+  eq = prim_int_eq
 
 instance Eq (Option a) where
-  def eq : Eq a => Option a -> Option a -> Bool
+  eq : Eq a => Option a -> Option a -> Bool
     | None None = true 
     | (Some x) (Some y) = eq x y
     |  _ _ = false
 
 class Ord a where
-  def compare : a -> a -> Ordering
+  compare : a -> a -> Ordering
 
 class Add a b where
   type Output = a

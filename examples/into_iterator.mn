@@ -1,0 +1,5 @@
+class IntoIterator i where
+  data Item i : Type
+  data IntoIter : Iterator (Item i) => i -> Type 
+
+  into_iter : i -> IntoIter i

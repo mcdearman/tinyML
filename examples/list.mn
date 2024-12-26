@@ -8,57 +8,46 @@ instance Iterator List where
   next (Pair x xs) = Some (x, xs)
 
 -- [len] takes a list [xs] and returns the number of elements in [xs].
-pub def len (xs : List a) : Int =
-  match xs with
-  | List.Pair x -> 1 + len x
-  | List.Nil -> 0
+len : List a -> Int
+len [] = 0
+len (x::xs) = 1 + len xs
 
 -- [map] takes a function [f] and a list [xs] and returns the list of
 -- the results of applying [f] to each element of [xs].
-pub def map (f : a -> b) (xs : List a) : List b =
-  match xs with
-  | List::Pair x -> Pair (map f x) 
-  | List::Empty -> []
+map : (a -> b) -> List a -> List b
+map f [] = []
+map f (x::xs) = f x :: map f xs
 
 -- [filter] takes a predicate [f] and a list [xs] and returns the 
 -- list of all elements [x] in [xs] such that [f x] is [True].
-pub def filter (f : T -> Bool) (xs : List T) : List T =
-  match xs with
-  | List::Pair x ->
-      if f x then
-        Pair (filter f x)
-      else
-        filter f x
-  | List::Empty -> Nil
+filter : (a -> Bool) -> List a -> List a
+filter f [] = []
+filter f (x::xs) = if f x then x :: filter f xs else filter f xs
 
--- [foldl] takes a binary operator [f], a starting value [z], and a list [xs],
+-- [foldl] takes a binary operator [f], a starting value [acc], and a list [xs],
 -- and returns the result of inserting [f] between successive elements of [xs],
--- starting [z] to the left of the leftmost element of [xs].
-pub def foldl (f : a -> b -> a) (z : a) (xs : List a) : a =
-  match xs with
-  | List::Pair x -> foldl f (f z x) x
-  | List::Empty -> z
+-- starting [acc] to the left of the leftmost element of [xs].
+foldl : (a -> b -> a) -> a -> List b -> a
+foldl f acc [] = acc
+foldl f acc (x::xs) = foldl f (f acc x) xs
 
--- [foldr] takes a binary operator [f], a starting value [z], and a list [xs],
+-- [foldr] takes a binary operator [f], a starting value [acc], and a list [xs],
 -- and returns the result of inserting [f] between successive elements of [xs],
--- starting the rightmost element of [xs] to the right of [z].
--- foldr :: (a -> b -> b) -> b -> List a -> b
-pub def foldr f z xs =
-  match xs with
-    Nil -> z
-    Pair x -> f x (foldr f z x)
+-- starting the rightmost element of [xs] to the right of [acc].
+foldr : (a -> b -> b) -> b -> List a -> b
+foldr f acc [] = acc
+foldr f acc (x::xs) = f x (foldr f acc xs)
 
--- [reduce] takes a binary operator [f] and a list [xs] and returns the result
--- of inserting [f] between successive elements of [xs], starting the
--- leftmost element of [xs].
--- reduce :: (a -> a -> a) -> List a -> a
-pub def reduce f xs =
-  match xs with
-    Nil -> error "reduce: empty list"
-    Pair x -> foldl f x x
+instance IntoIterator List where
+  type Item List = a
+  type IntoIter List = ListIter a
 
-instance Iterator List where
-  next xs =
-    match xs with
-    | List::Pair x -> Some (x, x)
-    | List::Empty -> None
+  into_iter xs = ListIter { iter = xs }
+
+data ListIter a { iter : List a }
+
+instance Iterator (ListIter a) where
+  type Item (ListIter a) = a
+
+  next (ListIter { iter = Empty }) = None
+  next (ListIter { iter = Pair x xs }) = Some (x, ListIter { iter = xs })
