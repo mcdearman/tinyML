@@ -32,8 +32,222 @@ import Text.Megaparsec.Char
     upperChar,
   )
 import qualified Text.Megaparsec.Char.Lexer as L
-import Token
-import TokenStream
+
+data Token
+  = TEOF
+  | TWhitespace
+  | TComment
+  | TIdent Text
+  | TTypeIdent Text
+  | TTyVar Text
+  | TInt Int
+  | TReal Double
+  | TBool Bool
+  | TString Text
+  | TChar Char
+  | TLParen
+  | TRParen
+  | TLBrace
+  | TRBrace
+  | TLBracket
+  | TRBracket
+  | THash
+  | TPlus
+  | TMinus
+  | TStar
+  | TSlash
+  | TBackSlash
+  | TPercent
+  | TAssign
+  | TAnd
+  | TOr
+  | TBang
+  | TEq
+  | TNeq
+  | TLt
+  | TGt
+  | TLeq
+  | TGeq
+  | TPeriod
+  | TDoublePeriod
+  | TComma
+  | TColon
+  | TDoubleColon
+  | TSemiColon
+  | TArrow
+  | TFatArrow
+  | TBar
+  | TPipe
+  | TUnderscore
+  | TModule
+  | TImport
+  | TAs
+  | TPub
+  | TDef
+  | TLet
+  | TIn
+  | TIf
+  | TThen
+  | TElse
+  | TMatch
+  | TWith
+  | TData
+  | TType
+  | TClass
+  | TInstance
+  | TDerive
+  | TDo
+  | TEnd
+  deriving (Show, Eq, Ord)
+
+pShowToken :: Token -> String
+pShowToken TEOF = "EOF"
+pShowToken TWhitespace = "Whitespace"
+pShowToken TComment = "Comment"
+pShowToken (TIdent x) = "Ident " ++ show x
+pShowToken (TTypeIdent x) = "TypeIdent " ++ show x
+pShowToken (TTyVar x) = "TyVar " ++ show x
+pShowToken (TInt x) = "Int" ++ show x
+pShowToken (TReal x) = "Real" ++ show x
+pShowToken (TBool x) = "Bool" ++ show x
+pShowToken (TString x) = "String" ++ show x
+pShowToken (TChar x) = "Char" ++ show x
+pShowToken TLParen = "LParen"
+pShowToken TRParen = "RParen"
+pShowToken TLBrace = "LBrace"
+pShowToken TRBrace = "RBrace"
+pShowToken TLBracket = "LBracket"
+pShowToken TRBracket = "RBracket"
+pShowToken THash = "Hash"
+pShowToken TPlus = "Plus"
+pShowToken TMinus = "Minus"
+pShowToken TStar = "Star"
+pShowToken TSlash = "Slash"
+pShowToken TBackSlash = "BackSlash"
+pShowToken TPercent = "Percent"
+pShowToken TAssign = "Assign"
+pShowToken TAnd = "And"
+pShowToken TOr = "Or"
+pShowToken TBang = "Bang"
+pShowToken TEq = "Eq"
+pShowToken TNeq = "Neq"
+pShowToken TLt = "Lt"
+pShowToken TGt = "Gt"
+pShowToken TLeq = "Leq"
+pShowToken TGeq = "Geq"
+pShowToken TPeriod = "Period"
+pShowToken TDoublePeriod = "DoublePeriod"
+pShowToken TComma = "Comma"
+pShowToken TColon = "Colon"
+pShowToken TDoubleColon = "DoubleColon"
+pShowToken TSemiColon = "SemiColon"
+pShowToken TArrow = "Arrow"
+pShowToken TFatArrow = "FatArrow"
+pShowToken TBar = "Bar"
+pShowToken TPipe = "Pipe"
+pShowToken TUnderscore = "Underscore"
+pShowToken TModule = "Module"
+pShowToken TImport = "Import"
+pShowToken TAs = "As"
+pShowToken TPub = "Pub"
+pShowToken TDef = "Def"
+pShowToken TLet = "Let"
+pShowToken TIn = "In"
+pShowToken TIf = "If"
+pShowToken TThen = "Then"
+pShowToken TElse = "Else"
+pShowToken TMatch = "Match"
+pShowToken TWith = "With"
+pShowToken TData = "Data"
+pShowToken TType = "Type"
+pShowToken TClass = "Class"
+pShowToken TInstance = "Instance"
+pShowToken TDerive = "Derive"
+pShowToken TDo = "Do"
+pShowToken TEnd = "End"
+
+data TokenStream = TokenStream
+  { src :: Text,
+    tokens :: [WithPos T.Token]
+  }
+  deriving (Show, Eq, Ord)
+
+data WithPos a = WithPos
+  { start :: SourcePos,
+    end :: SourcePos,
+    span :: Span,
+    len :: Int,
+    val :: a
+  }
+  deriving (Show, Eq, Ord)
+
+instance Stream TokenStream where
+  type Token TokenStream = WithPos T.Token
+  type Tokens TokenStream = [WithPos T.Token]
+
+  tokenToChunk _ = pure
+  tokensToChunk _ = id
+  chunkToTokens _ = id
+  chunkLength _ = length
+  chunkEmpty _ = null
+  take1_ (TokenStream _ []) = Nothing
+  take1_ (TokenStream src (t : ts)) = case val t of
+    T.TComment -> take1_ (TokenStream src ts)
+    _ -> Just (t, TokenStream src ts)
+
+  takeN_ n ts@(TokenStream src s)
+    | n <= 0 = Just ([], ts)
+    | null s = Nothing
+    | otherwise =
+        let (x, s') = splitAt n s
+         in case NE.nonEmpty x of
+              Nothing -> Just (x, TokenStream src s')
+              Just nex -> Just (x, TokenStream (pack (drop (tokensLength pxy nex) (unpack src))) s')
+
+  takeWhile_ f (TokenStream src ts) = (takeWhile f ts, TokenStream src (dropWhile f ts))
+
+instance VisualStream TokenStream where
+  showTokens _ = unwords . map (show . val) . NE.toList
+  tokensLength _ ts = sum (NE.map len ts)
+
+instance TraversableStream TokenStream where
+  reachOffset o PosState {..} =
+    ( Just (prefix ++ restOfLine),
+      PosState
+        { pstateInput =
+            TokenStream
+              { src = pack postStr,
+                tokens = post
+              },
+          pstateOffset = max pstateOffset o,
+          pstateSourcePos = newSourcePos,
+          pstateTabWidth = pstateTabWidth,
+          pstateLinePrefix = prefix
+        }
+    )
+    where
+      prefix =
+        if sameLine
+          then pstateLinePrefix ++ preLine
+          else preLine
+      sameLine = sourceLine newSourcePos == sourceLine pstateSourcePos
+      newSourcePos =
+        case post of
+          [] -> case tokens pstateInput of
+            [] -> pstateSourcePos
+            xs -> end (last xs)
+          (x : _) -> start x
+      (pre, post) = splitAt (o - pstateOffset) (tokens pstateInput)
+      (preStr, postStr) = splitAt tokensConsumed (unpack $ src pstateInput)
+      preLine = reverse . takeWhile (/= '\n') . reverse $ preStr
+      tokensConsumed =
+        case NE.nonEmpty pre of
+          Nothing -> 0
+          Just nePre -> tokensLength pxy nePre
+      restOfLine = takeWhile (/= '\n') postStr
+
+pxy :: Proxy TokenStream
+pxy = Proxy
 
 type Lexer = Parsec Void Text
 

@@ -18,32 +18,13 @@ executable tinyML
     import:           warnings
     main-is:          Main.hs
     other-modules: 
-        Span
-        Pretty
-        Spanned
-        Token
-        TokenStream
+        Common
         Lexer
-        AST
         Parser
-        NIR
-        Node
         Rename
-
-        Typing.Context
-        Typing.Constraint
-        Typing.Infer
-        Typing.Scheme
-        Typing.Solver
-        Typing.TIR
-        Typing.Ty
-        Typing.Types
-
-        Core
-        Compiler
+        Infer
         Eval
-        Unique
-        Result
+        Core
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables
