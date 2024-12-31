@@ -24,7 +24,8 @@ executable tinyML
         Rename
         Infer
         Eval
-        Core
+        -- Core
+        Compiler
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables

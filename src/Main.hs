@@ -1,19 +1,16 @@
 module Main where
 
-import Compiler (Compiler)
+import Common
+import Compiler (Compiler (..))
 import qualified Compiler as Compiler
 import Control.Monad.State.Strict (evalState, runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
-import Lexer (lexMML)
-import Parser
-import Pretty
-import Rename
+import qualified Infer as Solver
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
-import Typing.Solver (Solver (Solver))
-import qualified Typing.Solver as Solver
+import Infer
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
@@ -67,4 +64,3 @@ main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
   runInputT settings (repl Compiler.defaultCompiler)
-

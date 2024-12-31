@@ -8,17 +8,14 @@ import qualified Data.Map as Map
 import Data.Text (Text, pack, unpack)
 import Data.Text.Lazy (toStrict)
 import Debug.Trace (trace)
+import Infer (Solver (..), defaultSolver, infer)
+import qualified Infer as Solver
 import Lexer (lexMML)
-import qualified NIR as NIR
 import Parser (parseStream)
 import Rename
 import qualified Rename as Resolver
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
-import Typing.Infer
-import Typing.Solver
-import qualified Typing.Solver as Solver
-import Unique
 
 data Compiler = Compiler
   { src :: Text,

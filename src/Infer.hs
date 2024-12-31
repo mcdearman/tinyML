@@ -1,24 +1,24 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module Typing.Infer where
+module Infer where
 
+import Common
 import Control.Monad
-import Control.Monad.State
+import Control.Monad.State.Strict
 import Control.Placeholder (todo)
+import Data.Array
+import Data.Function ((&))
+import qualified Data.List as List
+import Data.Map (Map)
+import qualified Data.Map as Map
+import Data.Set
 import qualified Data.Set as Set
-import Data.Text (unpack)
+import Data.Text (Text, unpack)
+import Data.Text hiding (concat, unwords, zip)
 import Data.Text.Lazy (toStrict)
 import Debug.Trace (trace)
-import qualified NIR as N
-import Spanned
-import Text.Pretty.Simple (pShow)
-import qualified Typing.Constraint as Constraint
-import qualified Typing.Context as Ctx
-import qualified Typing.Scheme as Scheme
-import qualified Typing.Solver as Solver
-import Typing.TIR
-import qualified Typing.Ty as Ty
-import Typing.Types
+import qualified Rename as N
+import Prelude hiding (lookup)
 
 data InferError = UnificationError Ty Ty | Occurs Ty Ty deriving (Show, Eq)
 
@@ -46,13 +46,13 @@ data Decl
 
 applySubstDecl :: Subst -> Typed Decl -> Typed Decl
 applySubstDecl s (Typed (Spanned (DDef p e) sp) t) =
-  Typed (Spanned (DDef (applySubstPattern s p) (applySubstExpr s e)) sp) (Ty.applySubst s t)
+  Typed (Spanned (DDef (applySubstPattern s p) (applySubstExpr s e)) sp) (applySubstTy s t)
 applySubstDecl s (Typed (Spanned (DFn n ps e) sp) t) =
-  Typed (Spanned (DFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e)) sp) (Ty.applySubst s t)
+  Typed (Spanned (DFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e)) sp) (applySubstTy s t)
 applySubstDecl s (Typed (Spanned (DFnMatch n pes) sp) t) =
-  Typed (Spanned (DFnMatch n (fmap (\(ps, e) -> (fmap (applySubstPattern s) ps, applySubstExpr s e)) pes)) sp) (Ty.applySubst s t)
+  Typed (Spanned (DFnMatch n (fmap (\(ps, e) -> (fmap (applySubstPattern s) ps, applySubstExpr s e)) pes)) sp) (applySubstTy s t)
 -- applySubstDecl s (Typed (Spanned (DRecordDef n vs fs) sp) t) =
---   Typed (Spanned (DRecordDef n vs (fmap (\(n, t) -> (n, fmap (Ty.applySubst s) t)) fs)) sp) (Ty.applySubst s t)
+--   Typed (Spanned (DRecordDef n vs (fmap (\(n, t) -> (n, fmap (applySubstTy s) t)) fs)) sp) (applySubstTy s t)
 applySubstDecl _ _ = todo
 
 data Expr
@@ -72,28 +72,28 @@ data Expr
   deriving (Show, Eq)
 
 applySubstExpr :: Subst -> Typed Expr -> Typed Expr
-applySubstExpr s (Typed e@(Spanned (ELit _) _) t) = Typed e (Ty.applySubst s t)
-applySubstExpr s (Typed e@(Spanned (EVar _) _) t) = Typed e (Ty.applySubst s t)
+applySubstExpr s (Typed e@(Spanned (ELit _) _) t) = Typed e (applySubstTy s t)
+applySubstExpr s (Typed e@(Spanned (EVar _) _) t) = Typed e (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (EApp e1 e2) sp) t) =
-  Typed (Spanned (EApp (applySubstExpr s e1) (applySubstExpr s e2)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EApp (applySubstExpr s e1) (applySubstExpr s e2)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (ELam p e) sp) t) =
-  Typed (Spanned (ELam (applySubstPattern s p) (applySubstExpr s e)) sp) (Ty.applySubst s t)
+  Typed (Spanned (ELam (applySubstPattern s p) (applySubstExpr s e)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (ELet p e1 e2) sp) t) =
-  Typed (Spanned (ELet (applySubstPattern s p) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (Ty.applySubst s t)
+  Typed (Spanned (ELet (applySubstPattern s p) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (EFn n ps e1 e2) sp) t) =
-  Typed (Spanned (EFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (EIf e1 e2 e3) sp) t) =
-  Typed (Spanned (EIf (applySubstExpr s e1) (applySubstExpr s e2) (applySubstExpr s e3)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EIf (applySubstExpr s e1) (applySubstExpr s e2) (applySubstExpr s e3)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (EMatch e ps) sp) t) =
-  Typed (Spanned (EMatch (applySubstExpr s e) (fmap (\(p, e') -> (applySubstPattern s p, applySubstExpr s e')) ps)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EMatch (applySubstExpr s e) (fmap (\(p, e') -> (applySubstPattern s p, applySubstExpr s e')) ps)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (EList es) sp) t) =
-  Typed (Spanned (EList (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EList (fmap (applySubstExpr s) es)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (EArray es) sp) t) =
-  Typed (Spanned (EArray (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
+  Typed (Spanned (EArray (fmap (applySubstExpr s) es)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (ETuple es) sp) t) =
-  Typed (Spanned (ETuple (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
+  Typed (Spanned (ETuple (fmap (applySubstExpr s) es)) sp) (applySubstTy s t)
 applySubstExpr s (Typed (Spanned (ERecord n fs) sp) t) =
-  Typed (Spanned (ERecord n (fmap (\(n', e) -> (n', applySubstExpr s e)) fs)) sp) (Ty.applySubst s t)
+  Typed (Spanned (ERecord n (fmap (\(n', e) -> (n', applySubstExpr s e)) fs)) sp) (applySubstTy s t)
 applySubstExpr _ e = e
 
 data Pattern
@@ -106,23 +106,23 @@ data Pattern
   deriving (Show, Eq)
 
 -- applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
--- applySubstPattern s (Typed p@(Spanned PWildcard _) t) = Typed p (Ty.applySubst s t)
--- applySubstPattern s (Typed p@(Spanned (PVar _) _) t) = Typed p (Ty.applySubst s t)
+-- applySubstPattern s (Typed p@(Spanned PWildcard _) t) = Typed p (applySubstTy s t)
+-- applySubstPattern s (Typed p@(Spanned (PVar _) _) t) = Typed p (applySubstTy s t)
 -- applySubstPattern s (Typed (Spanned (PPair p1 p2) sp) t) =
---   Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
+--   Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (applySubstTy s t)
 -- applySubstPattern s (Typed (Spanned (PList ps) sp) t) =
---   Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
+--   Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (applySubstTy s t)
 -- applySubstPattern _ p = p
 applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
 applySubstPattern s p =
   -- trace ("applySubstPattern " ++ show p) $
   case p of
-    (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (Ty.applySubst s t)
-    (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (Ty.applySubst s t)
+    (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (applySubstTy s t)
+    (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (applySubstTy s t)
     (Typed (Spanned (PPair p1 p2) sp) t) ->
-      Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
+      Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (applySubstTy s t)
     (Typed (Spanned (PList ps) sp) t) ->
-      Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
+      Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (applySubstTy s t)
     _ -> p
 
 type Name = Spanned (Text, ResId)
@@ -206,10 +206,13 @@ pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c 
 pushError :: InferError -> InferState ()
 pushError e = modify' $ \s@Solver {errors = es} -> s {errors = e : es}
 
-newtype Constraint = Eq Ty Ty deriving (Show, Eq)
+data Constraint = Eq Ty Ty deriving (Show, Eq)
+
+instance Pretty Constraint where
+  pretty (Eq t1 t2) = pretty t1 <> " = " <> pretty t2
 
 applySubstConstraint :: Subst -> Constraint -> Constraint
-applySubstConstraint s (Eq t1 t2) = Eq (Ty.applySubst s t1) (Ty.applySubst s t2)
+applySubstConstraint s (Eq t1 t2) = Eq (applySubstTy s t1) (applySubstTy s t2)
 
 data Ty
   = TInt
@@ -265,13 +268,13 @@ unify t1 t2 = do
     (TArray t, TArray t') -> unify t t'
     (TTuple ts1, TTuple ts2) -> zipWithM_ unify ts1 ts2
     _ -> do
-      Solver.pushError $ UnificationError t1 t2
+      pushError $ UnificationError t1 t2
 
 bind :: Spanned TyVar -> Ty -> InferState ()
 bind v t
   | t == TVar v = pure ()
-  | Set.member v (freeVars t) = do
-      Solver.pushError $ Occurs (TVar v) t
+  | Set.member v (freeVarsTy t) = do
+      pushError $ Occurs (TVar v) t
   | otherwise = do
       s <- get
       let su = subst s
@@ -305,8 +308,8 @@ data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)
 
 newtype Context = Context [Map Unique Scheme] deriving (Show)
 
-freeVars :: Context -> Set (Spanned TyVar)
-freeVars (Context fs) =
+freeVarsCtx :: Context -> Set (Spanned TyVar)
+freeVarsCtx (Context fs) =
   fs
     & (<$>) (Map.elems)
     & concat
@@ -360,44 +363,10 @@ inst (Scheme vars t) = do
   pure $ applySubstTy s t
 
 applySubstScheme :: Subst -> Scheme -> Scheme
-applySubstScheme s (Scheme vars t) = Scheme vars (Ty.applySubst s t)
+applySubstScheme s (Scheme vars t) = Scheme vars (applySubstTy s t)
 
 freeVarsScheme :: Scheme -> Set (Spanned TyVar)
 freeVarsScheme (Scheme vars t) = t & freeVarsTy & Set.filter (`notElem` vars)
-
-builtins :: InferState ()
-builtins = do
-  let m =
-        Map.empty
-          & Map.insert (Id 0) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 1) (Scheme [] $ TArrow TBool TBool)
-          & Map.insert (Id 2) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 3) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 4) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 5) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 6) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 7) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 10) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-          & Map.insert (Id 11) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-          & Map.insert (Id 12) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-          & Map.insert (Id 13) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-  v1 <- freshVar $ NoLoc
-  let m1 = Map.insert (Id 8) (Scheme [v1] $ TArrow (TVar v1) (TArrow (TVar v1) TBool)) m
-  v2 <- freshVar $ NoLoc
-  let m2 = Map.insert (Id 9) (Scheme [v2] $ TArrow (TVar v2) (TArrow (TVar v2) TBool)) m1
-  v3 <- freshVar $ NoLoc
-  let m3 = Map.insert (Id 14) (Scheme [v3] $ TArrow (TVar v3) (TArrow (TList (TVar v3)) (TList (TVar v3)))) m2
-  v4 <- freshVar $ NoLoc
-  v5 <- freshVar $ NoLoc
-  let m4 =
-        Map.insert
-          (Id 15)
-          (Scheme [v4, v5] $ TArrow (TVar v4) (TArrow (TArrow (TVar v4) (TVar v5)) (TVar v5)))
-          m3
-  s <- get
-  case ctx s of
-    Context [] -> put s {ctx = Context $ [m4]}
-    _ -> error "builtins: context is not empty"
 
 genConstraints :: Spanned N.Program -> InferState (Spanned Program)
 genConstraints (Spanned (N.PFile n m) s) = do
@@ -413,18 +382,18 @@ genDeclConstraints :: Spanned N.Decl -> InferState (Typed Decl)
 genDeclConstraints (Spanned (N.DDef p e) s) = do
   e'@(Typed _ te) <- genExprConstraints e
   p'@(Typed _ tp) <- genPatternConstraints p te True
-  Solver.pushConstraint $ Eq tp te
+  pushConstraint $ Eq tp te
   pure $ Typed (Spanned (DDef p' e') s) te
 genDeclConstraints (Spanned (N.DFn n ps e) s) = do
-  v <- TVar <$> Solver.freshVar s
-  vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
-  Ctx.define (snd (value n)) (Scheme vps v)
-  Ctx.push
+  v <- TVar <$> freshVar s
+  vps <- forM ps $ \(Spanned _ sp) -> freshVar sp
+  define (snd (value n)) (Scheme vps v)
+  push
   ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
   e'@(Typed _ te) <- genExprConstraints e
-  let ty = foldr (\pv t -> TArrow (TVar pv) t) te vps
-  Solver.pushConstraint $ Eq v ty
-  Ctx.pop
+  let ty = List.foldr (\pv t -> TArrow (TVar pv) t) te vps
+  pushConstraint $ Eq v ty
+  pop
   pure $ Typed (Spanned (DFn n ps' e') s) ty
 genDeclConstraints (Spanned (N.DFnMatch n t cs) s) = todo
 genDeclConstraints _ = todo
@@ -434,80 +403,80 @@ genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit
 genExprConstraints (Spanned (N.ELit (N.LBool b)) s) = pure $ Typed (Spanned (ELit (LBool b)) s) TBool
 genExprConstraints (Spanned (N.ELit (N.LString t)) s) = pure $ Typed (Spanned (ELit (LString t)) s) TString
 genExprConstraints (Spanned (N.EVar n) s) = do
-  p <- Ctx.lookup (snd (value n))
-  v <- Scheme.inst p
+  p <- lookup (snd (value n))
+  v <- inst p
   pure $ Typed (Spanned (EVar n) s) v
 genExprConstraints (Spanned (N.EApp f arg) s) = do
   ~f'@(Typed _ tf) <- genExprConstraints f
   ~arg'@(Typed _ targ) <- genExprConstraints arg
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   let ty = TArrow targ v
-  Solver.pushConstraint $ Eq tf ty
+  pushConstraint $ Eq tf ty
   -- trace ("genExprConstraints: EApp " ++ (unpack . toStrict $ pShow t1) ++ "\n" ++ (unpack . toStrict $ pShow (TArrow t2 v))) $
   --   pure ()
-  Solver.pushConstraint $ Eq tf ty
+  pushConstraint $ Eq tf ty
   pure $ Typed (Spanned (EApp f' arg') s) v
 genExprConstraints (Spanned (N.ELam p@(Spanned _ sp) e) s) = do
-  Ctx.push
-  v <- TVar <$> Solver.freshVar sp
+  push
+  v <- TVar <$> freshVar sp
   p' <- genPatternConstraints p v False
   e'@(Typed _ te) <- genExprConstraints e
-  Ctx.pop
+  pop
   pure $ Typed (Spanned (ELam p' e') s) (TArrow v te)
 genExprConstraints (Spanned (N.ELet p e1 e2) s) = do
   e1'@(Typed _ t1) <- genExprConstraints e1
-  Ctx.push
+  push
   p'@(Typed _ tp) <- genPatternConstraints p t1 True
   e2'@(Typed _ t2) <- genExprConstraints e2
-  Solver.pushConstraint $ Eq tp t1
-  Ctx.pop
+  pushConstraint $ Eq tp t1
+  pop
   pure $ Typed (Spanned (ELet p' e1' e2') s) t2
 genExprConstraints (Spanned (N.EFn n ps e b) s) = do
   -- trace "genExprConstraints: EFn" $ pure ()
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   -- trace ("var: " ++ (unpack . toStrict $ pShow v)) $ pure ()
-  vps <- forM ps $ \(Spanned _ sp) -> Solver.freshVar sp
+  vps <- forM ps $ \(Spanned _ sp) -> freshVar sp
   -- trace ("vps: " ++ (unpack . toStrict $ pShow vps)) $ pure ()
-  Ctx.push
-  Ctx.define (snd (value n)) (Scheme vps v)
+  push
+  define (snd (value n)) (Scheme vps v)
   ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
   -- trace ("ps: " ++ (unpack . toStrict $ pShow ps')) $ pure ()
   e'@(Typed _ te) <- genExprConstraints e
   -- trace ("e: " ++ (unpack . toStrict $ pShow e')) $ pure ()
   b'@(Typed _ tb) <- genExprConstraints b
   -- trace ("b: " ++ (unpack . toStrict $ pShow b')) $ pure ()
-  let ty = foldr (\pv t -> TArrow (TVar pv) t) te vps
-  Solver.pushConstraint $ Eq v ty
+  let ty = List.foldr (\pv t -> TArrow (TVar pv) t) te vps
+  pushConstraint $ Eq v ty
   -- trace ("ty: " ++ (unpack . toStrict $ pShow ty)) $ pure ()
-  Ctx.pop
+  pop
   pure $ Typed (Spanned (EFn n ps' e' b') s) tb
 genExprConstraints (Spanned (N.EIf c t e) s) = do
   c'@(Typed _ tc) <- genExprConstraints c
   t'@(Typed _ tt) <- genExprConstraints t
   e'@(Typed _ te) <- genExprConstraints e
-  Solver.pushConstraint $ Eq tc TBool
-  Solver.pushConstraint $ Eq tt te
+  pushConstraint $ Eq tc TBool
+  pushConstraint $ Eq tt te
   pure $ Typed (Spanned (EIf c' t' e') s) tt
 genExprConstraints (Spanned (N.EMatch e cs) s) = do
   e'@(Typed _ te) <- genExprConstraints e
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   cs' <- forM cs $ \(p, b) -> do
-    Ctx.push
+    push
     p' <- genPatternConstraints p te False
     b'@(Typed _ tb') <- genExprConstraints b
-    Solver.pushConstraint $ Eq v tb'
-    Ctx.pop
+    pushConstraint $ Eq v tb'
+    pop
     pure (p', b')
   pure $ Typed (Spanned (EMatch e' cs') s) v
 genExprConstraints (Spanned (N.EList es) s) = do
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   es' <- forM es $ \e -> genExprConstraints e
-  forM_ es' $ \ ~(Typed _ t) -> Solver.pushConstraint $ Eq v t
+  forM_ es' $ \ ~(Typed _ t) -> pushConstraint $ Eq v t
   pure $ Typed (Spanned (EList es') s) (TList v)
 genExprConstraints (Spanned (N.EArray es) s) = do
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   es' <- forM es $ \e -> genExprConstraints e
-  forM_ es' $ \ ~(Typed _ t) -> Solver.pushConstraint $ Eq v t
+  forM_ es' $ \ ~(Typed _ t) -> pushConstraint $ Eq v t
   pure $ Typed (Spanned (EArray es') s) (TArray v)
 -- genExprConstraints (Spanned (N.ETuple es) s) = do
 --   es' <- forM es $ \e -> genExprConstraints e
@@ -520,20 +489,20 @@ genPatternConstraints (Spanned (N.PLit (N.LInt i)) s) _ _ = pure $ Typed (Spanne
 genPatternConstraints (Spanned (N.PLit (N.LBool b)) s) _ _ = pure $ Typed (Spanned (PLit (LBool b)) s) TBool
 genPatternConstraints (Spanned (N.PLit (N.LString t)) s) _ _ = pure $ Typed (Spanned (PLit (LString t)) s) TString
 genPatternConstraints (Spanned (N.PVar n) s) ty False = do
-  Ctx.define (snd (value n)) (Scheme [] ty)
+  define (snd (value n)) (Scheme [] ty)
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PVar n@(Spanned (_, i) _)) s) ty True = do
   scm <- generalize ty
-  Ctx.define i scm
+  define i scm
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   p1'@(Typed _ t1) <- genPatternConstraints p1 v gen
   p2'@(Typed _ t2) <- genPatternConstraints p2 (TList v) gen
-  Solver.pushConstraint $ Eq (TList t1) t2
+  pushConstraint $ Eq (TList t1) t2
   pure $ Typed (Spanned (PPair p1' p2') s) (TList v)
 genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
-  v <- TVar <$> Solver.freshVar s
+  v <- TVar <$> freshVar s
   ps' <- forM ps $ \p -> do
     genPatternConstraints p v gen
   pure $ Typed (Spanned (PList ps') s) (TList v)
@@ -542,13 +511,13 @@ genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) T
 solveConstraints :: Spanned Program -> InferState (Spanned Program)
 solveConstraints p = do
   Solver {constraints = cs, subst = sub} <- get
-  go (Constraint.applySubst sub <$> cs) p
+  go (applySubstConstraint sub <$> cs) p
   where
     go [] p = pure p
     go (Eq t1 t2 : cs) p = do
-      Ty.unify t1 t2
+      unify t1 t2
       Solver {subst = sub} <- get
-      go (Constraint.applySubst sub <$> cs) (applySubstProgram sub p)
+      go (applySubstConstraint sub <$> cs) (applySubstProgram sub p)
 
 infer :: Spanned N.Program -> InferState (Spanned Program)
 infer p = do
@@ -556,5 +525,5 @@ infer p = do
   p'' <- solveConstraints p'
   s@Solver {subst = sub, ctx = c, constraints = cs} <- get
   -- trace ("constraints: " ++ (unpack . toStrict $ pShow cs)) $ pure ()
-  put s {ctx = Ctx.applySubst sub c, constraints = []}
+  put s {ctx = applySubstCtx sub c, constraints = []}
   pure $ p''

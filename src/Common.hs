@@ -1,10 +1,12 @@
 module Common where
 
-data Node v m = Node
-  { value :: v,
-    meta :: m
-  }
-  deriving (Eq, Show)
+import Data.Text
+
+-- data Node v m = Node
+--   { value :: v,
+--     meta :: m
+--   }
+--   deriving (Eq, Show)
 
 class Pretty a where
   pretty :: a -> Text

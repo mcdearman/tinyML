@@ -1,16 +1,20 @@
 module Lexer where
 
+import Common (Span (SrcLoc))
+import qualified Common as C
 import Control.Applicative (empty, (<|>))
 import Control.Monad.Combinators (manyTill_)
+import Data.Data (Proxy (Proxy))
 import Data.Functor (($>))
+import qualified Data.List.NonEmpty as NE
 import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
-import Span
-import Spanned
 import Text.Megaparsec
   ( MonadParsec (eof, notFollowedBy, try),
     ParseErrorBundle,
     Parsec,
+    PosState (..),
+    SourcePos (sourceLine),
     between,
     choice,
     getOffset,
@@ -32,6 +36,8 @@ import Text.Megaparsec.Char
     upperChar,
   )
 import qualified Text.Megaparsec.Char.Lexer as L
+import Text.Megaparsec.Stream hiding (Token)
+import qualified Text.Megaparsec.Stream as S
 
 data Token
   = TEOF
@@ -168,7 +174,7 @@ pShowToken TEnd = "End"
 
 data TokenStream = TokenStream
   { src :: Text,
-    tokens :: [WithPos T.Token]
+    tokens :: [WithPos Token]
   }
   deriving (Show, Eq, Ord)
 
@@ -182,8 +188,8 @@ data WithPos a = WithPos
   deriving (Show, Eq, Ord)
 
 instance Stream TokenStream where
-  type Token TokenStream = WithPos T.Token
-  type Tokens TokenStream = [WithPos T.Token]
+  type Token TokenStream = WithPos Token
+  type Tokens TokenStream = [WithPos Token]
 
   tokenToChunk _ = pure
   tokensToChunk _ = id
@@ -192,7 +198,7 @@ instance Stream TokenStream where
   chunkEmpty _ = null
   take1_ (TokenStream _ []) = Nothing
   take1_ (TokenStream src (t : ts)) = case val t of
-    T.TComment -> take1_ (TokenStream src ts)
+    TComment -> take1_ (TokenStream src ts)
     _ -> Just (t, TokenStream src ts)
 
   takeN_ n ts@(TokenStream src s)
