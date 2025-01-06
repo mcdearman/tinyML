@@ -492,7 +492,7 @@ module' filename = Module (Spanned filename NoLoc) <$> many decl
 
 repl :: Parser (Spanned Program)
 repl = do
-  r <- (try (Left <$> many decl) <|> Right <$> expr) <* eof
+  r <- (try (Right <$> expr) <|> (Left <$> many decl)) <* eof
   pure $ case r of
     Left ds ->
       Spanned
