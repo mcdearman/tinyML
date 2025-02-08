@@ -6,16 +6,14 @@ import Data.Array
 import Data.Text (Text)
 import Ty
 
-data Program
-  = PFile Text (Spanned Module)
-  deriving (Show)
+type Prog = Spanned Module
 
-applySubstProgram :: Subst -> Spanned Program -> Spanned Program
-applySubstProgram s (Spanned (PFile n m) sp) = Spanned (PFile n (applySubstModule s m)) sp
+applySubstProgram :: Subst -> Prog -> Prog
+applySubstProgram s p = applySubstModule s p
 
 data Module = Module Name [Typed Decl] deriving (Show)
 
-applySubstModule :: Subst -> Spanned Module -> Spanned Module
+applySubstModule :: Subst -> Prog -> Prog
 applySubstModule s (Spanned (Module n ds) sp) = Spanned (Module n (fmap (applySubstDecl s) ds)) sp
 
 data Decl

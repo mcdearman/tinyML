@@ -112,20 +112,8 @@ pushError e = do
   r@Resolver {errors = es} <- get
   put r {errors = e : es}
 
-renameProgram :: Spanned A.Program -> ResState (Spanned Program)
-renameProgram (Spanned (A.PFile name m) s) = do
-  m' <- renameModule m
-  pure $ Spanned (PFile name m') s
-
--- renameProgram (Spanned (A.PRepl (Left d)) s) = do
---   d' <- renameDecl d
---   pure $ Spanned (PRepl (Left d')) s
--- renameProgram (Spanned (A.PRepl (Right e)) s) = do
---   e' <- renameExpr e
---   pure $ Spanned (PRepl (Right e')) s
-
-renameModule :: Spanned A.Module -> ResState (Spanned Module)
-renameModule (Spanned (A.Module (Spanned n s) ds) s') = do
+rename :: A.Prog -> ResState Prog
+rename (Spanned (A.Module (Spanned n s) ds) s') = do
   n' <- lookupOrDefine n
   ds' <- traverse renameDecl ds
   pure $ Spanned (Module (Spanned (n, n') s) ds') s'

@@ -376,27 +376,22 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
 module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
 
-repl :: Parser (Spanned Program)
+repl :: Parser Prog
 repl = do
   r <- (try (Right <$> expr) <|> (Left <$> many decl)) <* eof
   pure $ case r of
     Left ds ->
       Spanned
-        (PFile "" (Spanned (Module (Spanned "main" NoLoc) ds) NoLoc))
+        (Module (Spanned "main" NoLoc) ds)
         (case ds of [] -> NoLoc; d : _ -> span d <> span (last ds))
     Right e ->
-      Spanned
-        ( PFile
-            ""
-            ( Spanned
-                ( Module
-                    (Spanned "main" NoLoc)
-                    [Spanned (DFn (Spanned "main" $ span e) [] e) (span e)]
-                )
-                (span e)
-            )
-        )
-        (span e)
+      ( Spanned
+          ( Module
+              (Spanned "main" NoLoc)
+              [Spanned (DFn (Spanned "main" $ span e) [] e) (span e)]
+          )
+          (span e)
+      )
 
-parseStream :: TokenStream -> Either (ParseErrorBundle TokenStream Void) (Spanned Program)
+parseStream :: TokenStream -> Either (ParseErrorBundle TokenStream Void) Prog
 parseStream = Text.Megaparsec.parse repl ""

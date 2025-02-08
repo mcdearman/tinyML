@@ -191,13 +191,8 @@ inst (Scheme vars t) = do
   let s = Map.fromList $ zip vars vars'
   pure $ applySubstTy s t
 
-genConstraints :: Spanned N.Program -> InferState (Spanned Program)
-genConstraints (Spanned (N.PFile n m) s) = do
-  m' <- genModuleConstraints m
-  pure $ Spanned (PFile n m') s
-
-genModuleConstraints :: Spanned N.Module -> InferState (Spanned Module)
-genModuleConstraints (Spanned (N.Module n ds) s) = do
+genConstraints :: N.Prog -> InferState Prog
+genConstraints (Spanned (N.Module n ds) s) = do
   ds' <- forM ds genDeclConstraints
   pure $ Spanned (Module n ds') s
 
@@ -331,7 +326,7 @@ genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
   pure $ Typed (Spanned (PList ps') s) (TList v)
 genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
 
-solveConstraints :: Spanned Program -> InferState (Spanned Program)
+solveConstraints :: Prog -> InferState Prog
 solveConstraints p = do
   Solver {constraints = cs, subst = sub} <- get
   go (applySubstConstraint sub <$> cs) p
@@ -342,7 +337,7 @@ solveConstraints p = do
       Solver {subst = sub} <- get
       go (applySubstConstraint sub <$> cs) (applySubstProgram sub p)
 
-infer :: Spanned N.Program -> InferState (Spanned Program)
+infer :: N.Prog -> InferState Prog
 infer p = do
   p' <- genConstraints p
   p'' <- solveConstraints p'

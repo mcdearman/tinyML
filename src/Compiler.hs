@@ -45,7 +45,7 @@ run src = do
     Right d -> case parseStream d of
       Left err -> pure $ pack $ "Parser error: " ++ errorBundlePretty err
       Right p -> do
-        let (nir, r') = runState (renameProgram p) r
+        let (nir, r') = runState (rename p) r
         let r'' = r' & \res -> res {Resolver.errors = []}
         case r' of
           Resolver {errors = []} -> do

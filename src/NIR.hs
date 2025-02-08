@@ -4,9 +4,7 @@ import Common (Spanned, Unique)
 import Data.Array (Array)
 import Data.Text (Text)
 
-data Program
-  = PFile Text (Spanned Module)
-  deriving (Show)
+type Prog = Spanned Module
 
 data Module = Module Name [Spanned Decl] deriving (Show)
 
@@ -19,7 +17,6 @@ data Decl
   | DTypeSyn Name [TyVar] (Spanned TypeHint)
   | DImport Path
   deriving (Show, Eq)
-
 data Expr
   = ELit Lit
   | EVar Name
