@@ -137,22 +137,6 @@ bind v t
       -- traceM ("bind " ++ (unpack $ pretty v) ++ " to " ++ (unpack $ pretty t) ++ " gives " ++ (show $ Map.insert v t su))
       put s {subst = Map.insert v t su}
 
-instance Pretty Ty where
-  pretty TInt = "Int"
-  pretty TBool = "Bool"
-  pretty TChar = "Char"
-  pretty TString = "String"
-  pretty TUnit = "Unit"
-  pretty (TVar v) = pretty v
-  pretty (TArrow t1 t2) = case t1 of
-    TArrow _ _ -> pack $ "(" ++ unpack (pretty t1) ++ ") -> " ++ unpack (pretty t2)
-    _ -> pack $ unpack (pretty t1) ++ " -> " ++ unpack (pretty t2)
-  pretty (TList t) = pack $ "[" ++ unpack (pretty t) ++ "]"
-  pretty (TArray t) = pack $ "#[" ++ unpack (pretty t) ++ "]"
-  pretty (TTuple ts) = pack $ "(" ++ unwords (fmap show ts) ++ ")"
-  pretty (TRecord fs) = pack $ "{" ++ unwords (fmap (\(n, t) -> n ++ ": " ++ show t) fs) ++ "}"
-  pretty (TCon n ts) = pack $ n ++ " " ++ unwords (fmap show ts)
-
 newtype Context = Context [Map Unique Scheme] deriving (Show)
 
 freeVarsCtx :: Context -> Set (Spanned TyVar)
@@ -201,19 +185,11 @@ lookup n = do
 applySubstCtx :: Subst -> Context -> Context
 applySubstCtx s (Context fs) = Context $ fmap (fmap (applySubstScheme s)) fs
 
-data Scheme = Scheme [Spanned TyVar] Ty deriving (Show)
-
 inst :: Scheme -> InferState Ty
 inst (Scheme vars t) = do
   vars' <- forM vars $ \(Spanned (TyVar _) sp) -> TVar <$> freshVar sp
   let s = Map.fromList $ zip vars vars'
   pure $ applySubstTy s t
-
-applySubstScheme :: Subst -> Scheme -> Scheme
-applySubstScheme s (Scheme vars t) = Scheme vars (applySubstTy s t)
-
-freeVarsScheme :: Scheme -> Set (Spanned TyVar)
-freeVarsScheme (Scheme vars t) = t & freeVarsTy & Set.filter (`notElem` vars)
 
 genConstraints :: Spanned N.Program -> InferState (Spanned Program)
 genConstraints (Spanned (N.PFile n m) s) = do
