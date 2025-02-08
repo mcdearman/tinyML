@@ -11,7 +11,7 @@ import Data.Text (Text, pack, unpack)
 import Data.Text.IO (hGetContents)
 import Data.Void
 import GHC.IO.Handle (Handle)
-import Lexer (Token (..), TokenStream, WithPos (WithPos))
+import Lexer (TokenStream, WithPos (WithPos))
 import Text.Megaparsec
   ( MonadParsec (eof, getParserState, lookAhead, notFollowedBy, takeWhile1P, token, try),
     ParseErrorBundle,
@@ -31,6 +31,7 @@ import Text.Megaparsec
     some,
   )
 import Text.Megaparsec.Debug (MonadParsecDbg (dbg))
+import Token
 import Prelude hiding (span)
 
 type Parser = Parsec Void TokenStream

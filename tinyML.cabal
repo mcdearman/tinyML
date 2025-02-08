@@ -29,6 +29,7 @@ executable tinyML
         Parser
         Rename
         TIR
+        Token
         Ty
     default-extensions: 
         OverloadedStrings
