@@ -18,14 +18,18 @@ executable tinyML
     import:           warnings
     main-is:          Main.hs
     other-modules: 
+        AST
         Common
+        Compiler
+        -- Core
+        Eval
+        Infer
         Lexer
+        NIR
         Parser
         Rename
-        Infer
-        Eval
-        -- Core
-        Compiler
+        TIR
+        Ty
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables
