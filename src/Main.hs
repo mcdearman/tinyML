@@ -6,11 +6,11 @@ import qualified Compiler as Compiler
 import Control.Monad.State.Strict (evalState, runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
+import Infer
 import qualified Infer as Solver
 import System.Console.Haskeline
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
-import Infer
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}

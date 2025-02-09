@@ -18,92 +18,94 @@ data Decl
   | DImport Path
   deriving (Show, Eq)
 
+data Visibility = Public | Private deriving (Show, Eq)
+
 data Expr
-  = ELit Lit
-  | EVar Name
-  | EApp (Spanned Expr) (Spanned Expr)
-  | ELam [Spanned Pattern] (Spanned Expr)
-  | ELet (Spanned Pattern) (Spanned Expr) (Spanned Expr)
-  | EFn Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
-  | EUnary (Spanned UnOp) (Spanned Expr)
-  | EBinary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
-  | EIf (Spanned Expr) (Spanned Expr) (Spanned Expr)
-  | EMatch (Spanned Expr) [(Spanned Pattern, Spanned Expr)]
-  | EList [Spanned Expr]
-  | EArray (Array Int (Spanned Expr))
-  | ETuple [Spanned Expr]
-  | ERecord (Maybe Name) [(Name, Spanned Expr)]
-  | EUnit
+  = Lit Lit
+  | Var Name
+  | App (Spanned Expr) (Spanned Expr)
+  | Lam [Spanned Pattern] (Spanned Expr)
+  | Let (Spanned Pattern) (Spanned Expr) (Spanned Expr)
+  | Fn Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
+  | Unary (Spanned UnOp) (Spanned Expr)
+  | Binary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
+  | If (Spanned Expr) (Spanned Expr) (Spanned Expr)
+  | Match (Spanned Expr) [(Spanned Pattern, Spanned Expr)]
+  | List [Spanned Expr]
+  | Array (Array Int (Spanned Expr))
+  | Tuple [Spanned Expr]
+  | Record (Maybe Name) [(Name, Spanned Expr)]
+  | Unit
   deriving (Show, Eq)
 
 data UnOp
-  = UNeg
-  | UNot
+  = UnOpNeg
+  | UnOpNot
   deriving (Show, Eq)
 
 unOpName :: UnOp -> Text
-unOpName UNeg = "__neg__"
-unOpName UNot = "__not__"
+unOpName UnOpNeg = "neg"
+unOpName UnOpNot = "not"
 
 data BinOp
-  = BAdd
-  | BSub
-  | BMul
-  | BDiv
-  | BMod
-  | BPow
-  | BAnd
-  | BOr
-  | BEq
-  | BNeq
-  | BLt
-  | BGt
-  | BLeq
-  | BGeq
-  | BPair
-  | BPipe
+  = BinOpAdd
+  | BinOpSub
+  | BinOpMul
+  | BinOpDiv
+  | BinOpMod
+  | BinOpPow
+  | BinOpAnd
+  | BinOpOr
+  | BinOpEq
+  | BinOpNeq
+  | BinOpGt
+  | BinOpLt
+  | BinOpGeq
+  | BinOpLeq
+  | BinOpPair
+  | BinOpPipe
   deriving (Show, Eq)
 
 binOpName :: BinOp -> Text
-binOpName BAdd = "__add__"
-binOpName BSub = "__sub__"
-binOpName BMul = "__mul__"
-binOpName BDiv = "__div__"
-binOpName BMod = "__mod__"
-binOpName BPow = "__pow__"
-binOpName BAnd = "__and__"
-binOpName BOr = "__or__"
-binOpName BEq = "__eq__"
-binOpName BNeq = "__neq__"
-binOpName BLt = "__lt__"
-binOpName BGt = "__gt__"
-binOpName BLeq = "__lte__"
-binOpName BGeq = "__gte__"
-binOpName BPair = "__pair__"
-binOpName BPipe = "__pipe__"
+binOpName BinOpAdd = "+"
+binOpName BinOpSub = "-"
+binOpName BinOpMul = "*"
+binOpName BinOpDiv = "/"
+binOpName BinOpMod = "%"
+binOpName BinOpPow = "^"
+binOpName BinOpAnd = "and"
+binOpName BinOpOr = "or"
+binOpName BinOpEq = "=="
+binOpName BinOpNeq = "!="
+binOpName BinOpGt = ">"
+binOpName BinOpLt = "<"
+binOpName BinOpGeq = ">="
+binOpName BinOpLeq = "<="
+binOpName BinOpPair = "::"
+binOpName BinOpPipe = "|>"
 
 data TypeHint
-  = THInt
-  | THBool
-  | THString
-  | THVar TyVar
-  | THIdent Name
-  | THKind Name [Spanned TypeHint]
-  | THList (Spanned TypeHint)
-  | THArray (Spanned TypeHint)
-  | THTuple [Spanned TypeHint]
-  | THArrow (Spanned TypeHint) (Spanned TypeHint)
-  | THRecord (Maybe Name) [(Name, Spanned TypeHint)]
-  | THUnit
+  = TypeHintInt
+  | TypeHintBool
+  | TypeHintString
+  | TypeHintVar TyVar
+  | TypeHintIdent Name
+  | TypeHintKind Name [Spanned TypeHint]
+  | TypeHintList (Spanned TypeHint)
+  | TypeHintArray (Spanned TypeHint)
+  | TypeHintTuple [Spanned TypeHint]
+  | TypeHintArrow (Spanned TypeHint) (Spanned TypeHint)
+  | TypeHintRecord (Maybe Name) [(Name, Spanned TypeHint)]
+  | TypeHintUnit
   deriving (Show, Eq)
 
 data Pattern
-  = PWildcard
-  | PLit Lit
-  | PVar Name
-  | PPair (Spanned Pattern) (Spanned Pattern)
-  | PList [Spanned Pattern]
-  | PUnit
+  = PatternWildcard
+  | PatternLit Lit
+  | PatternVar Name
+  | PatternPair (Spanned Pattern) (Spanned Pattern)
+  | PatternList [Spanned Pattern]
+  | PatternUnit
   deriving (Show, Eq)
 
 type TyVar = Spanned Text
@@ -113,7 +115,7 @@ type Name = Spanned Text
 type Path = Spanned [Name]
 
 data Lit
-  = LInt Int
-  | LBool Bool
-  | LString Text
+  = LitInt Int
+  | LitBool Bool
+  | LitString Text
   deriving (Show, Eq)

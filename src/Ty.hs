@@ -9,42 +9,42 @@ import qualified Data.Set as Set
 import Data.Text (pack, unpack)
 
 data Ty
-  = TInt
-  | TBool
-  | TChar
-  | TString
-  | TUnit
-  | TVar (Spanned TyVar)
-  | TArrow Ty Ty
-  | TList Ty
-  | TArray Ty
-  | TTuple [Ty]
-  | TRecord [(String, Ty)]
-  | TCon String [Ty]
+  = TyInt
+  | TyBool
+  | TyChar
+  | TyString
+  | TyUnit
+  | TyVar (Spanned TyVar)
+  | TyArrow Ty Ty
+  | TyList Ty
+  | TyArray Ty
+  | TyTuple [Ty]
+  | TyRecord [(String, Ty)]
+  | TyCon String [Ty]
   deriving (Show, Eq, Ord)
 
 instance Pretty Ty where
-  pretty TInt = "Int"
-  pretty TBool = "Bool"
-  pretty TChar = "Char"
-  pretty TString = "String"
-  pretty TUnit = "Unit"
-  pretty (TVar v) = pretty v
-  pretty (TArrow t1 t2) = case t1 of
-    TArrow _ _ -> pack $ "(" ++ unpack (pretty t1) ++ ") -> " ++ unpack (pretty t2)
+  pretty TyInt = "Int"
+  pretty TyBool = "Bool"
+  pretty TyChar = "Char"
+  pretty TyString = "String"
+  pretty TyUnit = "Unit"
+  pretty (TyVar v) = pretty v
+  pretty (TyArrow t1 t2) = case t1 of
+    TyArrow _ _ -> pack $ "(" ++ unpack (pretty t1) ++ ") -> " ++ unpack (pretty t2)
     _ -> pack $ unpack (pretty t1) ++ " -> " ++ unpack (pretty t2)
-  pretty (TList t) = pack $ "[" ++ unpack (pretty t) ++ "]"
-  pretty (TArray t) = pack $ "#[" ++ unpack (pretty t) ++ "]"
-  pretty (TTuple ts) = pack $ "(" ++ unwords (fmap show ts) ++ ")"
-  pretty (TRecord fs) = pack $ "{" ++ unwords (fmap (\(n, t) -> n ++ ": " ++ show t) fs) ++ "}"
-  pretty (TCon n ts) = pack $ n ++ " " ++ unwords (fmap show ts)
+  pretty (TyList t) = pack $ "[" ++ unpack (pretty t) ++ "]"
+  pretty (TyArray t) = pack $ "#[" ++ unpack (pretty t) ++ "]"
+  pretty (TyTuple ts) = pack $ "(" ++ unwords (fmap show ts) ++ ")"
+  pretty (TyRecord fs) = pack $ "{" ++ unwords (fmap (\(n, t) -> n ++ ": " ++ show t) fs) ++ "}"
+  pretty (TyCon n ts) = pack $ n ++ " " ++ unwords (fmap show ts)
 
 freeVarsTy :: Ty -> Set (Spanned TyVar)
-freeVarsTy (TVar v) = Set.singleton v
-freeVarsTy (TArrow t1 t2) = freeVarsTy t1 `Set.union` freeVarsTy t2
-freeVarsTy (TList t) = freeVarsTy t
-freeVarsTy (TArray t) = freeVarsTy t
-freeVarsTy (TTuple ts) = Set.unions $ fmap freeVarsTy ts
+freeVarsTy (TyVar v) = Set.singleton v
+freeVarsTy (TyArrow t1 t2) = freeVarsTy t1 `Set.union` freeVarsTy t2
+freeVarsTy (TyList t) = freeVarsTy t
+freeVarsTy (TyArray t) = freeVarsTy t
+freeVarsTy (TyTuple ts) = Set.unions $ fmap freeVarsTy ts
 freeVarsTy _ = Set.empty
 
 applySubstTy :: Subst -> Ty -> Ty

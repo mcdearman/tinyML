@@ -69,9 +69,9 @@ unit = Spanned () <$> (((<>) . span <$> tokenWithSpan TLParen) <*> (span <$> tok
 lit :: Parser (Spanned Lit)
 lit =
   choice
-    [ fmap LInt <$> int,
-      fmap LBool <$> bool,
-      fmap LString <$> string
+    [ fmap LitInt <$> int,
+      fmap LitBool <$> bool,
+      fmap LitString <$> string
     ]
 
 ident :: Parser (Spanned Text)
@@ -121,45 +121,45 @@ postfix tok f = Postfix (f . span <$> tokenWithSpan tok)
 
 operatorTable :: [[Operator Parser (Spanned Expr)]]
 operatorTable =
-  [ [ prefix TMinus (\s e -> Spanned (EUnary (Spanned UNeg s) e) (span e)),
-      prefix TBang (\s e -> Spanned (EUnary (Spanned UNot s) e) (span e))
+  [ [ prefix TMinus (\s e -> Spanned (Unary (Spanned UnOpNeg s) e) (span e)),
+      prefix TBang (\s e -> Spanned (Unary (Spanned UnOpNot s) e) (span e))
     ],
-    [ binary TStar (\s l r -> Spanned (EBinary (Spanned BMul s) l r) (span l <> span r)),
-      binary TSlash (\s l r -> Spanned (EBinary (Spanned BDiv s) l r) (span l <> span r)),
-      binary TPercent (\s l r -> Spanned (EBinary (Spanned BMod s) l r) (span l <> span r))
+    [ binary TStar (\s l r -> Spanned (Binary (Spanned BinOpMul s) l r) (span l <> span r)),
+      binary TSlash (\s l r -> Spanned (Binary (Spanned BinOpDiv s) l r) (span l <> span r)),
+      binary TPercent (\s l r -> Spanned (Binary (Spanned BinOpMod s) l r) (span l <> span r))
     ],
-    [ binary TPlus (\s l r -> Spanned (EBinary (Spanned BAdd s) l r) (span l <> span r)),
-      binary TMinus (\s l r -> Spanned (EBinary (Spanned BSub s) l r) (span l <> span r))
+    [ binary TPlus (\s l r -> Spanned (Binary (Spanned BinOpAdd s) l r) (span l <> span r)),
+      binary TMinus (\s l r -> Spanned (Binary (Spanned BinOpSub s) l r) (span l <> span r))
     ],
-    [ binary TEq (\s l r -> Spanned (EBinary (Spanned BEq s) l r) (span l <> span r)),
-      binary TNeq (\s l r -> Spanned (EBinary (Spanned BNeq s) l r) (span l <> span r)),
-      binary TLt (\s l r -> Spanned (EBinary (Spanned BLt s) l r) (span l <> span r)),
-      binary TGt (\s l r -> Spanned (EBinary (Spanned BGt s) l r) (span l <> span r)),
-      binary TLeq (\s l r -> Spanned (EBinary (Spanned BLeq s) l r) (span l <> span r)),
-      binary TGeq (\s l r -> Spanned (EBinary (Spanned BGeq s) l r) (span l <> span r))
+    [ binary TEq (\s l r -> Spanned (Binary (Spanned BinOpEq s) l r) (span l <> span r)),
+      binary TNeq (\s l r -> Spanned (Binary (Spanned BinOpNeq s) l r) (span l <> span r)),
+      binary TLt (\s l r -> Spanned (Binary (Spanned BinOpLt s) l r) (span l <> span r)),
+      binary TGt (\s l r -> Spanned (Binary (Spanned BinOpGt s) l r) (span l <> span r)),
+      binary TLeq (\s l r -> Spanned (Binary (Spanned BinOpLeq s) l r) (span l <> span r)),
+      binary TGeq (\s l r -> Spanned (Binary (Spanned BinOpGeq s) l r) (span l <> span r))
     ],
-    [ binary TAnd (\s l r -> Spanned (EBinary (Spanned BAnd s) l r) (span l <> span r)),
-      binary TOr (\s l r -> Spanned (EBinary (Spanned BOr s) l r) (span l <> span r))
+    [ binary TAnd (\s l r -> Spanned (Binary (Spanned BinOpAnd s) l r) (span l <> span r)),
+      binary TOr (\s l r -> Spanned (Binary (Spanned BinOpOr s) l r) (span l <> span r))
     ],
-    [binary TDoubleColon (\s l r -> Spanned (EBinary (Spanned BPair s) l r) (span l <> span r))],
-    [binary TPipe (\s l r -> Spanned (EBinary (Spanned BPipe s) l r) (span l <> span r))]
+    [binary TDoubleColon (\s l r -> Spanned (Binary (Spanned BinOpPair s) l r) (span l <> span r))],
+    [binary TPipe (\s l r -> Spanned (Binary (Spanned BinOpPipe s) l r) (span l <> span r))]
   ]
 
 pattern' :: Parser (Spanned Pattern)
 pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
   where
-    wildcard = Spanned PWildcard . span <$> tokenWithSpan TUnderscore
+    wildcard = Spanned PatternWildcard . span <$> tokenWithSpan TUnderscore
     litP = do
       l <- lit
-      pure $ Spanned (PLit (value l)) (span l)
+      pure $ Spanned (PatternLit (value l)) (span l)
     varP = do
       i <- ident
-      pure $ Spanned (PVar i) (span i)
-    pairP = parens $ PPair <$> pattern' <*> (tokenWithSpan TDoubleColon *> pattern')
+      pure $ Spanned (PatternVar i) (span i)
+    pairP = parens $ PatternPair <$> pattern' <*> (tokenWithSpan TDoubleColon *> pattern')
     listP = do
       ps <- brackets $ pattern' `sepEndBy` tokenWithSpan TComma
-      pure $ Spanned (PList (value ps)) (span ps)
-    unitP = Spanned PUnit . span <$> unit
+      pure $ Spanned (PatternList (value ps)) (span ps)
+    unitP = Spanned PatternUnit . span <$> unit
 
 type' :: Parser (Spanned TypeHint)
 type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
@@ -169,11 +169,11 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
       t1 <- baseType
       tokenWithSpan TArrow
       t2 <- type'
-      pure $ Spanned (THArrow t1 t2) (span t1 <> span t2)
+      pure $ Spanned (TypeHintArrow t1 t2) (span t1 <> span t2)
     kindType = do
       name <- typeIdent
       ts <- some baseType
-      pure $ Spanned (THKind name ts) (span name <> span (last ts))
+      pure $ Spanned (TypeHintKind name ts) (span name <> span (last ts))
 
     baseType :: Parser (Spanned TypeHint)
     baseType =
@@ -183,24 +183,24 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
           listType,
           arrayType,
           recordType,
-          try (Spanned THUnit . span <$> unit)
+          try (Spanned TypeHintUnit . span <$> unit)
             <|> try tupleType
             <|> parens (value <$> type')
         ]
     varType = do
       v <- tyVar
-      pure $ Spanned (THVar v) (span v)
+      pure $ Spanned (TypeHintVar v) (span v)
     identType = do
       i <- typeIdent
-      pure $ Spanned (THIdent i) (span i)
+      pure $ Spanned (TypeHintIdent i) (span i)
     listType = do
       ts <- brackets type'
-      pure $ Spanned (THList (value ts)) (span ts)
+      pure $ Spanned (TypeHintList (value ts)) (span ts)
     arrayType = do
       ts <- arrBrackets type'
-      pure $ Spanned (THArray (value ts)) (span ts)
+      pure $ Spanned (TypeHintArray (value ts)) (span ts)
     tupleType =
-      fmap THTuple
+      fmap TypeHintTuple
         <$> parens
           ( (:)
               <$> (type' <* tokenWithSpan TComma)
@@ -210,15 +210,15 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
       name <- optional typeIdent
       r <- braces (((,) <$> ident <*> (tokenWithSpan TColon *> type')) `sepEndBy1` tokenWithSpan TComma)
       case name of
-        Nothing -> pure $ Spanned (THRecord Nothing (value r)) (span r)
-        Just n -> pure $ Spanned (THRecord name (value r)) (span n <> span r)
+        Nothing -> pure $ Spanned (TypeHintRecord Nothing (value r)) (span r)
+        Just n -> pure $ Spanned (TypeHintRecord name (value r)) (span n <> span r)
 
 expr :: Parser (Spanned Expr)
 expr = makeExprParser apply operatorTable
   where
-    unit' = Spanned EUnit . span <$> unit
-    litExpr = (\l -> Spanned (ELit (value l)) (span l)) <$> lit
-    varExpr = (\i -> Spanned (EVar i) (span i)) <$> ident
+    unit' = Spanned Unit . span <$> unit
+    litExpr = (\l -> Spanned (Lit (value l)) (span l)) <$> lit
+    varExpr = (\i -> Spanned (Var i) (span i)) <$> ident
 
     simple :: Parser (Spanned Expr)
     simple = choice [litExpr, varExpr, try unit' <|> parens (value <$> expr)]
@@ -229,7 +229,7 @@ expr = makeExprParser apply operatorTable
       ps <- some pattern'
       tokenWithSpan TArrow
       e <- expr
-      pure $ Spanned (ELam ps e) (span start <> span e)
+      pure $ Spanned (Lam ps e) (span start <> span e)
 
     let' :: Parser (Spanned Expr)
     let' = do
@@ -239,7 +239,7 @@ expr = makeExprParser apply operatorTable
       e1 <- expr
       tokenWithSpan TIn
       e2 <- expr
-      pure $ Spanned (ELet p e1 e2) (span start <> span e2)
+      pure $ Spanned (Let p e1 e2) (span start <> span e2)
 
     let_rec :: Parser (Spanned Expr)
     let_rec = do
@@ -250,7 +250,7 @@ expr = makeExprParser apply operatorTable
       e1 <- expr
       tokenWithSpan TIn
       e2 <- expr
-      pure $ Spanned (EFn i ps e1 e2) (span start <> span e2)
+      pure $ Spanned (Fn i ps e1 e2) (span start <> span e2)
 
     if' :: Parser (Spanned Expr)
     if' = do
@@ -260,7 +260,7 @@ expr = makeExprParser apply operatorTable
       e1 <- expr
       tokenWithSpan TElse
       e2 <- expr
-      pure $ Spanned (EIf cond e1 e2) (span start <> span e2)
+      pure $ Spanned (If cond e1 e2) (span start <> span e2)
 
     match :: Parser (Spanned Expr)
     match = do
@@ -273,19 +273,19 @@ expr = makeExprParser apply operatorTable
           )
         )
           `sepBy1` tokenWithSpan TBar
-      pure $ Spanned (EMatch e cases) (span start <> span (snd (last cases)))
+      pure $ Spanned (Match e cases) (span start <> span (snd (last cases)))
 
     list :: Parser (Spanned Expr)
-    list = fmap EList <$> brackets (expr `sepEndBy` tokenWithSpan TComma)
+    list = fmap List <$> brackets (expr `sepEndBy` tokenWithSpan TComma)
 
     array :: Parser (Spanned Expr)
     array = do
       a <- arrBrackets (expr `sepEndBy` tokenWithSpan TComma)
-      pure $ Spanned (EArray $ listArray (0, length (value a) - 1) (value a)) (span a)
+      pure $ Spanned (Array $ listArray (0, length (value a) - 1) (value a)) (span a)
 
     tuple :: Parser (Spanned Expr)
     tuple =
-      fmap ETuple
+      fmap Tuple
         <$> parens
           ( (:)
               <$> (expr <* tokenWithSpan TComma)
@@ -297,8 +297,8 @@ expr = makeExprParser apply operatorTable
       name <- optional typeIdent
       r <- braces (((,) <$> ident <*> (tokenWithSpan TEq *> expr)) `sepEndBy1` tokenWithSpan TComma)
       case name of
-        Nothing -> pure $ Spanned (ERecord Nothing (value r)) (span r)
-        Just n -> pure $ Spanned (ERecord name (value r)) (span n <> span r)
+        Nothing -> pure $ Spanned (Record Nothing (value r)) (span r)
+        Just n -> pure $ Spanned (Record name (value r)) (span n <> span r)
 
     atom :: Parser (Spanned Expr)
     atom =
@@ -316,7 +316,7 @@ expr = makeExprParser apply operatorTable
     apply :: Parser (Spanned Expr)
     apply = do
       fargs <- some atom
-      pure $ foldl1 (\f a -> Spanned (EApp f a) (span f <> span a)) fargs
+      pure $ foldl1 (\f a -> Spanned (App f a) (span f <> span a)) fargs
 
 decl :: Parser (Spanned Decl)
 decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef

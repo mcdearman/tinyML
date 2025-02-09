@@ -10,16 +10,20 @@ true -- Bool
 
 -- Files are composed of declarations at the top level. In the notebook 
 -- or repl, you can use expressions at the top level. You can think of 
--- this as a shorthand for `let main args = <expr>`. In files, the main 
+-- this as a shorthand for `def main args = <expr>`. In files, the main 
 -- function must be defined explicitly:
-main : #[String] -> ()
-main args = ()
+def main () ! IO =
+  println "Hello, world!"
 
 -- Bindings are immutable by default.
-x = 1
+def x = 1
 
--- pattern binding
-(a, b, c) = (1, 2, 3)
+-- pattern bindings at the top level must be irrefutable
+def [a, b, c] = [1, 2, 3]
+-- > ERROR: Pattern match is not exhaustive
+
+def (a, b, c) = (1, 2, 3) -- this is fine because the pattern is exhaustive
+-- > a = 1, b = 2, c = 3
 
 -- ints
 1
@@ -32,14 +36,14 @@ true
 
 -- Unary operators
 -1
--- => -1
+-- > -1
 
 not true
--- => false
+-- > false
 
 -- Boolean operators
 true and false or true
--- => true
+-- > true
 
 -- Comparison
 1 < 2 and 2 <= 3 and 3 > 2 and 3 >= 2 and 2 = 2 and 2 != 3
@@ -51,10 +55,10 @@ if 1 < 2 then 1 else 2
 let x = 1 in x + 1
 
 -- function definition
-f x = x + 1
+def f x = x + 1
 
 -- this is equivalent to
-f = \x -> x + 1
+def f = \x -> x + 1
 
 -- function expression
 let f x = x + 1 in f 1
@@ -72,130 +76,159 @@ f 1
 let x = 1 in let y = 2 in x + y
 
 -- recursion
-fib n = 
+def fib n = 
   if n <= 1 then n 
   else fib (n - 1) + fib (n - 2) 
 
-gcd a b = 
+def gcd a b = 
   if b = 0 then a 
   else gcd b (a % b)
 
 -- with type annotations
-gcd (a : Int) (b : Int) : Int =
+def gcd (a : Int) (b : Int) : Int =
   if b = 0 then a 
   else gcd b (a % b)
 
-fib (n : Int) : Int =
+def fib (n : Int) : Int =
   if n <= 1 then n 
   else fib (n - 1) + fib (n - 2)
 
-lcm (a : Int) (b : Int) : Int =
+def lcm (a : Int) (b : Int) : Int =
   a * b / gcd a b
 
-lcm a b = a * b / gcd a b
+def lcm a b = a * b / gcd a b
 
 -- tail recursive fib
-fib n = 
+def fib n = 
   let loop a b i = 
     if i = 0 then a 
     else loop b (a + b) (i - 1)
   in loop 0 1 n
 
 -- pattern match
-fib n = 
+def fib n = 
   match n
   | 0 -> 0
   | 1 -> 1
   | n -> fib (n - 1) + fib (n - 2)
 
-fact n =
+def fact n =
   let loop acc n =
     if n = 0 then acc
     else loop (acc * n) (n - 1)
   in loop 1 n
 
-map a b. (f : a -> b) (xs : [a]) : [b] =
+def map a b. (f : a -> b) (xs : [a]) : [b] =
   match xs with
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-map f xs = match xs with
+-- possible uncurried version of sigs
+def map : a b. [a] (a -> b) -> [b]
+  | [] f -> []
+  | (x::xs) f -> f x :: map f xs
+
+pub def map f xs = match xs with
   [] -> []
   (x::xs) -> f x :: map f xs
 
+def map f xs =
+  match xs with
+  | [] -> []
+  | (x::xs) -> f x :: map f xs
+
 -- or
-map : a b. (a -> b) -> [a] -> [b]
-map f [] -> []
-map f (x::xs) -> f x :: map f xs
+pub def map : a b. (a -> b) -> [a] -> [b]
+  f [] -> []
+  f (x::xs) -> f x :: map f xs
 
-foldl a b. (f : a -> b -> a) (acc : a) (xs : [b]) : a =
+def foldl f acc xs =
   match xs with
   | [] -> acc
   | (x :: xs) -> foldl f (f acc x) xs
 
-foldl f acc xs =
+def foldl = \f acc xs ->
   match xs with
   | [] -> acc
   | (x :: xs) -> foldl f (f acc x) xs
 
-foldl = \f acc xs ->
-  match xs with
-  | [] -> acc
-  | (x :: xs) -> foldl f (f acc x) xs
-
-foldl : a b. (a -> b -> a) -> a -> [b] -> a
+def foldl : a b. (a -> b -> a) -> a -> [b] -> a
   | f acc [] = acc
   | f acc (x::xs) = foldl f (f acc x) xs
 
--- possible uncurried version of sigs
-foldl : a b. [b] (a b -> a) a -> a
-  | [] f acc -> acc
-  | (x::xs) f acc -> foldl f (f acc x) xs
+def foldl : a b e. (a -> b -> a) -> a -> [b] -> a
+  | f acc []      = acc
+  | f acc (x::xs) = foldl f (f acc x) xs
 
-foldl f acc xs = match xs with
+def foldl : (a -> b -> a) -> a -> [b] -> a
+  | f acc []      = acc
+  | f acc (x::xs) = foldl f (f acc x) xs
+
+def foldl a b. (f : a -> b -> a) (acc: a) (xs : [b]) : a =
+  match xs with
+  | [] -> acc
+  | (x :: xs) -> foldl f (f acc x) xs
+
+def foldl f acc xs = match xs with
   [] -> acc
   (x::xs) -> foldl f (f acc x) xs
 
-foldr f acc xs = match xs with
+def foldr f acc xs = match xs with
   | [] -> acc
   | (x::xs) -> f x (foldr f acc xs)
 
-binary_search (x : Int) (xs : #[Int] -> Int) : Int =
-  let loop l r =
-    if l > r then -1
-    else
-      let m = (l + r) / 2 in
-      if Array.get xs m = n then m
-      else if Array.get xs m < n then loop (m + 1) r
-      else loop l (m - 1)
-  in loop 0 (Array.len xs - 1)
+def foldr a b. (f : a -> b -> b) (acc : b) (xs : [a]) : b =
+  match xs with
+  | [] -> acc
+  | (x :: xs) -> f x (foldr f acc xs)
+
+def foldr : a b. (a -> b -> b) -> b -> [a] -> b 
+  | f acc [] = acc
+  | f acc (x::xs) = f x (foldr f acc xs) 
+
+def binary_search : a. (a -> Ordering) -> [a] -> a -> Option Int
+  | cmp xs x -> 
+    let loop l r =
+      if l > r then None
+      else
+        let m = (l + r) / 2
+        match cmp x (xs !! m) with
+        | Ordering.Eq -> Some m
+        | Ordering.Lt -> loop l (m - 1)
+        | Ordering.Gt -> loop (m + 1) r
+    in loop 0 (len xs - 1)
 
 -- type alias
 type Point = (Int, Int)
 
 -- records
 data Person = { name : String, age : Int }
-p = { name = "Alice", age = 30 }
+def p = { name = "Alice", age = 30 }
 
 -- records with public fields
 data Person = { pub name : String, pub age : Int }
 
+-- functional update
+def p = { name = "Alice", age = 30 }
+def p' = { p with age = 31 }
+
 -- sum types
 data Option a = None | Some a
 
+-- sum type with effectful constructors
+data Foo a e = Bar a | Baz (a -> a)
+
 data List a = Empty | Pair a (List a)
+
+data List a = [] | a :: List a
 
 data NonEmptyList a = NonEmpty a (List a)
 
-(|>) : a b. a -> (a -> b) -> b
+-- with infix constructors
+data NomEmptyList a = a :| List a
+
+def (|>) : a b. a -> (a -> b) -> b
   | x |> f = f x
-
--- possible uncurried version of sigs
-(|>) : a b c. a (a ..b -> c) -> (..b -> c)
-  | x f -> f x _..
-
-(::) : a. a -> [a] -> [a]
-  | x :: xs = Pair x xs
 
 -- methods with pipe
 [1, 2, 3]
@@ -214,32 +247,59 @@ data NonEmptyList a = NonEmpty a (List a)
 
 -- type classes
 class Eq a where
-  eq : a -> a -> Bool
+  def eq : a -> a -> Bool
 
 instance Eq Int where
-  eq = prim_int_eq
+  def eq = prim_int_eq
 
 instance Eq (Option a) where
-  eq : Eq a => Option a -> Option a -> Bool
+  def eq : Eq a => Option a -> Option a -> Bool
     | None None = true 
     | (Some x) (Some y) = eq x y
     |  _ _ = false
 
-class Ord a where
-  compare : a -> a -> Ordering
+class Ord a <: Eq + PartialOrd where
+  def compare : a -> a -> Ordering
 
 class Add a b where
-  type Output = a
-  add : a -> a -> Output
+  def data Output = a
+  def (+) : a -> b -> Output
 
-class Iterator i where
-  next : i a -> Option (a, i a)
+data Ordering = Lt | Eq | Gt
 
-class IntoIterator i where
-  into_iter : i a -> Iterator a
+class Eq a where
+  def (=) : a -> a -> Bool
 
-instance IntoIterator [a] where
-  into_iter = ListIterator
+class PartialOrd a where
+  def partial_compare : a -> a -> Option Ordering
 
+  def (<) (x : a) (y : a) : Bool = 
+    match partial_compare x y with
+    | Some Lt -> true
+    | _ -> false
+
+  def (<=) (x : a) (y : a) : Bool =
+    match partial_compare x y with
+    | Some Lt -> true
+    | Some Eq -> true
+    | _ -> false
+
+  def (>) (x : a) (y : a) : Bool =
+    match partial_compare x y with
+    | Some Gt -> true
+    | _ -> false
+
+  def (>=) (x : a) (y : a) : Bool =
+    match partial_compare x y with
+    | Some Gt -> true
+    | Some Eq -> true
+    | _ -> false
+
+class (Eq a, PartialOrd a) => Ord a where
+  def compare : a -> a -> Ordering
+  def (<) : a -> a -> Bool
+  def (<=) : a -> a -> Bool
+  def (>) : a -> a -> Bool
+  def (>=) : a -> a -> Bool
 
 

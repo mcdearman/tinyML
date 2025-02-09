@@ -140,28 +140,28 @@ renameDecl (Spanned (A.DFnMatch (Spanned n s) t cs) s') = do
 renameDecl _ = undefined
 
 renameExpr :: Spanned A.Expr -> ResState (Spanned Expr)
-renameExpr (Spanned (A.ELit lit) s) = pure $ Spanned (ELit (renameLit lit)) s
-renameExpr (Spanned (A.EVar v) s) = do
+renameExpr (Spanned (A.Lit lit) s) = pure $ Spanned (ELit (renameLit lit)) s
+renameExpr (Spanned (A.Var v) s) = do
   v' <- lookupVar v
   pure $ Spanned (EVar (Spanned (value v, v') s)) s
-renameExpr (Spanned (A.EApp f arg) s) = do
+renameExpr (Spanned (A.App f arg) s) = do
   f' <- renameExpr f
   arg' <- renameExpr arg
   pure $ Spanned (EApp f' arg') s
-renameExpr (Spanned (A.ELam ps e) s) = do
+renameExpr (Spanned (A.Lam ps e) s) = do
   push
   ps' <- traverse renamePattern ps
   e' <- renameExpr e
   pop
   pure $ foldr (\p expr -> Spanned (ELam p expr) s) e' ps'
-renameExpr (Spanned (A.ELet p e1 e2) s) = do
+renameExpr (Spanned (A.Let p e1 e2) s) = do
   e1' <- renameExpr e1
   push
   p' <- renamePattern p
   e2' <- renameExpr e2
   pop
   pure $ Spanned (ELet p' e1' e2') s
-renameExpr (Spanned (A.EFn (Spanned n s) ps e1 e2) s') = do
+renameExpr (Spanned (A.Fn (Spanned n s) ps e1 e2) s') = do
   n' <- define n
   push
   ps' <- traverse renamePattern ps
@@ -169,80 +169,80 @@ renameExpr (Spanned (A.EFn (Spanned n s) ps e1 e2) s') = do
   e2' <- renameExpr e2
   pop
   pure $ Spanned (EFn (Spanned (n, n') s) ps' e1' e2') s'
-renameExpr (Spanned (A.EIf c t e) s) = do
+renameExpr (Spanned (A.If c t e) s) = do
   c' <- renameExpr c
   t' <- renameExpr t
   e' <- renameExpr e
   pure $ Spanned (EIf c' t' e') s
-renameExpr (Spanned (A.EUnary op e) s) = do
+renameExpr (Spanned (A.Unary op e) s) = do
   n <- lookupVar $ A.unOpName <$> op
   e' <- renameExpr e
   pure $ Spanned (EApp (Spanned (EVar (Spanned (A.unOpName (value op), n) s)) s) e') s
-renameExpr (Spanned (A.EBinary op e1 e2) s) = do
+renameExpr (Spanned (A.Binary op e1 e2) s) = do
   n <- lookupVar $ A.binOpName <$> op
   e1' <- renameExpr e1
   e2' <- renameExpr e2
   pure $ Spanned (EApp (Spanned (EApp (Spanned (EVar (Spanned (A.binOpName (value op), n) s)) s) e1') s) e2') s
-renameExpr (Spanned (A.EMatch e cs) s) = do
+renameExpr (Spanned (A.Match e cs) s) = do
   e' <- renameExpr e
   cs' <- traverse (\(p, e'') -> (,) <$> renamePattern p <*> renameExpr e'') cs
   pure $ Spanned (EMatch e' cs') s
-renameExpr (Spanned (A.EList es) s) = do
+renameExpr (Spanned (A.List es) s) = do
   es' <- traverse renameExpr es
   pure $ Spanned (EList es') s
-renameExpr (Spanned (A.EArray es) s) = do
+renameExpr (Spanned (A.Array es) s) = do
   es' <- traverse renameExpr es
   pure $ Spanned (EArray es') s
-renameExpr (Spanned (A.ETuple es) s) = do
+renameExpr (Spanned (A.Tuple es) s) = do
   es' <- traverse renameExpr es
   pure $ Spanned (ETuple es') s
-renameExpr (Spanned (A.ERecord n fs) s) = todo
-renameExpr (Spanned A.EUnit s) = pure $ Spanned EUnit s
+renameExpr (Spanned (A.Record n fs) s) = todo
+renameExpr (Spanned A.Unit s) = pure $ Spanned EUnit s
 
 renameTypeHint :: Spanned A.TypeHint -> ResState (Spanned TypeHint)
-renameTypeHint (Spanned A.THInt s) = pure $ Spanned THInt s
-renameTypeHint (Spanned A.THBool s) = pure $ Spanned THBool s
-renameTypeHint (Spanned A.THString s) = pure $ Spanned THString s
-renameTypeHint (Spanned (A.THVar v) s) = pure $ Spanned (THVar v) s
-renameTypeHint (Spanned (A.THIdent n) s) = do
+renameTypeHint (Spanned A.TypeHintInt s) = pure $ Spanned THInt s
+renameTypeHint (Spanned A.TypeHintBool s) = pure $ Spanned THBool s
+renameTypeHint (Spanned A.TypeHintString s) = pure $ Spanned THString s
+renameTypeHint (Spanned (A.TypeHintVar v) s) = pure $ Spanned (THVar v) s
+renameTypeHint (Spanned (A.TypeHintIdent n) s) = do
   n' <- lookupOrDefine (value n)
   pure $ Spanned (THIdent (Spanned (value n, n') s)) s
-renameTypeHint (Spanned (A.THKind n ts) s) = do
+renameTypeHint (Spanned (A.TypeHintKind n ts) s) = do
   n' <- lookupOrDefine (value n)
   ts' <- traverse renameTypeHint ts
   pure $ Spanned (THKind (Spanned (value n, n') s) ts') s
-renameTypeHint (Spanned (A.THList t) s) = do
+renameTypeHint (Spanned (A.TypeHintList t) s) = do
   t' <- renameTypeHint t
   pure $ Spanned (THList t') s
-renameTypeHint (Spanned (A.THArray t) s) = do
+renameTypeHint (Spanned (A.TypeHintArray t) s) = do
   t' <- renameTypeHint t
   pure $ Spanned (THArray t') s
-renameTypeHint (Spanned (A.THTuple ts) s) = do
+renameTypeHint (Spanned (A.TypeHintTuple ts) s) = do
   ts' <- traverse renameTypeHint ts
   pure $ Spanned (THTuple ts') s
-renameTypeHint (Spanned (A.THArrow t1 t2) s) = do
+renameTypeHint (Spanned (A.TypeHintArrow t1 t2) s) = do
   t1' <- renameTypeHint t1
   t2' <- renameTypeHint t2
   pure $ Spanned (THArrow t1' t2') s
-renameTypeHint (Spanned (A.THRecord n fs) s) = todo
-renameTypeHint (Spanned A.THUnit s) = pure $ Spanned THUnit s
+renameTypeHint (Spanned (A.TypeHintRecord n fs) s) = todo
+renameTypeHint (Spanned A.TypeHintUnit s) = pure $ Spanned THUnit s
 
 renamePattern :: Spanned A.Pattern -> ResState (Spanned Pattern)
-renamePattern (Spanned A.PWildcard s) = pure $ Spanned PWildcard s
-renamePattern (Spanned (A.PLit lit) s) = pure $ Spanned (PLit (renameLit lit)) s
-renamePattern (Spanned (A.PVar (Spanned v s)) s') = do
+renamePattern (Spanned A.PatternWildcard s) = pure $ Spanned PWildcard s
+renamePattern (Spanned (A.PatternLit lit) s) = pure $ Spanned (PLit (renameLit lit)) s
+renamePattern (Spanned (A.PatternVar (Spanned v s)) s') = do
   v' <- define v
   pure $ Spanned (PVar (Spanned (v, v') s)) s'
-renamePattern (Spanned (A.PPair p1 p2) s) = do
+renamePattern (Spanned (A.PatternPair p1 p2) s) = do
   p1' <- renamePattern p1
   p2' <- renamePattern p2
   pure $ Spanned (PPair p1' p2') s
-renamePattern (Spanned (A.PList ps) s) = do
+renamePattern (Spanned (A.PatternList ps) s) = do
   ps' <- traverse renamePattern ps
   pure $ Spanned (PList ps') s
-renamePattern (Spanned A.PUnit s) = pure $ Spanned PUnit s
+renamePattern (Spanned A.PatternUnit s) = pure $ Spanned PUnit s
 
 renameLit :: A.Lit -> Lit
-renameLit (A.LInt i) = LInt i
-renameLit (A.LBool b) = LBool b
-renameLit (A.LString t) = LString t
+renameLit (A.LitInt i) = LInt i
+renameLit (A.LitBool b) = LBool b
+renameLit (A.LitString t) = LString t
