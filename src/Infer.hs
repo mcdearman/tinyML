@@ -51,30 +51,30 @@ builtins :: InferState ()
 builtins = do
   let m =
         Map.empty
-          & Map.insert (Id 0) (Scheme [] $ TArrow TInt TInt)
-          & Map.insert (Id 1) (Scheme [] $ TArrow TBool TBool)
-          & Map.insert (Id 2) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 3) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 4) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 5) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 6) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 7) (Scheme [] $ TArrow TInt (TArrow TInt TInt))
-          & Map.insert (Id 10) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-          & Map.insert (Id 11) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-          & Map.insert (Id 12) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
-          & Map.insert (Id 13) (Scheme [] $ TArrow TInt (TArrow TInt TBool))
+          & Map.insert (Id 0) (Scheme [] $ TyArrow TyInt TyInt)
+          & Map.insert (Id 1) (Scheme [] $ TyArrow TyBool TyBool)
+          & Map.insert (Id 2) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyInt))
+          & Map.insert (Id 3) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyInt))
+          & Map.insert (Id 4) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyInt))
+          & Map.insert (Id 5) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyInt))
+          & Map.insert (Id 6) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyInt))
+          & Map.insert (Id 7) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyInt))
+          & Map.insert (Id 10) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyBool))
+          & Map.insert (Id 11) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyBool))
+          & Map.insert (Id 12) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyBool))
+          & Map.insert (Id 13) (Scheme [] $ TyArrow TyInt (TyArrow TyInt TyBool))
   v1 <- freshVar $ NoLoc
-  let m1 = Map.insert (Id 8) (Scheme [v1] $ TArrow (TVar v1) (TArrow (TVar v1) TBool)) m
+  let m1 = Map.insert (Id 8) (Scheme [v1] $ TyArrow (TyVar v1) (TyArrow (TyVar v1) TyBool)) m
   v2 <- freshVar $ NoLoc
-  let m2 = Map.insert (Id 9) (Scheme [v2] $ TArrow (TVar v2) (TArrow (TVar v2) TBool)) m1
+  let m2 = Map.insert (Id 9) (Scheme [v2] $ TyArrow (TyVar v2) (TyArrow (TyVar v2) TyBool)) m1
   v3 <- freshVar $ NoLoc
-  let m3 = Map.insert (Id 14) (Scheme [v3] $ TArrow (TVar v3) (TArrow (TList (TVar v3)) (TList (TVar v3)))) m2
+  let m3 = Map.insert (Id 14) (Scheme [v3] $ TyArrow (TyVar v3) (TyArrow (TyList (TyVar v3)) (TyList (TyVar v3)))) m2
   v4 <- freshVar $ NoLoc
   v5 <- freshVar $ NoLoc
   let m4 =
         Map.insert
           (Id 15)
-          (Scheme [v4, v5] $ TArrow (TVar v4) (TArrow (TArrow (TVar v4) (TVar v5)) (TVar v5)))
+          (Scheme [v4, v5] $ TyArrow (TyVar v4) (TyArrow (TyArrow (TyVar v4) (TyVar v5)) (TyVar v5)))
           m3
   s <- get
   case ctx s of
@@ -85,7 +85,7 @@ freshVar :: Span -> InferState (Spanned TyVar)
 freshVar sp = do
   s@Solver {tyVarCounter = c@(Id v)} <- get
   put s {tyVarCounter = Id (v + 1)}
-  pure $ Spanned (TyVar c) sp
+  pure $ Spanned (VarId c) sp
 
 pushConstraint :: Constraint -> InferState ()
 pushConstraint c = modify' $ \s@Solver {constraints = cs} -> s {constraints = c : cs}
@@ -110,27 +110,27 @@ unify :: Ty -> Ty -> InferState ()
 unify t1 t2 = do
   -- trace ("unify " ++ (unpack $ pretty t1) ++ " and " ++ (unpack $ pretty t2)) $ pure ()
   case (t1, t2) of
-    (TInt, TInt) -> pure ()
-    (TBool, TBool) -> pure ()
-    (TChar, TChar) -> pure ()
-    (TString, TString) -> pure ()
-    (TUnit, TUnit) -> pure ()
-    (TArrow tp tr, TArrow tp' tr') -> do
+    (TyInt, TyInt) -> pure ()
+    (TyBool, TyBool) -> pure ()
+    (TyChar, TyChar) -> pure ()
+    (TyString, TyString) -> pure ()
+    (TyUnit, TyUnit) -> pure ()
+    (TyArrow tp tr, TyArrow tp' tr') -> do
       unify tp tp'
       unify tr tr'
-    (TVar v1, _) -> bind v1 t2
-    (_, TVar v2) -> bind v2 t1
-    (TList t, TList t') -> unify t t'
-    (TArray t, TArray t') -> unify t t'
-    (TTuple ts1, TTuple ts2) -> zipWithM_ unify ts1 ts2
+    (TyVar v1, _) -> bind v1 t2
+    (_, TyVar v2) -> bind v2 t1
+    (TyList t, TyList t') -> unify t t'
+    (TyArray t, TyArray t') -> unify t t'
+    (TyTuple ts1, TyTuple ts2) -> zipWithM_ unify ts1 ts2
     _ -> do
       pushError $ UnificationError t1 t2
 
 bind :: Spanned TyVar -> Ty -> InferState ()
 bind v t
-  | t == TVar v = pure ()
+  | t == TyVar v = pure ()
   | Set.member v (freeVarsTy t) = do
-      pushError $ Occurs (TVar v) t
+      pushError $ Occurs (TyVar v) t
   | otherwise = do
       s <- get
       let su = subst s
@@ -187,7 +187,7 @@ applySubstCtx s (Context fs) = Context $ fmap (fmap (applySubstScheme s)) fs
 
 inst :: Scheme -> InferState Ty
 inst (Scheme vars t) = do
-  vars' <- forM vars $ \(Spanned (TyVar _) sp) -> TVar <$> freshVar sp
+  vars' <- forM vars $ \(Spanned (VarId _) sp) -> TyVar <$> freshVar sp
   let s = Map.fromList $ zip vars vars'
   pure $ applySubstTy s t
 
@@ -203,13 +203,13 @@ genDeclConstraints (Spanned (N.DDef p e) s) = do
   pushConstraint $ Eq tp te
   pure $ Typed (Spanned (DDef p' e') s) te
 genDeclConstraints (Spanned (N.DFn n ps e) s) = do
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   vps <- forM ps $ \(Spanned _ sp) -> freshVar sp
   define (snd (value n)) (Scheme vps v)
   push
-  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
+  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TyVar pv) False
   e'@(Typed _ te) <- genExprConstraints e
-  let ty = List.foldr (\pv t -> TArrow (TVar pv) t) te vps
+  let ty = List.foldr (\pv t -> TyArrow (TyVar pv) t) te vps
   pushConstraint $ Eq v ty
   pop
   pure $ Typed (Spanned (DFn n ps' e') s) ty
@@ -217,9 +217,9 @@ genDeclConstraints (Spanned (N.DFnMatch n t cs) s) = todo
 genDeclConstraints _ = todo
 
 genExprConstraints :: Spanned N.Expr -> InferState (Typed Expr)
-genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit (LInt i)) s) TInt
-genExprConstraints (Spanned (N.ELit (N.LBool b)) s) = pure $ Typed (Spanned (ELit (LBool b)) s) TBool
-genExprConstraints (Spanned (N.ELit (N.LString t)) s) = pure $ Typed (Spanned (ELit (LString t)) s) TString
+genExprConstraints (Spanned (N.ELit (N.LInt i)) s) = pure $ Typed (Spanned (ELit (LInt i)) s) TyInt
+genExprConstraints (Spanned (N.ELit (N.LBool b)) s) = pure $ Typed (Spanned (ELit (LBool b)) s) TyBool
+genExprConstraints (Spanned (N.ELit (N.LString t)) s) = pure $ Typed (Spanned (ELit (LString t)) s) TyString
 genExprConstraints (Spanned (N.EVar n) s) = do
   p <- lookup (snd (value n))
   v <- inst p
@@ -227,20 +227,20 @@ genExprConstraints (Spanned (N.EVar n) s) = do
 genExprConstraints (Spanned (N.EApp f arg) s) = do
   ~f'@(Typed _ tf) <- genExprConstraints f
   ~arg'@(Typed _ targ) <- genExprConstraints arg
-  v <- TVar <$> freshVar s
-  let ty = TArrow targ v
+  v <- TyVar <$> freshVar s
+  let ty = TyArrow targ v
   pushConstraint $ Eq tf ty
-  -- trace ("genExprConstraints: EApp " ++ (unpack . toStrict $ pShow t1) ++ "\n" ++ (unpack . toStrict $ pShow (TArrow t2 v))) $
+  -- trace ("genExprConstraints: EApp " ++ (unpack . toStrict $ pShow t1) ++ "\n" ++ (unpack . toStrict $ pShow (TyArrow t2 v))) $
   --   pure ()
   pushConstraint $ Eq tf ty
   pure $ Typed (Spanned (EApp f' arg') s) v
 genExprConstraints (Spanned (N.ELam p@(Spanned _ sp) e) s) = do
   push
-  v <- TVar <$> freshVar sp
+  v <- TyVar <$> freshVar sp
   p' <- genPatternConstraints p v False
   e'@(Typed _ te) <- genExprConstraints e
   pop
-  pure $ Typed (Spanned (ELam p' e') s) (TArrow v te)
+  pure $ Typed (Spanned (ELam p' e') s) (TyArrow v te)
 genExprConstraints (Spanned (N.ELet p e1 e2) s) = do
   e1'@(Typed _ t1) <- genExprConstraints e1
   push
@@ -251,19 +251,19 @@ genExprConstraints (Spanned (N.ELet p e1 e2) s) = do
   pure $ Typed (Spanned (ELet p' e1' e2') s) t2
 genExprConstraints (Spanned (N.EFn n ps e b) s) = do
   -- trace "genExprConstraints: EFn" $ pure ()
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   -- trace ("var: " ++ (unpack . toStrict $ pShow v)) $ pure ()
   vps <- forM ps $ \(Spanned _ sp) -> freshVar sp
   -- trace ("vps: " ++ (unpack . toStrict $ pShow vps)) $ pure ()
   push
   define (snd (value n)) (Scheme vps v)
-  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TVar pv) False
+  ps' <- forM (zip ps vps) $ \ ~(p, pv) -> genPatternConstraints p (TyVar pv) False
   -- trace ("ps: " ++ (unpack . toStrict $ pShow ps')) $ pure ()
   e'@(Typed _ te) <- genExprConstraints e
   -- trace ("e: " ++ (unpack . toStrict $ pShow e')) $ pure ()
   b'@(Typed _ tb) <- genExprConstraints b
   -- trace ("b: " ++ (unpack . toStrict $ pShow b')) $ pure ()
-  let ty = List.foldr (\pv t -> TArrow (TVar pv) t) te vps
+  let ty = List.foldr (\pv t -> TyArrow (TyVar pv) t) te vps
   pushConstraint $ Eq v ty
   -- trace ("ty: " ++ (unpack . toStrict $ pShow ty)) $ pure ()
   pop
@@ -272,12 +272,12 @@ genExprConstraints (Spanned (N.EIf c t e) s) = do
   c'@(Typed _ tc) <- genExprConstraints c
   t'@(Typed _ tt) <- genExprConstraints t
   e'@(Typed _ te) <- genExprConstraints e
-  pushConstraint $ Eq tc TBool
+  pushConstraint $ Eq tc TyBool
   pushConstraint $ Eq tt te
   pure $ Typed (Spanned (EIf c' t' e') s) tt
 genExprConstraints (Spanned (N.EMatch e cs) s) = do
   e'@(Typed _ te) <- genExprConstraints e
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   cs' <- forM cs $ \(p, b) -> do
     push
     p' <- genPatternConstraints p te False
@@ -287,25 +287,25 @@ genExprConstraints (Spanned (N.EMatch e cs) s) = do
     pure (p', b')
   pure $ Typed (Spanned (EMatch e' cs') s) v
 genExprConstraints (Spanned (N.EList es) s) = do
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   es' <- forM es $ \e -> genExprConstraints e
   forM_ es' $ \ ~(Typed _ t) -> pushConstraint $ Eq v t
-  pure $ Typed (Spanned (EList es') s) (TList v)
+  pure $ Typed (Spanned (EList es') s) (TyList v)
 genExprConstraints (Spanned (N.EArray es) s) = do
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   es' <- forM es $ \e -> genExprConstraints e
   forM_ es' $ \ ~(Typed _ t) -> pushConstraint $ Eq v t
-  pure $ Typed (Spanned (EArray es') s) (TArray v)
+  pure $ Typed (Spanned (EArray es') s) (TyArray v)
 -- genExprConstraints (Spanned (N.ETuple es) s) = do
 --   es' <- forM es $ \e -> genExprConstraints e
 --   pure $ Typed (Spanned (ETuple es') s) (TTuple $ fmap (Ty.typeOf . value) es')
 genExprConstraints e = todo
 
 genPatternConstraints :: Spanned N.Pattern -> Ty -> Bool -> InferState (Typed Pattern)
-genPatternConstraints (Spanned N.PWildcard s) _ _ = pure $ Typed (Spanned PWildcard s) TUnit
-genPatternConstraints (Spanned (N.PLit (N.LInt i)) s) _ _ = pure $ Typed (Spanned (PLit (LInt i)) s) TInt
-genPatternConstraints (Spanned (N.PLit (N.LBool b)) s) _ _ = pure $ Typed (Spanned (PLit (LBool b)) s) TBool
-genPatternConstraints (Spanned (N.PLit (N.LString t)) s) _ _ = pure $ Typed (Spanned (PLit (LString t)) s) TString
+genPatternConstraints (Spanned N.PWildcard s) _ _ = pure $ Typed (Spanned PWildcard s) TyUnit
+genPatternConstraints (Spanned (N.PLit (N.LInt i)) s) _ _ = pure $ Typed (Spanned (PLit (LInt i)) s) TyInt
+genPatternConstraints (Spanned (N.PLit (N.LBool b)) s) _ _ = pure $ Typed (Spanned (PLit (LBool b)) s) TyBool
+genPatternConstraints (Spanned (N.PLit (N.LString t)) s) _ _ = pure $ Typed (Spanned (PLit (LString t)) s) TyString
 genPatternConstraints (Spanned (N.PVar n) s) ty False = do
   define (snd (value n)) (Scheme [] ty)
   pure $ Typed (Spanned (PVar n) s) ty
@@ -314,17 +314,17 @@ genPatternConstraints (Spanned (N.PVar n@(Spanned (_, i) _)) s) ty True = do
   define i scm
   pure $ Typed (Spanned (PVar n) s) ty
 genPatternConstraints (Spanned (N.PPair p1 p2) s) ty gen = do
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   p1'@(Typed _ t1) <- genPatternConstraints p1 v gen
-  p2'@(Typed _ t2) <- genPatternConstraints p2 (TList v) gen
-  pushConstraint $ Eq (TList t1) t2
-  pure $ Typed (Spanned (PPair p1' p2') s) (TList v)
+  p2'@(Typed _ t2) <- genPatternConstraints p2 (TyList v) gen
+  pushConstraint $ Eq (TyList t1) t2
+  pure $ Typed (Spanned (PPair p1' p2') s) (TyList v)
 genPatternConstraints (Spanned (N.PList ps) s) ty gen = do
-  v <- TVar <$> freshVar s
+  v <- TyVar <$> freshVar s
   ps' <- forM ps $ \p -> do
     genPatternConstraints p v gen
-  pure $ Typed (Spanned (PList ps') s) (TList v)
-genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TUnit
+  pure $ Typed (Spanned (PList ps') s) (TyList v)
+genPatternConstraints (Spanned N.PUnit s) _ _ = pure $ Typed (Spanned PUnit s) TyUnit
 
 solveConstraints :: Prog -> InferState Prog
 solveConstraints p = do

@@ -48,19 +48,19 @@ freeVarsTy (TyTuple ts) = Set.unions $ fmap freeVarsTy ts
 freeVarsTy _ = Set.empty
 
 applySubstTy :: Subst -> Ty -> Ty
-applySubstTy s ty@(TVar v) = Map.findWithDefault ty v s
-applySubstTy s (TArrow t1 t2) = TArrow (applySubstTy s t1) (applySubstTy s t2)
-applySubstTy s (TList t) = TList (applySubstTy s t)
-applySubstTy s (TArray t) = TArray (applySubstTy s t)
-applySubstTy s (TTuple ts) = TTuple (fmap (applySubstTy s) ts)
+applySubstTy s ty@(TyVar v) = Map.findWithDefault ty v s
+applySubstTy s (TyArrow t1 t2) = TyArrow (applySubstTy s t1) (applySubstTy s t2)
+applySubstTy s (TyList t) = TyList (applySubstTy s t)
+applySubstTy s (TyArray t) = TyArray (applySubstTy s t)
+applySubstTy s (TyTuple ts) = TyTuple (fmap (applySubstTy s) ts)
 applySubstTy _ t = t
 
 type Subst = Map (Spanned TyVar) Ty
 
-newtype TyVar = TyVar Unique deriving (Show, Eq, Ord)
+newtype TyVar = VarId Unique deriving (Show, Eq, Ord)
 
 instance Pretty TyVar where
-  pretty (TyVar (Id i)) = pack $ "t" ++ show i
+  pretty (VarId (Id i)) = pack $ "t" ++ show i
 
 data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)
 
