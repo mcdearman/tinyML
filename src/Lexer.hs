@@ -1,4 +1,4 @@
-module Lexer where
+module Lexer (TokenStream (..), WithPos (..), lexMML) where
 
 import Common (Span (SrcLoc))
 import qualified Common as C

@@ -1,8 +1,7 @@
 module Main where
 
 import Common
-import Compiler (Compiler (..))
-import qualified Compiler as Compiler
+import Compiler
 import Control.Monad.State.Strict (evalState, runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
