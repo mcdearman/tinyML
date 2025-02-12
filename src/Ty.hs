@@ -1,7 +1,6 @@
 module Ty where
 
 import Common
-import Data.Function ((&))
 import Data.Map
 import qualified Data.Map as Map
 import Data.Set
@@ -39,21 +38,21 @@ instance Pretty Ty where
   pretty (TyRecord fs) = pack $ "{" ++ unwords (fmap (\(n, t) -> n ++ ": " ++ show t) fs) ++ "}"
   pretty (TyCon n ts) = pack $ n ++ " " ++ unwords (fmap show ts)
 
-freeVarsTy :: Ty -> Set (Spanned TyVar)
-freeVarsTy (TyVar v) = Set.singleton v
-freeVarsTy (TyArrow t1 t2) = freeVarsTy t1 `Set.union` freeVarsTy t2
-freeVarsTy (TyList t) = freeVarsTy t
-freeVarsTy (TyArray t) = freeVarsTy t
-freeVarsTy (TyTuple ts) = Set.unions $ fmap freeVarsTy ts
-freeVarsTy _ = Set.empty
+freeVars :: Ty -> Set (Spanned TyVar)
+freeVars (TyVar v) = Set.singleton v
+freeVars (TyArrow t1 t2) = freeVars t1 `Set.union` freeVars t2
+freeVars (TyList t) = freeVars t
+freeVars (TyArray t) = freeVars t
+freeVars (TyTuple ts) = Set.unions $ fmap freeVars ts
+freeVars _ = Set.empty
 
-applySubstTy :: Subst -> Ty -> Ty
-applySubstTy s ty@(TyVar v) = Map.findWithDefault ty v s
-applySubstTy s (TyArrow t1 t2) = TyArrow (applySubstTy s t1) (applySubstTy s t2)
-applySubstTy s (TyList t) = TyList (applySubstTy s t)
-applySubstTy s (TyArray t) = TyArray (applySubstTy s t)
-applySubstTy s (TyTuple ts) = TyTuple (fmap (applySubstTy s) ts)
-applySubstTy _ t = t
+applySubst :: Subst -> Ty -> Ty
+applySubst s ty@(TyVar v) = Map.findWithDefault ty v s
+applySubst s (TyArrow t1 t2) = TyArrow (applySubst s t1) (applySubst s t2)
+applySubst s (TyList t) = TyList (applySubst s t)
+applySubst s (TyArray t) = TyArray (applySubst s t)
+applySubst s (TyTuple ts) = TyTuple (fmap (applySubst s) ts)
+applySubst _ t = t
 
 type Subst = Map (Spanned TyVar) Ty
 
@@ -63,11 +62,3 @@ instance Pretty TyVar where
   pretty (VarId (Id i)) = pack $ "t" ++ show i
 
 data Typed a = Typed (Spanned a) Ty deriving (Show, Eq)
-
-data Scheme = Scheme [Spanned TyVar] Ty deriving (Show)
-
-applySubstScheme :: Subst -> Scheme -> Scheme
-applySubstScheme s (Scheme vars t) = Scheme vars (applySubstTy s t)
-
-freeVarsScheme :: Scheme -> Set (Spanned TyVar)
-freeVarsScheme (Scheme vars t) = t & freeVarsTy & Set.filter (`notElem` vars)

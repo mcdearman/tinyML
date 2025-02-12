@@ -6,6 +6,8 @@ import Data.Array
 import Data.Text (Text)
 import Ty
 
+-- import qualified Ty as Ty
+
 type Prog = Spanned Module
 
 applySubstProgram :: Subst -> Prog -> Prog
@@ -28,13 +30,13 @@ data Decl
 
 applySubstDecl :: Subst -> Typed Decl -> Typed Decl
 applySubstDecl s (Typed (Spanned (DDef p e) sp) t) =
-  Typed (Spanned (DDef (applySubstPattern s p) (applySubstExpr s e)) sp) (applySubstTy s t)
+  Typed (Spanned (DDef (applySubstPattern s p) (applySubstExpr s e)) sp) (Ty.applySubst s t)
 applySubstDecl s (Typed (Spanned (DFn n ps e) sp) t) =
-  Typed (Spanned (DFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e)) sp) (applySubstTy s t)
+  Typed (Spanned (DFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e)) sp) (Ty.applySubst s t)
 applySubstDecl s (Typed (Spanned (DFnMatch n pes) sp) t) =
-  Typed (Spanned (DFnMatch n (fmap (\(ps, e) -> (fmap (applySubstPattern s) ps, applySubstExpr s e)) pes)) sp) (applySubstTy s t)
+  Typed (Spanned (DFnMatch n (fmap (\(ps, e) -> (fmap (applySubstPattern s) ps, applySubstExpr s e)) pes)) sp) (Ty.applySubst s t)
 -- applySubstDecl s (Typed (Spanned (DRecordDef n vs fs) sp) t) =
---   Typed (Spanned (DRecordDef n vs (fmap (\(n, t) -> (n, fmap (applySubstTy s) t)) fs)) sp) (applySubstTy s t)
+--   Typed (Spanned (DRecordDef n vs (fmap (\(n, t) -> (n, fmap (Ty.applySubst s) t)) fs)) sp) (Ty.applySubst s t)
 applySubstDecl _ _ = todo
 
 data Expr
@@ -54,28 +56,28 @@ data Expr
   deriving (Show, Eq)
 
 applySubstExpr :: Subst -> Typed Expr -> Typed Expr
-applySubstExpr s (Typed e@(Spanned (ELit _) _) t) = Typed e (applySubstTy s t)
-applySubstExpr s (Typed e@(Spanned (EVar _) _) t) = Typed e (applySubstTy s t)
+applySubstExpr s (Typed e@(Spanned (ELit _) _) t) = Typed e (Ty.applySubst s t)
+applySubstExpr s (Typed e@(Spanned (EVar _) _) t) = Typed e (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EApp e1 e2) sp) t) =
-  Typed (Spanned (EApp (applySubstExpr s e1) (applySubstExpr s e2)) sp) (applySubstTy s t)
+  Typed (Spanned (EApp (applySubstExpr s e1) (applySubstExpr s e2)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (ELam p e) sp) t) =
-  Typed (Spanned (ELam (applySubstPattern s p) (applySubstExpr s e)) sp) (applySubstTy s t)
+  Typed (Spanned (ELam (applySubstPattern s p) (applySubstExpr s e)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (ELet p e1 e2) sp) t) =
-  Typed (Spanned (ELet (applySubstPattern s p) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (applySubstTy s t)
+  Typed (Spanned (ELet (applySubstPattern s p) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EFn n ps e1 e2) sp) t) =
-  Typed (Spanned (EFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (applySubstTy s t)
+  Typed (Spanned (EFn n (fmap (applySubstPattern s) ps) (applySubstExpr s e1) (applySubstExpr s e2)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EIf e1 e2 e3) sp) t) =
-  Typed (Spanned (EIf (applySubstExpr s e1) (applySubstExpr s e2) (applySubstExpr s e3)) sp) (applySubstTy s t)
+  Typed (Spanned (EIf (applySubstExpr s e1) (applySubstExpr s e2) (applySubstExpr s e3)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EMatch e ps) sp) t) =
-  Typed (Spanned (EMatch (applySubstExpr s e) (fmap (\(p, e') -> (applySubstPattern s p, applySubstExpr s e')) ps)) sp) (applySubstTy s t)
+  Typed (Spanned (EMatch (applySubstExpr s e) (fmap (\(p, e') -> (applySubstPattern s p, applySubstExpr s e')) ps)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EList es) sp) t) =
-  Typed (Spanned (EList (fmap (applySubstExpr s) es)) sp) (applySubstTy s t)
+  Typed (Spanned (EList (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (EArray es) sp) t) =
-  Typed (Spanned (EArray (fmap (applySubstExpr s) es)) sp) (applySubstTy s t)
+  Typed (Spanned (EArray (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (ETuple es) sp) t) =
-  Typed (Spanned (ETuple (fmap (applySubstExpr s) es)) sp) (applySubstTy s t)
+  Typed (Spanned (ETuple (fmap (applySubstExpr s) es)) sp) (Ty.applySubst s t)
 applySubstExpr s (Typed (Spanned (ERecord n fs) sp) t) =
-  Typed (Spanned (ERecord n (fmap (\(n', e) -> (n', applySubstExpr s e)) fs)) sp) (applySubstTy s t)
+  Typed (Spanned (ERecord n (fmap (\(n', e) -> (n', applySubstExpr s e)) fs)) sp) (Ty.applySubst s t)
 applySubstExpr _ e = e
 
 data Pattern
@@ -88,23 +90,23 @@ data Pattern
   deriving (Show, Eq)
 
 -- applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
--- applySubstPattern s (Typed p@(Spanned PWildcard _) t) = Typed p (applySubstTy s t)
--- applySubstPattern s (Typed p@(Spanned (PVar _) _) t) = Typed p (applySubstTy s t)
+-- applySubstPattern s (Typed p@(Spanned PWildcard _) t) = Typed p (Ty.applySubst s t)
+-- applySubstPattern s (Typed p@(Spanned (PVar _) _) t) = Typed p (Ty.applySubst s t)
 -- applySubstPattern s (Typed (Spanned (PPair p1 p2) sp) t) =
---   Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (applySubstTy s t)
+--   Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
 -- applySubstPattern s (Typed (Spanned (PList ps) sp) t) =
---   Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (applySubstTy s t)
+--   Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
 -- applySubstPattern _ p = p
 applySubstPattern :: Subst -> Typed Pattern -> Typed Pattern
 applySubstPattern s p =
   -- trace ("applySubstPattern " ++ show p) $
   case p of
-    (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (applySubstTy s t)
-    (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (applySubstTy s t)
+    (Typed (Spanned PWildcard sp) t) -> Typed (Spanned PWildcard sp) (Ty.applySubst s t)
+    (Typed (Spanned (PVar n) sp) t) -> Typed (Spanned (PVar n) sp) (Ty.applySubst s t)
     (Typed (Spanned (PPair p1 p2) sp) t) ->
-      Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (applySubstTy s t)
+      Typed (Spanned (PPair (applySubstPattern s p1) (applySubstPattern s p2)) sp) (Ty.applySubst s t)
     (Typed (Spanned (PList ps) sp) t) ->
-      Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (applySubstTy s t)
+      Typed (Spanned (PList (fmap (applySubstPattern s) ps)) sp) (Ty.applySubst s t)
     _ -> p
 
 type Name = Spanned (Text, ResId)

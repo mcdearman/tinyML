@@ -18,6 +18,7 @@ import Data.Text hiding (concat, unwords, zip)
 import Data.Text.Lazy (toStrict)
 import Debug.Trace (trace)
 import qualified NIR as N
+import Scheme
 import TIR
 import Ty
 import Prelude hiding (lookup)
@@ -99,12 +100,12 @@ instance Pretty Constraint where
   pretty (Eq t1 t2) = pretty t1 <> " = " <> pretty t2
 
 applySubstConstraint :: Subst -> Constraint -> Constraint
-applySubstConstraint s (Eq t1 t2) = Eq (applySubstTy s t1) (applySubstTy s t2)
+applySubstConstraint s (Eq t1 t2) = Eq (Ty.applySubst s t1) (Ty.applySubst s t2)
 
 generalize :: Ty -> InferState Scheme
 generalize t = do
   Solver {ctx = c} <- get
-  pure $ Scheme (Set.toList (freeVarsTy t `Set.difference` freeVarsCtx c)) t
+  pure $ Scheme (Set.toList (Ty.freeVars t `Set.difference` freeVarsCtx c)) t
 
 unify :: Ty -> Ty -> InferState ()
 unify t1 t2 = do
@@ -129,7 +130,7 @@ unify t1 t2 = do
 bind :: Spanned TyVar -> Ty -> InferState ()
 bind v t
   | t == TyVar v = pure ()
-  | Set.member v (freeVarsTy t) = do
+  | Set.member v (Ty.freeVars t) = do
       pushError $ Occurs (TyVar v) t
   | otherwise = do
       s <- get
@@ -144,7 +145,7 @@ freeVarsCtx (Context fs) =
   fs
     & (<$>) (Map.elems)
     & concat
-    & (<$>) freeVarsScheme
+    & (<$>) Scheme.freeVars
     & Set.unions
 
 pop :: InferState ()
@@ -183,13 +184,13 @@ lookup n = do
       Nothing -> lookup' n' ms
 
 applySubstCtx :: Subst -> Context -> Context
-applySubstCtx s (Context fs) = Context $ fmap (fmap (applySubstScheme s)) fs
+applySubstCtx s (Context fs) = Context $ fmap (fmap (Scheme.applySubst s)) fs
 
 inst :: Scheme -> InferState Ty
 inst (Scheme vars t) = do
   vars' <- forM vars $ \(Spanned (VarId _) sp) -> TyVar <$> freshVar sp
   let s = Map.fromList $ zip vars vars'
-  pure $ applySubstTy s t
+  pure $ Ty.applySubst s t
 
 genConstraints :: N.Prog -> InferState Prog
 genConstraints (Spanned (N.Module n ds) s) = do

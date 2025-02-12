@@ -28,6 +28,7 @@ executable tinyML
         NIR
         Parser
         Rename
+        Scheme
         TIR
         Token
         Ty
