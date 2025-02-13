@@ -6,21 +6,19 @@ import Common
 import Control.Monad
 import Control.Monad.State.Strict
 import Control.Placeholder (todo)
-import Data.Array
 import Data.Function ((&))
 import qualified Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
-import Data.Text (Text, unpack)
-import Data.Text hiding (concat, unwords, zip)
-import Data.Text.Lazy (toStrict)
-import Debug.Trace (trace)
+-- import Data.Text hiding (concat, unwords, zip)
 import qualified NIR as N
-import Scheme
+import Scheme (Scheme (..))
+import qualified Scheme
 import TIR
-import Ty
+import Ty (Subst, Ty (..), TyVar (..), Typed (..))
+import qualified Ty
 import Prelude hiding (lookup)
 
 data InferError = UnificationError Ty Ty | Occurs Ty Ty deriving (Show, Eq)

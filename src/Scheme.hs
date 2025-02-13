@@ -4,7 +4,8 @@ import Common (Spanned)
 import Data.Function ((&))
 import Data.Set (Set)
 import qualified Data.Set as Set
-import Ty
+import Ty (Subst, Ty, TyVar)
+import qualified Ty as Ty
 
 data Scheme = Scheme [Spanned TyVar] Ty deriving (Show)
 

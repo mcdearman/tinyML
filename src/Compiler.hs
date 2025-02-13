@@ -42,7 +42,7 @@ run src = do
   put $ Compiler {src = src, flags = f, resolver = r, solver = sl}
   case lexMML src of
     Left err -> pure $ pack $ "Lexer error: " ++ errorBundlePretty err
-    Right d -> case parseStream d of
+    Right ts -> trace (unpack . toStrict $ (pShow ts)) $ case parseStream ts of
       Left err -> pure $ pack $ "Parser error: " ++ errorBundlePretty err
       Right p -> do
         let (nir, r') = runState (rename p) r

@@ -35,22 +35,22 @@ type ResState a = State Resolver a
 
 builtins :: [Text]
 builtins =
-  [ "__neg__",
-    "__not__",
-    "__add__",
-    "__sub__",
-    "__mul__",
-    "__div__",
-    "__mod__",
-    "__pow__",
-    "__eq__",
-    "__neq__",
-    "__lt__",
-    "__gt__",
-    "__lte__",
-    "__gte__",
-    "__pair__",
-    "__pipe__"
+  [ "neg",
+    "not",
+    "+",
+    "-",
+    "*",
+    "/",
+    "%",
+    "^",
+    "=",
+    "!=",
+    ">",
+    "<",
+    ">=",
+    "<=",
+    "::",
+    "|>"
   ]
 
 defaultEnv :: ResState Env
