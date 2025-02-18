@@ -9,16 +9,26 @@ type Prog = Spanned Module
 data Module = Module Name [Spanned Decl] deriving (Show)
 
 data Decl
-  = DDef (Spanned Pattern) (Spanned Expr)
-  | DFn Name [Spanned Pattern] (Spanned Expr)
-  | DFnMatch Name (Maybe (Spanned TypeHint)) [([Spanned Pattern], Spanned Expr)]
-  | DRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
-  | DData Name [TyVar] [(Name, [Spanned TypeHint])]
-  | DTypeSyn Name [TyVar] (Spanned TypeHint)
-  | DImport Path
+  = DeclDef (Spanned Pattern) (Spanned Expr)
+  | DeclFn Name [Spanned Pattern] (Spanned Expr)
+  | DeclFnMatch Name (Maybe (Spanned TypeHint)) [([Spanned Pattern], Spanned Expr)]
+  | DeclRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
+  | DeclData Name [TyVar] [(Name, [Spanned TypeHint])]
+  | DeclTypeSyn Name [TyVar] (Spanned TypeHint)
+  | DeclImport Path
   deriving (Show, Eq)
 
+data Def a = Def
+  { alts :: [Alt a],
+    visibility :: Visibility
+  }
+  deriving (Show, Eq)
+
+data Alt a = Alt a (Spanned Expr) deriving (Show, Eq)
+
 data Visibility = Public | Private deriving (Show, Eq)
+
+-- data Attr =
 
 data Expr
   = Lit Lit

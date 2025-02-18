@@ -119,18 +119,18 @@ rename (Spanned (A.Module (Spanned n s) ds) s') = do
   pure $ Spanned (Module (Spanned (n, n') s) ds') s'
 
 renameDecl :: Spanned A.Decl -> ResState (Spanned Decl)
-renameDecl (Spanned (A.DDef p e) s) = do
+renameDecl (Spanned (A.DeclDef p e) s) = do
   p' <- renamePattern p
   e' <- renameExpr e
   pure $ Spanned (DDef p' e') s
-renameDecl (Spanned (A.DFn (Spanned n s) ps e) s') = do
+renameDecl (Spanned (A.DeclFn (Spanned n s) ps e) s') = do
   n' <- define n
   push
   ps' <- traverse renamePattern ps
   e' <- renameExpr e
   pop
   pure $ Spanned (DFn (Spanned (n, n') s) ps' e') s'
-renameDecl (Spanned (A.DFnMatch (Spanned n s) t cs) s') = do
+renameDecl (Spanned (A.DeclFnMatch (Spanned n s) t cs) s') = do
   n' <- define n
   t' <- traverse renameTypeHint t
   push

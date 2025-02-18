@@ -142,6 +142,10 @@ pub def map : a b. (a -> b) -> [a] -> [b]
   f [] -> []
   f (x::xs) -> f x :: map f xs
 
+map : a b. (a -> b) -> [a] -> [b]
+map f [] = []
+map f (x::xs) = f x :: map f xs
+
 def foldl f acc xs =
   match xs with
   | [] -> acc

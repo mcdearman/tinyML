@@ -326,7 +326,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
       start <- tokenWithSpan TDef
       p <- pattern'
       e <- tokenWithSpan TAssign *> expr
-      pure $ Spanned (DDef p e) (span start <> span e)
+      pure $ Spanned (DeclDef p e) (span start <> span e)
 
     fn :: Parser (Spanned Decl)
     fn = do
@@ -334,7 +334,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
       i <- ident
       ps <- some pattern'
       e <- tokenWithSpan TAssign *> expr
-      pure $ Spanned (DFn i ps e) (span start <> span e)
+      pure $ Spanned (DeclFn i ps e) (span start <> span e)
 
     fnMatch :: Parser (Spanned Decl)
     fnMatch = do
@@ -348,7 +348,7 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
                  <*> (tokenWithSpan TAssign *> expr)
              )
             `sepEndBy1` tokenWithSpan TBar
-      pure $ Spanned (DFnMatch i t cases) (span start <> span (snd (last cases)))
+      pure $ Spanned (DeclFnMatch i t cases) (span start <> span (snd (last cases)))
 
     record :: Parser (Spanned Decl)
     record =
@@ -364,14 +364,14 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
               )
                 `sepEndBy1` tokenWithSpan TComma
             )
-        pure $ Spanned (DRecordDef name vars (value p)) (span start <> span p)
+        pure $ Spanned (DeclRecordDef name vars (value p)) (span start <> span p)
 
     dataDef :: Parser (Spanned Decl)
     dataDef = do
       name <- tokenWithSpan TData *> typeIdent
       vars <- many tyVar <* tokenWithSpan TEq
       p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TBar
-      pure $ Spanned (DData name vars p) (span name <> span (last (snd (last p))))
+      pure $ Spanned (DeclData name vars p) (span name <> span (last (snd (last p))))
 
 module' :: Text -> Parser Module
 module' filename = Module (Spanned filename NoLoc) <$> many decl
@@ -388,7 +388,7 @@ repl = do
       ( Spanned
           ( Module
               (Spanned "main" NoLoc)
-              [Spanned (DFn (Spanned "main" $ span e) [] e) (span e)]
+              [Spanned (DeclFn (Spanned "main" $ span e) [] e) (span e)]
           )
           (span e)
       )
