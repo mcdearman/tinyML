@@ -55,16 +55,16 @@ tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
 
 int :: Parser (Spanned Int)
-int = token (\case (WithPos _ _ s _ (TInt n)) -> Just (Spanned n s); _ -> Nothing) Set.empty
+int = token (\case (WithPos _ _ s _ (TokInt n)) -> Just (Spanned n s); _ -> Nothing) Set.empty
 
 bool :: Parser (Spanned Bool)
-bool = token (\case (WithPos _ _ s _ (TBool b)) -> Just (Spanned b s); _ -> Nothing) Set.empty
+bool = token (\case (WithPos _ _ s _ (TokBool b)) -> Just (Spanned b s); _ -> Nothing) Set.empty
 
 string :: Parser (Spanned Text)
-string = token (\case (WithPos _ _ s _ (TString str)) -> Just (Spanned str s); _ -> Nothing) Set.empty
+string = token (\case (WithPos _ _ s _ (TokString str)) -> Just (Spanned str s); _ -> Nothing) Set.empty
 
 unit :: Parser (Spanned ())
-unit = Spanned () <$> (((<>) . span <$> tokenWithSpan TLParen) <*> (span <$> tokenWithSpan TRParen))
+unit = Spanned () <$> (((<>) . span <$> tokenWithSpan TokLParen) <*> (span <$> tokenWithSpan TokRParen))
 
 lit :: Parser (Spanned Lit)
 lit =
@@ -75,41 +75,41 @@ lit =
     ]
 
 ident :: Parser (Spanned Text)
-ident = token (\case (WithPos _ _ s _ (TIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
+ident = token (\case (WithPos _ _ s _ (TokIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 tyVar :: Parser TyVar
-tyVar = token (\case (WithPos _ _ s _ (TTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
+tyVar = token (\case (WithPos _ _ s _ (TokTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
 
 typeIdent :: Parser (Spanned Text)
-typeIdent = token (\case (WithPos _ _ s _ (TTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
+typeIdent = token (\case (WithPos _ _ s _ (TokTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 parens :: Parser a -> Parser (Spanned a)
 parens p = do
-  start <- tokenWithSpan TLParen
+  start <- tokenWithSpan TokLParen
   x <- p
-  end <- tokenWithSpan TRParen
+  end <- tokenWithSpan TokRParen
   pure $ Spanned x (span start <> span end)
 
 brackets :: Parser a -> Parser (Spanned a)
 brackets p = do
-  start <- tokenWithSpan TLBracket
+  start <- tokenWithSpan TokLBracket
   x <- p
-  end <- tokenWithSpan TRBracket
+  end <- tokenWithSpan TokRBracket
   pure $ Spanned x (span start <> span end)
 
 arrBrackets :: Parser a -> Parser (Spanned a)
 arrBrackets p = do
-  start <- tokenWithSpan THash
-  tokenWithSpan TLBracket
+  start <- tokenWithSpan TokHash
+  tokenWithSpan TokLBracket
   x <- p
-  end <- tokenWithSpan TRBracket
+  end <- tokenWithSpan TokRBracket
   pure $ Spanned x (span start <> span end)
 
 braces :: Parser a -> Parser (Spanned a)
 braces p = do
-  start <- tokenWithSpan TLBrace
+  start <- tokenWithSpan TokLBrace
   x <- p
-  end <- tokenWithSpan TRBrace
+  end <- tokenWithSpan TokRBrace
   pure $ Spanned x (span start <> span end)
 
 binary :: Token -> (Span -> Spanned Expr -> Spanned Expr -> Spanned Expr) -> Operator Parser (Spanned Expr)
@@ -121,43 +121,43 @@ postfix tok f = Postfix (f . span <$> tokenWithSpan tok)
 
 operatorTable :: [[Operator Parser (Spanned Expr)]]
 operatorTable =
-  [ [ prefix TMinus (\s e -> Spanned (Unary (Spanned UnOpNeg s) e) (span e)),
-      prefix TBang (\s e -> Spanned (Unary (Spanned UnOpNot s) e) (span e))
+  [ [ prefix TokMinus (\s e -> Spanned (Unary (Spanned UnOpNeg s) e) (span e)),
+      prefix TokBang (\s e -> Spanned (Unary (Spanned UnOpNot s) e) (span e))
     ],
-    [ binary TStar (\s l r -> Spanned (Binary (Spanned BinOpMul s) l r) (span l <> span r)),
-      binary TSlash (\s l r -> Spanned (Binary (Spanned BinOpDiv s) l r) (span l <> span r)),
-      binary TPercent (\s l r -> Spanned (Binary (Spanned BinOpMod s) l r) (span l <> span r))
+    [ binary TokStar (\s l r -> Spanned (Binary (Spanned BinOpMul s) l r) (span l <> span r)),
+      binary TokSlash (\s l r -> Spanned (Binary (Spanned BinOpDiv s) l r) (span l <> span r)),
+      binary TokPercent (\s l r -> Spanned (Binary (Spanned BinOpMod s) l r) (span l <> span r))
     ],
-    [ binary TPlus (\s l r -> Spanned (Binary (Spanned BinOpAdd s) l r) (span l <> span r)),
-      binary TMinus (\s l r -> Spanned (Binary (Spanned BinOpSub s) l r) (span l <> span r))
+    [ binary TokPlus (\s l r -> Spanned (Binary (Spanned BinOpAdd s) l r) (span l <> span r)),
+      binary TokMinus (\s l r -> Spanned (Binary (Spanned BinOpSub s) l r) (span l <> span r))
     ],
-    [ binary TEq (\s l r -> Spanned (Binary (Spanned BinOpEq s) l r) (span l <> span r)),
-      binary TNeq (\s l r -> Spanned (Binary (Spanned BinOpNeq s) l r) (span l <> span r)),
-      binary TLt (\s l r -> Spanned (Binary (Spanned BinOpLt s) l r) (span l <> span r)),
-      binary TGt (\s l r -> Spanned (Binary (Spanned BinOpGt s) l r) (span l <> span r)),
-      binary TLeq (\s l r -> Spanned (Binary (Spanned BinOpLeq s) l r) (span l <> span r)),
-      binary TGeq (\s l r -> Spanned (Binary (Spanned BinOpGeq s) l r) (span l <> span r))
+    [ binary TokEq (\s l r -> Spanned (Binary (Spanned BinOpEq s) l r) (span l <> span r)),
+      binary TokNeq (\s l r -> Spanned (Binary (Spanned BinOpNeq s) l r) (span l <> span r)),
+      binary TokLt (\s l r -> Spanned (Binary (Spanned BinOpLt s) l r) (span l <> span r)),
+      binary TokGt (\s l r -> Spanned (Binary (Spanned BinOpGt s) l r) (span l <> span r)),
+      binary TokLeq (\s l r -> Spanned (Binary (Spanned BinOpLeq s) l r) (span l <> span r)),
+      binary TokGeq (\s l r -> Spanned (Binary (Spanned BinOpGeq s) l r) (span l <> span r))
     ],
-    [ binary TAnd (\s l r -> Spanned (Binary (Spanned BinOpAnd s) l r) (span l <> span r)),
-      binary TOr (\s l r -> Spanned (Binary (Spanned BinOpOr s) l r) (span l <> span r))
+    [ binary TokAnd (\s l r -> Spanned (Binary (Spanned BinOpAnd s) l r) (span l <> span r)),
+      binary TokOr (\s l r -> Spanned (Binary (Spanned BinOpOr s) l r) (span l <> span r))
     ],
-    [binary TDoubleColon (\s l r -> Spanned (Binary (Spanned BinOpPair s) l r) (span l <> span r))],
-    [binary TPipe (\s l r -> Spanned (Binary (Spanned BinOpPipe s) l r) (span l <> span r))]
+    [binary TokDoubleColon (\s l r -> Spanned (Binary (Spanned BinOpPair s) l r) (span l <> span r))],
+    [binary TokPipe (\s l r -> Spanned (Binary (Spanned BinOpPipe s) l r) (span l <> span r))]
   ]
 
 pattern' :: Parser (Spanned Pattern)
 pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
   where
-    wildcard = Spanned PatternWildcard . span <$> tokenWithSpan TUnderscore
+    wildcard = Spanned PatternWildcard . span <$> tokenWithSpan TokUnderscore
     litP = do
       l <- lit
       pure $ Spanned (PatternLit (value l)) (span l)
     varP = do
       i <- ident
       pure $ Spanned (PatternVar i) (span i)
-    pairP = parens $ PatternPair <$> pattern' <*> (tokenWithSpan TDoubleColon *> pattern')
+    pairP = parens $ PatternPair <$> pattern' <*> (tokenWithSpan TokDoubleColon *> pattern')
     listP = do
-      ps <- brackets $ pattern' `sepEndBy` tokenWithSpan TComma
+      ps <- brackets $ pattern' `sepEndBy` tokenWithSpan TokComma
       pure $ Spanned (PatternList (value ps)) (span ps)
     unitP = Spanned PatternUnit . span <$> unit
 
@@ -167,7 +167,7 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
     arrowType :: Parser (Spanned TypeHint)
     arrowType = do
       t1 <- baseType
-      tokenWithSpan TArrow
+      tokenWithSpan TokArrow
       t2 <- type'
       pure $ Spanned (TypeHintArrow t1 t2) (span t1 <> span t2)
     kindType = do
@@ -203,12 +203,12 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
       fmap TypeHintTuple
         <$> parens
           ( (:)
-              <$> (type' <* tokenWithSpan TComma)
-              <*> type' `sepEndBy1` tokenWithSpan TComma
+              <$> (type' <* tokenWithSpan TokComma)
+              <*> type' `sepEndBy1` tokenWithSpan TokComma
           )
     recordType = do
       name <- optional typeIdent
-      r <- braces (((,) <$> ident <*> (tokenWithSpan TColon *> type')) `sepEndBy1` tokenWithSpan TComma)
+      r <- braces (((,) <$> ident <*> (tokenWithSpan TokColon *> type')) `sepEndBy1` tokenWithSpan TokComma)
       case name of
         Nothing -> pure $ Spanned (TypeHintRecord Nothing (value r)) (span r)
         Just n -> pure $ Spanned (TypeHintRecord name (value r)) (span n <> span r)
@@ -225,62 +225,62 @@ expr = makeExprParser apply operatorTable
 
     lambda :: Parser (Spanned Expr)
     lambda = do
-      start <- tokenWithSpan TBackSlash
+      start <- tokenWithSpan TokBackSlash
       ps <- some pattern'
-      tokenWithSpan TArrow
+      tokenWithSpan TokArrow
       e <- expr
       pure $ Spanned (Lam ps e) (span start <> span e)
 
     let' :: Parser (Spanned Expr)
     let' = do
-      start <- tokenWithSpan TLet
+      start <- tokenWithSpan TokLet
       p <- pattern'
-      tokenWithSpan TEq
+      tokenWithSpan TokEq
       e1 <- expr
-      tokenWithSpan TIn
+      tokenWithSpan TokIn
       e2 <- expr
       pure $ Spanned (Let p e1 e2) (span start <> span e2)
 
     let_rec :: Parser (Spanned Expr)
     let_rec = do
-      start <- tokenWithSpan TLet
+      start <- tokenWithSpan TokLet
       i <- ident
       ps <- some pattern'
-      tokenWithSpan TEq
+      tokenWithSpan TokEq
       e1 <- expr
-      tokenWithSpan TIn
+      tokenWithSpan TokIn
       e2 <- expr
       pure $ Spanned (Fn i ps e1 e2) (span start <> span e2)
 
     if' :: Parser (Spanned Expr)
     if' = do
-      start <- tokenWithSpan TIf
+      start <- tokenWithSpan TokIf
       cond <- expr
-      tokenWithSpan TThen
+      tokenWithSpan TokThen
       e1 <- expr
-      tokenWithSpan TElse
+      tokenWithSpan TokElse
       e2 <- expr
       pure $ Spanned (If cond e1 e2) (span start <> span e2)
 
     match :: Parser (Spanned Expr)
     match = do
-      start <- tokenWithSpan TMatch
-      e <- expr <* tokenWithSpan TWith <* tokenWithSpan TBar
+      start <- tokenWithSpan TokMatch
+      e <- expr <* tokenWithSpan TokWith <* tokenWithSpan TokBar
       cases <-
         ( ( (,)
               <$> pattern'
-              <*> (tokenWithSpan TArrow *> expr)
+              <*> (tokenWithSpan TokArrow *> expr)
           )
         )
-          `sepBy1` tokenWithSpan TBar
+          `sepBy1` tokenWithSpan TokBar
       pure $ Spanned (Match e cases) (span start <> span (snd (last cases)))
 
     list :: Parser (Spanned Expr)
-    list = fmap List <$> brackets (expr `sepEndBy` tokenWithSpan TComma)
+    list = fmap List <$> brackets (expr `sepEndBy` tokenWithSpan TokComma)
 
     array :: Parser (Spanned Expr)
     array = do
-      a <- arrBrackets (expr `sepEndBy` tokenWithSpan TComma)
+      a <- arrBrackets (expr `sepEndBy` tokenWithSpan TokComma)
       pure $ Spanned (Array $ listArray (0, length (value a) - 1) (value a)) (span a)
 
     tuple :: Parser (Spanned Expr)
@@ -288,14 +288,14 @@ expr = makeExprParser apply operatorTable
       fmap Tuple
         <$> parens
           ( (:)
-              <$> (expr <* tokenWithSpan TComma)
-              <*> expr `sepEndBy1` tokenWithSpan TComma
+              <$> (expr <* tokenWithSpan TokComma)
+              <*> expr `sepEndBy1` tokenWithSpan TokComma
           )
 
     record :: Parser (Spanned Expr)
     record = do
       name <- optional typeIdent
-      r <- braces (((,) <$> ident <*> (tokenWithSpan TEq *> expr)) `sepEndBy1` tokenWithSpan TComma)
+      r <- braces (((,) <$> ident <*> (tokenWithSpan TokEq *> expr)) `sepEndBy1` tokenWithSpan TokComma)
       case name of
         Nothing -> pure $ Spanned (Record Nothing (value r)) (span r)
         Just n -> pure $ Spanned (Record name (value r)) (span n <> span r)
@@ -323,54 +323,54 @@ decl = try fnMatch <|> try fn <|> def <|> try record <|> dataDef
   where
     def :: Parser (Spanned Decl)
     def = do
-      start <- tokenWithSpan TDef
+      start <- tokenWithSpan TokDef
       p <- pattern'
-      e <- tokenWithSpan TAssign *> expr
+      e <- tokenWithSpan TokAssign *> expr
       pure $ Spanned (DeclDef p e) (span start <> span e)
 
     fn :: Parser (Spanned Decl)
     fn = do
-      start <- tokenWithSpan TDef
+      start <- tokenWithSpan TokDef
       i <- ident
       ps <- some pattern'
-      e <- tokenWithSpan TAssign *> expr
+      e <- tokenWithSpan TokAssign *> expr
       pure $ Spanned (DeclFn i ps e) (span start <> span e)
 
     fnMatch :: Parser (Spanned Decl)
     fnMatch = do
-      start <- tokenWithSpan TDef
+      start <- tokenWithSpan TokDef
       i <- ident
-      t <- optional (tokenWithSpan TColon *> type')
+      t <- optional (tokenWithSpan TokColon *> type')
       cases <-
-        tokenWithSpan TBar
+        tokenWithSpan TokBar
           *> ( (,)
                  <$> some pattern'
-                 <*> (tokenWithSpan TAssign *> expr)
+                 <*> (tokenWithSpan TokAssign *> expr)
              )
-            `sepEndBy1` tokenWithSpan TBar
+            `sepEndBy1` tokenWithSpan TokBar
       pure $ Spanned (DeclFnMatch i t cases) (span start <> span (snd (last cases)))
 
     record :: Parser (Spanned Decl)
     record =
       do
-        start <- tokenWithSpan TData
+        start <- tokenWithSpan TokData
         name <- typeIdent
-        vars <- many tyVar <* tokenWithSpan TEq
+        vars <- many tyVar <* tokenWithSpan TokEq
         p <-
           braces
             ( ( (,)
                   <$> ident
-                  <*> (tokenWithSpan TColon *> type')
+                  <*> (tokenWithSpan TokColon *> type')
               )
-                `sepEndBy1` tokenWithSpan TComma
+                `sepEndBy1` tokenWithSpan TokComma
             )
         pure $ Spanned (DeclRecordDef name vars (value p)) (span start <> span p)
 
     dataDef :: Parser (Spanned Decl)
     dataDef = do
-      name <- tokenWithSpan TData *> typeIdent
-      vars <- many tyVar <* tokenWithSpan TEq
-      p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TBar
+      name <- tokenWithSpan TokData *> typeIdent
+      vars <- many tyVar <* tokenWithSpan TokEq
+      p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TokBar
       pure $ Spanned (DeclData name vars p) (span name <> span (last (snd (last p))))
 
 module' :: Text -> Parser Module

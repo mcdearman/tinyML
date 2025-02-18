@@ -3,134 +3,134 @@ module Token where
 import Data.Text (Text)
 
 data Token
-  = TEOF
-  | TWhitespace
-  | TComment
-  | TIdent Text
-  | TTypeIdent Text
-  | TTyVar Text
-  | TInt Int
-  | TReal Double
-  | TBool Bool
-  | TString Text
-  | TChar Char
-  | TLParen
-  | TRParen
-  | TLBrace
-  | TRBrace
-  | TLBracket
-  | TRBracket
-  | THash
-  | TPlus
-  | TMinus
-  | TStar
-  | TSlash
-  | TBackSlash
-  | TPercent
-  | TAssign
-  | TAnd
-  | TOr
-  | TBang
-  | TEq
-  | TNeq
-  | TLt
-  | TGt
-  | TLeq
-  | TGeq
-  | TPeriod
-  | TDoublePeriod
-  | TComma
-  | TColon
-  | TDoubleColon
-  | TSemiColon
-  | TArrow
-  | TFatArrow
-  | TBar
-  | TPipe
-  | TUnderscore
-  | TModule
-  | TImport
-  | TAs
-  | TPub
-  | TDef
-  | TLet
-  | TIn
-  | TIf
-  | TThen
-  | TElse
-  | TMatch
-  | TWith
-  | TData
-  | TType
-  | TClass
-  | TInstance
-  | TDerive
-  | TDo
-  | TEnd
+  = TokEOF
+  | TokWhitespace
+  | TokComment
+  | TokIdent Text
+  | TokTypeIdent Text
+  | TokTyVar Text
+  | TokInt Int
+  | TokReal Double
+  | TokBool Bool
+  | TokString Text
+  | TokChar Char
+  | TokLParen
+  | TokRParen
+  | TokLBrace
+  | TokRBrace
+  | TokLBracket
+  | TokRBracket
+  | TokHash
+  | TokPlus
+  | TokMinus
+  | TokStar
+  | TokSlash
+  | TokBackSlash
+  | TokPercent
+  | TokAssign
+  | TokAnd
+  | TokOr
+  | TokBang
+  | TokEq
+  | TokNeq
+  | TokLt
+  | TokGt
+  | TokLeq
+  | TokGeq
+  | TokPeriod
+  | TokDoublePeriod
+  | TokComma
+  | TokColon
+  | TokDoubleColon
+  | TokSemiColon
+  | TokArrow
+  | TokFatArrow
+  | TokBar
+  | TokPipe
+  | TokUnderscore
+  | TokModule
+  | TokImport
+  | TokAs
+  | TokPub
+  | TokDef
+  | TokLet
+  | TokIn
+  | TokIf
+  | TokThen
+  | TokElse
+  | TokMatch
+  | TokWith
+  | TokData
+  | TokType
+  | TokClass
+  | TokInstance
+  | TokDerive
+  | TokDo
+  | TokEnd
   deriving (Show, Eq, Ord)
 
 pShowToken :: Token -> String
-pShowToken TEOF = "EOF"
-pShowToken TWhitespace = "Whitespace"
-pShowToken TComment = "Comment"
-pShowToken (TIdent x) = "Ident " ++ show x
-pShowToken (TTypeIdent x) = "TypeIdent " ++ show x
-pShowToken (TTyVar x) = "TyVar " ++ show x
-pShowToken (TInt x) = "Int" ++ show x
-pShowToken (TReal x) = "Real" ++ show x
-pShowToken (TBool x) = "Bool" ++ show x
-pShowToken (TString x) = "String" ++ show x
-pShowToken (TChar x) = "Char" ++ show x
-pShowToken TLParen = "LParen"
-pShowToken TRParen = "RParen"
-pShowToken TLBrace = "LBrace"
-pShowToken TRBrace = "RBrace"
-pShowToken TLBracket = "LBracket"
-pShowToken TRBracket = "RBracket"
-pShowToken THash = "Hash"
-pShowToken TPlus = "Plus"
-pShowToken TMinus = "Minus"
-pShowToken TStar = "Star"
-pShowToken TSlash = "Slash"
-pShowToken TBackSlash = "BackSlash"
-pShowToken TPercent = "Percent"
-pShowToken TAssign = "Assign"
-pShowToken TAnd = "And"
-pShowToken TOr = "Or"
-pShowToken TBang = "Bang"
-pShowToken TEq = "Eq"
-pShowToken TNeq = "Neq"
-pShowToken TLt = "Lt"
-pShowToken TGt = "Gt"
-pShowToken TLeq = "Leq"
-pShowToken TGeq = "Geq"
-pShowToken TPeriod = "Period"
-pShowToken TDoublePeriod = "DoublePeriod"
-pShowToken TComma = "Comma"
-pShowToken TColon = "Colon"
-pShowToken TDoubleColon = "DoubleColon"
-pShowToken TSemiColon = "SemiColon"
-pShowToken TArrow = "Arrow"
-pShowToken TFatArrow = "FatArrow"
-pShowToken TBar = "Bar"
-pShowToken TPipe = "Pipe"
-pShowToken TUnderscore = "Underscore"
-pShowToken TModule = "Module"
-pShowToken TImport = "Import"
-pShowToken TAs = "As"
-pShowToken TPub = "Pub"
-pShowToken TDef = "Def"
-pShowToken TLet = "Let"
-pShowToken TIn = "In"
-pShowToken TIf = "If"
-pShowToken TThen = "Then"
-pShowToken TElse = "Else"
-pShowToken TMatch = "Match"
-pShowToken TWith = "With"
-pShowToken TData = "Data"
-pShowToken TType = "Type"
-pShowToken TClass = "Class"
-pShowToken TInstance = "Instance"
-pShowToken TDerive = "Derive"
-pShowToken TDo = "Do"
-pShowToken TEnd = "End"
+pShowToken TokEOF = "EOF"
+pShowToken TokWhitespace = "Whitespace"
+pShowToken TokComment = "Comment"
+pShowToken (TokIdent x) = "Ident " ++ show x
+pShowToken (TokTypeIdent x) = "TypeIdent " ++ show x
+pShowToken (TokTyVar x) = "TyVar " ++ show x
+pShowToken (TokInt x) = "Int" ++ show x
+pShowToken (TokReal x) = "Real" ++ show x
+pShowToken (TokBool x) = "Bool" ++ show x
+pShowToken (TokString x) = "String" ++ show x
+pShowToken (TokChar x) = "Char" ++ show x
+pShowToken TokLParen = "LParen"
+pShowToken TokRParen = "RParen"
+pShowToken TokLBrace = "LBrace"
+pShowToken TokRBrace = "RBrace"
+pShowToken TokLBracket = "LBracket"
+pShowToken TokRBracket = "RBracket"
+pShowToken TokHash = "Hash"
+pShowToken TokPlus = "Plus"
+pShowToken TokMinus = "Minus"
+pShowToken TokStar = "Star"
+pShowToken TokSlash = "Slash"
+pShowToken TokBackSlash = "BackSlash"
+pShowToken TokPercent = "Percent"
+pShowToken TokAssign = "Assign"
+pShowToken TokAnd = "And"
+pShowToken TokOr = "Or"
+pShowToken TokBang = "Bang"
+pShowToken TokEq = "Eq"
+pShowToken TokNeq = "Neq"
+pShowToken TokLt = "Lt"
+pShowToken TokGt = "Gt"
+pShowToken TokLeq = "Leq"
+pShowToken TokGeq = "Geq"
+pShowToken TokPeriod = "Period"
+pShowToken TokDoublePeriod = "DoublePeriod"
+pShowToken TokComma = "Comma"
+pShowToken TokColon = "Colon"
+pShowToken TokDoubleColon = "DoubleColon"
+pShowToken TokSemiColon = "SemiColon"
+pShowToken TokArrow = "Arrow"
+pShowToken TokFatArrow = "FatArrow"
+pShowToken TokBar = "Bar"
+pShowToken TokPipe = "Pipe"
+pShowToken TokUnderscore = "Underscore"
+pShowToken TokModule = "Module"
+pShowToken TokImport = "Import"
+pShowToken TokAs = "As"
+pShowToken TokPub = "Pub"
+pShowToken TokDef = "Def"
+pShowToken TokLet = "Let"
+pShowToken TokIn = "In"
+pShowToken TokIf = "If"
+pShowToken TokThen = "Then"
+pShowToken TokElse = "Else"
+pShowToken TokMatch = "Match"
+pShowToken TokWith = "With"
+pShowToken TokData = "Data"
+pShowToken TokType = "Type"
+pShowToken TokClass = "Class"
+pShowToken TokInstance = "Instance"
+pShowToken TokDerive = "Derive"
+pShowToken TokDo = "Do"
+pShowToken TokEnd = "End"

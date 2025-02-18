@@ -66,7 +66,7 @@ instance Stream TokenStream where
   chunkEmpty _ = null
   take1_ (TokenStream _ []) = Nothing
   take1_ (TokenStream src (t : ts)) = case val t of
-    TComment -> take1_ (TokenStream src ts)
+    TokComment -> take1_ (TokenStream src ts)
     _ -> Just (t, TokenStream src ts)
 
   takeN_ n ts@(TokenStream src s)
@@ -150,23 +150,23 @@ hexadecimal :: Lexer Int
 hexadecimal = char '0' >> char' 'x' >> L.hexadecimal
 
 int :: Lexer Token
-int = TInt <$> (try octal <|> try hexadecimal <|> L.decimal)
+int = TokInt <$> (try octal <|> try hexadecimal <|> L.decimal)
 
 real :: Lexer Token
-real = TReal <$> L.float
+real = TokReal <$> L.float
 
 bool :: Lexer Token
-bool = TBool <$> choice [True <$ string "true", False <$ string "false"]
+bool = TokBool <$> choice [True <$ string "true", False <$ string "false"]
 
 str :: Lexer Token
-str = TString <$> (char '\"' *> (pack <$> manyTill L.charLiteral (char '\"')))
+str = TokString <$> (char '\"' *> (pack <$> manyTill L.charLiteral (char '\"')))
 
 ident :: Lexer Token
 ident = try $ do
   name <- pack <$> ((:) <$> identStartChar <*> many identChar)
   if name `elem` keywords
     then fail $ "keyword " ++ unpack name ++ " cannot be an identifier"
-    else return $ TIdent name
+    else return $ TokIdent name
   where
     identStartChar = lowerChar <|> char '_'
     identChar = alphaNumChar <|> char '_' <|> char '\''
@@ -197,68 +197,68 @@ ident = try $ do
       ]
 
 typeIdent :: Lexer Token
-typeIdent = TTypeIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
+typeIdent = TokTypeIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
 
 tyVar :: Lexer Token
-tyVar = TTyVar . pack <$> ((:) <$> char '\'' <*> some lowerChar)
+tyVar = TokTyVar . pack <$> ((:) <$> char '\'' <*> some lowerChar)
 
 token :: Lexer (WithPos Token)
 token =
   lexemeWithPos $
     choice
-      [ TComment <$ string "--" <* manyTill_ L.charLiteral (char '\n'),
+      [ TokComment <$ string "--" <* manyTill_ L.charLiteral (char '\n'),
         try real <|> int,
         bool,
         str,
         typeIdent,
         tyVar,
         ident,
-        TLParen <$ char '(',
-        TRParen <$ char ')',
-        TLBrace <$ char '{',
-        TRBrace <$ char '}',
-        TLBracket <$ char '[',
-        TRBracket <$ char ']',
-        THash <$ char '#',
-        TPlus <$ char '+',
-        try (TArrow <$ string "->") <|> TMinus <$ char '-',
-        TStar <$ char '*',
-        TSlash <$ char '/',
-        TBackSlash <$ char '\\',
-        TPercent <$ char '%',
-        TAnd <$ string "&&",
-        TOr <$ string "||",
-        try (TNeq <$ string "!=") <|> TBang <$ char '!',
-        try (TFatArrow <$ string "=>") <|> TEq <$ string "==" <|> TAssign <$ char '=',
-        TLt <$ char '<',
-        TGt <$ char '>',
-        TLeq <$ string "<=",
-        TGeq <$ string ">=",
-        try (TDoublePeriod <$ string "..") <|> TPeriod <$ char '.',
-        TComma <$ char ',',
-        try (TDoubleColon <$ string "::") <|> TColon <$ char ':',
-        TSemiColon <$ char ';',
-        try (TPipe <$ string "|>") <|> TBar <$ char '|',
-        TUnderscore <$ char '_',
-        TModule <$ string "module",
-        TImport <$ string "import",
-        TAs <$ string "as",
-        TPub <$ string "pub",
-        TDef <$ string "def",
-        TLet <$ string "let",
-        TIn <$ string "in",
-        TIf <$ string "if",
-        TThen <$ string "then",
-        TElse <$ string "else",
-        TMatch <$ string "match",
-        TWith <$ string "with",
-        TData <$ string "data",
-        TType <$ string "type",
-        TClass <$ string "class",
-        TInstance <$ string "instance",
-        TDerive <$ string "derive",
-        TDo <$ string "do",
-        TEnd <$ string "end"
+        TokLParen <$ char '(',
+        TokRParen <$ char ')',
+        TokLBrace <$ char '{',
+        TokRBrace <$ char '}',
+        TokLBracket <$ char '[',
+        TokRBracket <$ char ']',
+        TokHash <$ char '#',
+        TokPlus <$ char '+',
+        try (TokArrow <$ string "->") <|> TokMinus <$ char '-',
+        TokStar <$ char '*',
+        TokSlash <$ char '/',
+        TokBackSlash <$ char '\\',
+        TokPercent <$ char '%',
+        TokAnd <$ string "&&",
+        TokOr <$ string "||",
+        try (TokNeq <$ string "!=") <|> TokBang <$ char '!',
+        try (TokFatArrow <$ string "=>") <|> TokEq <$ string "==" <|> TokAssign <$ char '=',
+        TokLt <$ char '<',
+        TokGt <$ char '>',
+        TokLeq <$ string "<=",
+        TokGeq <$ string ">=",
+        try (TokDoublePeriod <$ string "..") <|> TokPeriod <$ char '.',
+        TokComma <$ char ',',
+        try (TokDoubleColon <$ string "::") <|> TokColon <$ char ':',
+        TokSemiColon <$ char ';',
+        try (TokPipe <$ string "|>") <|> TokBar <$ char '|',
+        TokUnderscore <$ char '_',
+        TokModule <$ string "module",
+        TokImport <$ string "import",
+        TokAs <$ string "as",
+        TokPub <$ string "pub",
+        TokDef <$ string "def",
+        TokLet <$ string "let",
+        TokIn <$ string "in",
+        TokIf <$ string "if",
+        TokThen <$ string "then",
+        TokElse <$ string "else",
+        TokMatch <$ string "match",
+        TokWith <$ string "with",
+        TokData <$ string "data",
+        TokType <$ string "type",
+        TokClass <$ string "class",
+        TokInstance <$ string "instance",
+        TokDerive <$ string "derive",
+        TokDo <$ string "do",
+        TokEnd <$ string "end"
       ]
 
 lexMML :: Text -> Either (ParseErrorBundle Text Void) TokenStream
