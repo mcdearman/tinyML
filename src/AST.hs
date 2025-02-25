@@ -6,21 +6,35 @@ import Data.Text (Text)
 
 type Prog = Spanned Module
 
-data Module = Module Name [Spanned Decl] deriving (Show)
+data Module = Module
+  { moduleName :: Name,
+    moudleimports :: [Path],
+    moduleTypeDefs :: [TypeDef],
+    moduleTypeAliases :: [TypeAlias],
+    moduleDefs :: [Def (Spanned Pattern)]
+  }
 
-data Decl
-  = DeclDef (Spanned Pattern) (Spanned Expr)
-  | DeclFn Name [Spanned Pattern] (Spanned Expr)
-  | DeclFnMatch Name (Maybe (Spanned TypeHint)) [([Spanned Pattern], Spanned Expr)]
-  | DeclRecordDef Name [TyVar] [(Name, Spanned TypeHint)]
-  | DeclData Name [TyVar] [(Name, [Spanned TypeHint])]
-  | DeclTypeSyn Name [TyVar] (Spanned TypeHint)
-  | DeclImport Path
+data Attr = Attr Expr deriving (Show, Eq)
+
+data TypeAlias = TypeAlias
+  { aliasName :: Name,
+    aliasTyVars :: [TyVar],
+    aliasType :: Spanned TypeHint
+  }
   deriving (Show, Eq)
 
+data TypeDef = TypeDef
+  { typeName :: Name,
+    typeTyVars :: [TyVar],
+    typeConstructors :: [(Name, [Spanned TypeHint])]
+  }
+  deriving (Show, Eq)
+
+type Defs a = [Def a]
+
 data Def a = Def
-  { alts :: [Alt a],
-    visibility :: Visibility
+  { defAlts :: [Alt a],
+    defVisibility :: Visibility
   }
   deriving (Show, Eq)
 
@@ -28,9 +42,9 @@ data Alt a = Alt a (Spanned Expr) deriving (Show, Eq)
 
 data Visibility = Public | Private deriving (Show, Eq)
 
--- data Attr =
+type Expr = Spanned ExprKind
 
-data Expr
+data ExprKind
   = Lit Lit
   | Var Name
   | App (Spanned Expr) (Spanned Expr)
