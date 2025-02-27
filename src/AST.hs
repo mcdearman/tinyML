@@ -9,24 +9,34 @@ type Prog = Spanned Module
 data Module = Module
   { moduleName :: Name,
     moudleimports :: [Path],
-    moduleTypeDefs :: [TypeDef],
+    moduleDataDefs :: [DataDef],
     moduleTypeAliases :: [TypeAlias],
-    moduleDefs :: [Def (Spanned Pattern)]
+    moduleDefs :: Defs Pattern
   }
 
 data Attr = Attr Expr deriving (Show, Eq)
 
-data TypeAlias = TypeAlias
-  { aliasName :: Name,
-    aliasTyVars :: [TyVar],
-    aliasType :: Spanned TypeHint
+data RecordDef = RecordDef
+  { recordName :: Name,
+    recordTyVars :: [TyVar],
+    recordFields :: [(Name, Spanned TypeHint, Visibility)],
+    recordVisibility :: Visibility
   }
   deriving (Show, Eq)
 
-data TypeDef = TypeDef
-  { typeName :: Name,
-    typeTyVars :: [TyVar],
-    typeConstructors :: [(Name, [Spanned TypeHint])]
+data DataDef = DataDef
+  { dataName :: Name,
+    dataTyVars :: [TyVar],
+    dataConstructors :: [(Name, [Spanned TypeHint])],
+    dataVisibility :: Visibility
+  }
+  deriving (Show, Eq)
+
+data TypeAlias = TypeAlias
+  { aliasName :: Name,
+    aliasTyVars :: [TyVar],
+    aliasType :: Spanned TypeHint,
+    aliasVisibility :: Visibility
   }
   deriving (Show, Eq)
 
