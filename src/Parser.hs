@@ -8,7 +8,6 @@ import Data.Array (Array, listArray)
 import Data.Functor (($>))
 import Data.Set as Set
 import Data.Text (Text, pack, unpack)
-import Data.Text.IO (hGetContents)
 import Data.Void
 import GHC.IO.Handle (Handle)
 import Lexer (TokenStream, WithPos (WithPos))

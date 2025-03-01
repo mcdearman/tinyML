@@ -41,8 +41,9 @@ executable tinyML
         TypeFamilies
         RecordWildCards
         GADTs
-        StrictData
         BangPatterns
+        OverloadedRecordDot
+        DuplicateRecordFields
     build-depends:    
         base,
         megaparsec,
