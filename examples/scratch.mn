@@ -227,7 +227,7 @@ data List a = Empty | Pair a (List a)
 
 data List a = [] | a :: List a
 
-record NonEmptyList a = { head : a, tail: (List a) }
+data NonEmptyList a = { head : a, tail: (List a) }
 
 -- with infix constructors
 data NomEmptyList a = a :| List a
