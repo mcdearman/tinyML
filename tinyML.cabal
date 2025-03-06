@@ -43,6 +43,7 @@ executable tinyML
         GADTs
         BangPatterns
         OverloadedRecordDot
+        OverloadedRecordUpdate
         DuplicateRecordFields
     build-depends:    
         base,
