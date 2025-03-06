@@ -1,5 +1,6 @@
 module Compiler where
 
+import Control.Monad.State (StateT)
 import Control.Monad.State.Strict
 import Control.Placeholder (todo)
 import Data.Function ((&))
@@ -35,6 +36,8 @@ defaultCompiler =
     }
 
 type CompilerState a = State Compiler a
+
+type CompilerT a = StateT Compiler IO a
 
 run :: Text -> CompilerState Text
 run src = do
