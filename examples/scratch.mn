@@ -206,16 +206,49 @@ def binary_search : a. (a -> Ordering) -> [a] -> a -> Option Int
 -- type alias
 type Point = (Int, Int)
 
--- records
-data Person = { name : String, age : Int }
-def p = { name = "Alice", age = 30 }
+-- structs
+struct Person { 
+  name : String, 
+  age : Int 
+}
 
--- records with public fields
-@pub data Person = { @pub name : String, @pub age : Int }
+-- or with indentation
+struct Person
+  name : String
+  age : Int
 
--- functional update
-def p = { name = "Alice", age = 30 }
-def p' = { p with age = 31 }
+-- We can use initializer syntax to create instances of structs.
+-- Notice that we don't need to specify the struct name. MiniML will
+-- infer the type based on the fields.
+def alice = { name = "Alice", age = 30 }
+
+-- If there are two structs with identical fields, we can use the
+-- struct name to disambiguate.
+def bob = Person { name = "Bob", age = 25 }
+
+-- By default struct fields are private. We can make them public by using
+-- the `pub` keyword.
+pub struct Person
+  pub name : String
+  pub age : Int
+
+-- Structs can also be initialized like functions with positional arguments.
+-- Even though this looks like a function call, it is actually a struct
+-- initialization under the hood. Note that this is only possible if the
+-- struct **and** its fields are public.
+def charlie = Person "Charlie" 20
+
+-- We can update struct fields using the `with` keyword. This creates a new
+-- struct with the specified fields updated.
+def alice = { name = "Alice", age = 30 }
+def alice' = { alice with age = 31 }
+
+-- We can also update nested fields.
+struct Address { city : String, zip : Int }
+struct Person { name : String, age : Int, address : Address }
+
+def alice = { name = "Alice", age = 30, address = { city = "New York", zip = 10001 } }
+def alice' = { alice with address.city = "San Francisco" }
 
 -- sum types
 data Option a = None | Some a
@@ -227,9 +260,6 @@ data List a = Empty | Pair a (List a)
 
 data List a = [] | a :: List a
 
-data NonEmptyList a = { head : a, tail: (List a) }
-
--- with infix constructors
 data NomEmptyList a = a :| List a
 
 def (|>) : a b. a -> (a -> b) -> b
