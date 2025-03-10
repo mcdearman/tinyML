@@ -123,11 +123,6 @@ def map a b. (f : a -> b) (xs : [a]) : [b] =
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
--- possible uncurried version of sigs
-def map : a b. [a] (a -> b) -> [b]
-  | [] f -> []
-  | (x::xs) f -> f x :: map f xs
-
 pub def map f xs = match xs with
   [] -> []
   (x::xs) -> f x :: map f xs
@@ -253,29 +248,28 @@ def alice' = { alice with address.city = "San Francisco" }
 -- sum types
 data Option a = None | Some a
 
--- sum type with effectful constructors
-data Foo a e = Bar a | Baz (a -> a)
-
 data List a = Empty | Pair a (List a)
 
 data List a = [] | a :: List a
 
 data NomEmptyList a = a :| List a
 
-def (|>) : a b. a -> (a -> b) -> b
+def (|>) : a -> (a -> b) -> b
   | x |> f = f x
+
+def (<|) : (a -> b) -> a -> b
+  | f <| x = f x
+
+def (~) : (a -> b) -> (b -> c) -> a -> c
+  | f ~ g = \x -> g (f x)
 
 -- methods with pipe
 [1, 2, 3]
-  |> into_iter
   |> map (+ 1)
-  |> filter ((= 0) ∘ (% 2))
+  |> filter ((= 0) ~ (% 2))
+  |> sum
 
--- into_iter postfix operator
-[1, 2, 3]!
-  |> map (+ 1)
-  |> filter ((= 0) ∘ (% 2))
-  |> reduce (+)
+def sum = foldl (+) 0
 
 -- iterator comprehensions
 [for x in [1, 2, 3] if x % 2 = 0]
