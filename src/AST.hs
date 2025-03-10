@@ -7,44 +7,44 @@ import Data.Text (Text)
 type Prog = Spanned Module
 
 data Module = Module
-  { name :: Name,
-    imports :: [Path],
-    dataDefs :: [DataDef],
-    typeAliases :: [TypeAlias],
-    defs :: Defs Pattern
+  { moduleName :: !Name,
+    moduleImports :: [Path],
+    moduleDataDefs :: [DataDef],
+    moduleTypeAliases :: [TypeAlias],
+    moduleDefs :: Defs Pattern
   }
 
 data Attr = Attr Expr deriving (Show, Eq)
 
 data RecordDef = RecordDef
-  { name :: Name,
-    tyVars :: [TyVar],
-    fields :: [(Name, Spanned TypeHint, Visibility)],
-    visibility :: Visibility
+  { recordName :: Name,
+    recordTyVars :: [TyVar],
+    recordFields :: [(Name, Spanned TypeHint, Visibility)],
+    recordVis :: Visibility
   }
   deriving (Show, Eq)
 
 data DataDef = DataDef
-  { name :: Name,
-    tyVars :: [TyVar],
-    constructors :: [(Name, [Spanned TypeHint])],
-    visibility :: Visibility
+  { dataName :: Name,
+    dataTyVars :: [TyVar],
+    dataConstructors :: [(Name, [Spanned TypeHint])],
+    dataVis :: Visibility
   }
   deriving (Show, Eq)
 
 data TypeAlias = TypeAlias
-  { name :: Name,
-    tyVars :: [TyVar],
-    ty :: Spanned TypeHint,
-    visibility :: Visibility
+  { aliasName :: Name,
+    aliasTyVars :: [TyVar],
+    aliasTy :: Spanned TypeHint,
+    aliasVis :: Visibility
   }
   deriving (Show, Eq)
 
 type Defs a = [Def a]
 
 data Def a = Def
-  { alts :: [Alt a],
-    visibility :: Visibility
+  { defAlts :: [Alt a],
+    defVis :: Visibility
   }
   deriving (Show, Eq)
 

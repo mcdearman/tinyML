@@ -17,23 +17,23 @@ instance (Pretty a) => Pretty [a] where
   pretty (x : xs) = pretty x <> ",\n" <> pretty xs
 
 data Result e v
-  = Ok v
-  | Err e
+  = Err e
+  | Ok v
   deriving (Eq, Show)
 
 instance Functor (Result e) where
-  fmap f (Ok v) = Ok (f v)
   fmap _ (Err e) = Err e
+  fmap f (Ok v) = Ok (f v)
 
 instance Applicative (Result e) where
   pure = Ok
-  Ok f <*> Ok v = Ok (f v)
   Err e <*> _ = Err e
   _ <*> Err e = Err e
+  Ok f <*> Ok v = Ok (f v)
 
 instance Monad (Result e) where
-  Ok v >>= f = f v
   Err e >>= _ = Err e
+  Ok v >>= f = f v
 
 data Span
   = SrcLoc {start :: Int, end :: Int}
