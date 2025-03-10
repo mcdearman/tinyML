@@ -9,9 +9,11 @@ type Prog = Spanned Module
 data Module = Module
   { moduleName :: !Name,
     moduleImports :: [Path],
+    moduleRecordDefs :: [RecordDef],
     moduleDataDefs :: [DataDef],
     moduleTypeAliases :: [TypeAlias],
-    moduleDefs :: Defs Pattern
+    moduleDefs :: Defs,
+    moduleFnDefs :: [FnDef]
   }
 
 data Attr = Attr Expr deriving (Show, Eq)
@@ -40,15 +42,23 @@ data TypeAlias = TypeAlias
   }
   deriving (Show, Eq)
 
-type Defs a = [Def a]
+type Defs = [Def]
 
-data Def a = Def
-  { defAlts :: [Alt a],
+data Def = Def
+  { defPat :: Pattern,
+    defBody :: Spanned Expr,
     defVis :: Visibility
   }
   deriving (Show, Eq)
 
-data Alt a = Alt a (Spanned Expr) deriving (Show, Eq)
+data FnDef = FnDef
+  { fnName :: Name,
+    fnTyVars :: [TyVar],
+    fnArgs :: [Spanned Pattern],
+    fnBody :: Spanned Expr,
+    fnVis :: Visibility
+  }
+  deriving (Show, Eq)
 
 data Visibility = Public | Private deriving (Show, Eq)
 
