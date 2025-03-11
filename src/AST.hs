@@ -1,8 +1,42 @@
-module AST where
+module AST
+  ( Prog,
+    Module (..),
+    Attr,
+    RecordDef,
+    RecordDefSort (..),
+    DataDef,
+    DataDefSort (..),
+    TypeAlias,
+    TypeAliasSort (..),
+    Def,
+    DefSort (..),
+    FnDef,
+    FnDefSort (..),
+    Visibility (..),
+    Expr,
+    ExprSort (..),
+    UnOp,
+    UnOpSort (..),
+    unOpName,
+    BinOp,
+    BinOpSort (..),
+    binOpName,
+    TypeAnno,
+    TypeAnnoSort (..),
+    Pattern,
+    PatternSort (..),
+    TyVar,
+    Name,
+    Path,
+    Lit (..),
+  )
+where
 
-import Common (Spanned)
+import Common (Rational64, Spanned)
 import Data.Array (Array)
+import Data.Int (Int64)
 import Data.Text (Text)
+import Data.Word (Word8)
 
 type Prog = Spanned Module
 
@@ -12,86 +46,99 @@ data Module = Module
     moduleRecordDefs :: [RecordDef],
     moduleDataDefs :: [DataDef],
     moduleTypeAliases :: [TypeAlias],
-    moduleDefs :: Defs,
+    moduleDefs :: [Def],
     moduleFnDefs :: [FnDef]
   }
 
-data Attr = Attr Expr deriving (Show, Eq)
+type Attr = Spanned Expr
 
-data RecordDef = RecordDef
-  { recordName :: Name,
-    recordTyVars :: [TyVar],
-    recordFields :: [(Name, Spanned TypeHint, Visibility)],
-    recordVis :: Visibility
+type RecordDef = Spanned RecordDefSort
+
+data RecordDefSort = RecordDef
+  { recordName :: !Name,
+    recordTyVars :: ![TyVar],
+    recordFields :: [(Name, Spanned TypeAnno, Visibility)],
+    recordVis :: !Visibility
   }
   deriving (Show, Eq)
 
-data DataDef = DataDef
-  { dataName :: Name,
+type DataDef = Spanned DataDefSort
+
+data DataDefSort = DataDef
+  { dataName :: !Name,
     dataTyVars :: [TyVar],
-    dataConstructors :: [(Name, [Spanned TypeHint])],
-    dataVis :: Visibility
+    dataConstructors :: [(Name, [Spanned TypeAnno])],
+    dataVis :: !Visibility
   }
   deriving (Show, Eq)
 
-data TypeAlias = TypeAlias
-  { aliasName :: Name,
+type TypeAlias = Spanned TypeAliasSort
+
+data TypeAliasSort = TypeAlias
+  { aliasName :: !Name,
     aliasTyVars :: [TyVar],
-    aliasTy :: Spanned TypeHint,
-    aliasVis :: Visibility
+    aliasTy :: Spanned TypeAnno,
+    aliasVis :: !Visibility
   }
   deriving (Show, Eq)
 
-type Defs = [Def]
+type Def = Spanned DefSort
 
-data Def = Def
-  { defPat :: Pattern,
+data DefSort = Def
+  { defPat :: !Pattern,
+    defTyAnno :: Maybe TypeAnno,
     defBody :: Spanned Expr,
-    defVis :: Visibility
+    defVis :: !Visibility
   }
   deriving (Show, Eq)
 
-data FnDef = FnDef
-  { fnName :: Name,
-    fnTyVars :: [TyVar],
+type FnDef = Spanned FnDefSort
+
+data FnDefSort = FnDef
+  { fnName :: !Name,
+    fnTyAnno :: Maybe TypeAnno,
     fnArgs :: [Spanned Pattern],
-    fnBody :: Spanned Expr,
-    fnVis :: Visibility
+    fnBody :: Expr,
+    fnVis :: !Visibility
   }
   deriving (Show, Eq)
 
 data Visibility = Public | Private deriving (Show, Eq)
 
-type Expr = Spanned ExprKind
+type Expr = Spanned ExprSort
 
-data ExprKind
-  = Lit Lit
-  | Var Name
-  | App (Spanned Expr) (Spanned Expr)
-  | Lam [Spanned Pattern] (Spanned Expr)
-  | Let (Spanned Pattern) (Spanned Expr) (Spanned Expr)
-  | Fn Name [Spanned Pattern] (Spanned Expr) (Spanned Expr)
-  | Unary (Spanned UnOp) (Spanned Expr)
-  | Binary (Spanned BinOp) (Spanned Expr) (Spanned Expr)
-  | If (Spanned Expr) (Spanned Expr) (Spanned Expr)
-  | Match (Spanned Expr) [(Spanned Pattern, Spanned Expr)]
-  | List [Spanned Expr]
-  | Array (Array Int (Spanned Expr))
-  | Tuple [Spanned Expr]
-  | Record (Maybe Name) [(Name, Spanned Expr)]
+data ExprSort
+  = Lit !Lit
+  | Var !Name
+  | App Expr Expr
+  | Lam [Pattern] Expr
+  | Let Pattern Expr Expr
+  | Fn !Name [Pattern] Expr Expr
+  | Unary !UnOp Expr
+  | Binary !BinOp Expr Expr
+  | If Expr Expr Expr
+  | Match Expr [(Pattern, Expr)]
+  | List [Expr]
+  | Array !(Array Word Expr)
+  | Tuple [Expr]
+  | Record !(Maybe Name) [(Name, Expr)]
   | Unit
   deriving (Show, Eq)
 
-data UnOp
+type UnOp = Spanned UnOpSort
+
+data UnOpSort
   = UnOpNeg
   | UnOpNot
   deriving (Show, Eq)
 
-unOpName :: UnOp -> Text
+unOpName :: UnOpSort -> Text
 unOpName UnOpNeg = "neg"
 unOpName UnOpNot = "not"
 
-data BinOp
+type BinOp = Spanned BinOpSort
+
+data BinOpSort
   = BinOpAdd
   | BinOpSub
   | BinOpMul
@@ -110,7 +157,7 @@ data BinOp
   | BinOpPipe
   deriving (Show, Eq)
 
-binOpName :: BinOp -> Text
+binOpName :: BinOpSort -> Text
 binOpName BinOpAdd = "+"
 binOpName BinOpSub = "-"
 binOpName BinOpMul = "*"
@@ -128,27 +175,31 @@ binOpName BinOpLeq = "<="
 binOpName BinOpPair = "::"
 binOpName BinOpPipe = "|>"
 
-data TypeHint
-  = TypeHintInt
-  | TypeHintBool
-  | TypeHintString
-  | TypeHintVar TyVar
-  | TypeHintIdent Name
-  | TypeHintKind Name [Spanned TypeHint]
-  | TypeHintList (Spanned TypeHint)
-  | TypeHintArray (Spanned TypeHint)
-  | TypeHintTuple [Spanned TypeHint]
-  | TypeHintArrow (Spanned TypeHint) (Spanned TypeHint)
-  | TypeHintRecord (Maybe Name) [(Name, Spanned TypeHint)]
-  | TypeHintUnit
+type TypeAnno = Spanned TypeAnnoSort
+
+data TypeAnnoSort
+  = TypeAnnoInt
+  | TypeAnnoBool
+  | TypeAnnoString
+  | TypeAnnoVar TyVar
+  | TypeAnnoIdent !Name
+  | TypeAnnoKind !Name [TypeAnno]
+  | TypeAnnoList TypeAnno
+  | TypeAnnoArray TypeAnno
+  | TypeAnnoTuple [TypeAnno]
+  | TypeAnnoArrow TypeAnno TypeAnno
+  | TypeAnnoRecord !(Maybe Name) [(Name, TypeAnno)]
+  | TypeAnnoUnit
   deriving (Show, Eq)
 
-data Pattern
+type Pattern = Spanned PatternSort
+
+data PatternSort
   = PatternWildcard
-  | PatternLit Lit
-  | PatternVar Name
-  | PatternPair (Spanned Pattern) (Spanned Pattern)
-  | PatternList [Spanned Pattern]
+  | PatternLit !Lit
+  | PatternVar !Name
+  | PatternPair Pattern Pattern
+  | PatternList [Pattern]
   | PatternUnit
   deriving (Show, Eq)
 
@@ -159,7 +210,11 @@ type Name = Spanned Text
 type Path = Spanned [Name]
 
 data Lit
-  = LitInt Int
-  | LitBool Bool
-  | LitString Text
+  = Byte !Word8
+  | Int !Int64
+  | Rational !Rational64
+  | Real !Double
+  | Bool !Bool
+  | String !Text
+  | Char !Char
   deriving (Show, Eq)

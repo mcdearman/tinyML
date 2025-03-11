@@ -1,5 +1,7 @@
 module Common where
 
+import Data.Int (Int64)
+import Data.Ratio (Ratio)
 import Data.Text
 
 -- data Node v m = Node
@@ -66,3 +68,5 @@ instance Functor Spanned where
   fmap f (Spanned v s) = Spanned (f v) s
 
 newtype Unique = Id Int deriving (Show, Eq, Ord)
+
+type Rational64 = Ratio Int64
