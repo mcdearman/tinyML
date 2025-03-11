@@ -56,7 +56,7 @@ type RecordDef = Spanned RecordDefSort
 
 data RecordDefSort = RecordDef
   { recordName :: !Name,
-    recordTyVars :: ![TyVar],
+    recordTyVars :: [TyVar],
     recordFields :: [(Name, Spanned TypeAnno, Visibility)],
     recordVis :: !Visibility
   }
