@@ -50,7 +50,7 @@ data Module = Module
     moduleFnDefs :: [FnDef]
   }
 
-type Attr = Spanned Expr
+type Attr = Expr
 
 type RecordDef = Spanned RecordDefSort
 

@@ -1,5 +1,7 @@
 module Token where
 
+import Common (Rational64)
+import Data.Int (Int64)
 import Data.Text (Text)
 
 data Token
@@ -9,7 +11,8 @@ data Token
   | TokIdent Text
   | TokTypeIdent Text
   | TokTyVar Text
-  | TokInt Int
+  | TokInt Int64
+  | TokRational Rational64
   | TokReal Double
   | TokBool Bool
   | TokString Text
