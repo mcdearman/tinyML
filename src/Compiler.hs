@@ -48,21 +48,23 @@ run src = do
     Right ts -> trace (unpack . toStrict $ (pShow ts)) $ case parseStream ts of
       Left err -> pure $ pack $ "Parser error: " ++ errorBundlePretty err
       Right p -> do
-        let (nir, r') = runState (rename p) r
-        let r'' = r' & \res -> res {Resolver.errors = []}
-        case r' of
-          Resolver {errors = []} -> do
-            put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
-            -- trace (unpack . toStrict $ pShow nir) $ pure ()
-            let (tir, sl') = runState (infer nir) sl
-            let sl'' = sl' & \s -> s {Solver.errors = []}
-            case sl' of
-              Solver {errors = []} -> do
-                put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
-                pure $ (toStrict . pShow) tir
-              Solver {errors = es} -> do
-                put $ Compiler {src = src, flags = f, resolver = r', solver = sl''}
-                pure $ pack $ "Type errors: " ++ show es
-          Resolver {errors = es} -> do
-            put $ Compiler {src = src, flags = f, resolver = r'', solver = sl}
-            pure $ pack $ "Resolver errors: " ++ show es
+        putStrLn $ pShow p
+
+-- let (nir, r') = runState (rename p) r
+-- let r'' = r' & \res -> res {Resolver.errors = []}
+-- case r' of
+--   Resolver {errors = []} -> do
+--     put $ Compiler {src = src, flags = f, resolver = r', solver = sl}
+--     -- trace (unpack . toStrict $ pShow nir) $ pure ()
+--     let (tir, sl') = runState (infer nir) sl
+--     let sl'' = sl' & \s -> s {Solver.errors = []}
+--     case sl' of
+--       Solver {errors = []} -> do
+--         put $ Compiler {src = src, flags = f, resolver = r', solver = sl'}
+--         pure $ (toStrict . pShow) tir
+--       Solver {errors = es} -> do
+--         put $ Compiler {src = src, flags = f, resolver = r', solver = sl''}
+--         pure $ pack $ "Type errors: " ++ show es
+--   Resolver {errors = es} -> do
+--     put $ Compiler {src = src, flags = f, resolver = r'', solver = sl}
+--     pure $ pack $ "Resolver errors: " ++ show es

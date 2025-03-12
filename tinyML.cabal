@@ -22,13 +22,13 @@ executable tinyML
         Common
         Compiler
         -- Core
-        Eval
-        Infer
+        -- Eval
+        -- Infer
         Lexer
         NIR
         Parser
-        Rename
-        Scheme
+        -- Rename
+        -- Scheme
         TIR
         Token
         Ty
