@@ -269,7 +269,12 @@ expr = makeExprParser apply operatorTable
       start <- tokenWithSpan TokMatch
       e <- expr <* tokenWithSpan TokWith <* tokenWithSpan TokBar
       cases <-
-        (((,) <$> pattern' <*> (tokenWithSpan TokArrow *> expr))) `sepBy1` tokenWithSpan TokBar
+        ( ( (,)
+              <$> pattern'
+              <*> (tokenWithSpan TokArrow *> expr)
+          )
+        )
+          `sepBy1` tokenWithSpan TokBar
       pure $ Spanned (Match e cases) (span start <> span (snd (last cases)))
 
     list :: Parser Expr
