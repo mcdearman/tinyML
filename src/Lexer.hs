@@ -39,6 +39,7 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Megaparsec.Stream hiding (Token)
 import qualified Text.Megaparsec.Stream as S
 import Token
+import Data.Int (Int64)
 
 data TokenStream = TokenStream
   { src :: Text,
@@ -143,10 +144,10 @@ lexemeWithPos p = withPos p <* sc
 sc :: Lexer ()
 sc = L.space space1 (L.skipLineComment "--") empty
 
-octal :: Lexer Int
+octal :: Lexer Int64
 octal = char '0' >> char' 'o' >> L.octal
 
-hexadecimal :: Lexer Int
+hexadecimal :: Lexer Int64
 hexadecimal = char '0' >> char' 'x' >> L.hexadecimal
 
 int :: Lexer Token
