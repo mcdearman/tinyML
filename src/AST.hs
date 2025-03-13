@@ -57,7 +57,7 @@ type RecordDef = Spanned RecordDefSort
 data RecordDefSort = RecordDef
   { recordName :: !Name,
     recordTyVars :: [TyVar],
-    recordFields :: [(Name, Spanned TypeAnno, Visibility)],
+    recordFields :: [(Name, TypeAnno, Visibility)],
     recordVis :: !Visibility
   }
   deriving (Show, Eq)
@@ -67,7 +67,7 @@ type DataDef = Spanned DataDefSort
 data DataDefSort = DataDef
   { dataName :: !Name,
     dataTyVars :: [TyVar],
-    dataConstructors :: [(Name, [Spanned TypeAnno])],
+    dataConstructors :: [(Name, [TypeAnno])],
     dataVis :: !Visibility
   }
   deriving (Show, Eq)

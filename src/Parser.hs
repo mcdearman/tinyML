@@ -24,6 +24,7 @@ import Text.Megaparsec
     getOffset,
     many,
     manyTill,
+    option,
     parse,
     satisfy,
     sepBy1,
@@ -369,16 +370,17 @@ expr = makeExprParser apply operatorTable
 --       p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TokBar
 --       pure $ Spanned (DeclData name vars p) (span name <> span (last (snd (last p))))
 
-public :: Parser Visibility
-public = tokenWithSpan TokPub $> Public
+visibility :: Parser Visibility
+visibility = option Private (tokenWithSpan TokPub $> Public)
 
 dataDef :: Parser DataDef
 dataDef = do
-  start <- tokenWithSpan TokData
+  v <- visibility
+  d <- tokenWithSpan TokData
   name <- typeIdent
   vars <- many tyVar <* tokenWithSpan TokEq
   p <- ((,) <$> ident <*> many type') `sepEndBy1` tokenWithSpan TokBar
-  pure $ Spanned (DataDef name vars p) (span start <> span (last (snd (last p))))
+  pure $ Spanned (DataDef name vars p v) (span d <> span (last (snd (last p))))
 
 repl :: Parser Prog
 repl = do
