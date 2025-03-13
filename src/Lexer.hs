@@ -6,6 +6,7 @@ import Control.Applicative (empty, (<|>))
 import Control.Monad.Combinators (manyTill_)
 import Data.Data (Proxy (Proxy))
 import Data.Functor (($>))
+import Data.Int (Int64)
 import qualified Data.List.NonEmpty as NE
 import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
@@ -39,11 +40,12 @@ import qualified Text.Megaparsec.Char.Lexer as L
 import Text.Megaparsec.Stream hiding (Token)
 import qualified Text.Megaparsec.Stream as S
 import Token
-import Data.Int (Int64)
+import Prelude hiding (span)
 
 data TokenStream = TokenStream
   { src :: Text,
-    tokens :: [WithPos Token]
+    tokens :: [WithPos Token],
+    lastSpan :: Span
   }
   deriving (Show, Eq, Ord)
 
@@ -65,12 +67,12 @@ instance Stream TokenStream where
   chunkToTokens _ = id
   chunkLength _ = length
   chunkEmpty _ = null
-  take1_ (TokenStream _ []) = Nothing
-  take1_ (TokenStream src (t : ts)) = case val t of
-    TokComment -> take1_ (TokenStream src ts)
-    _ -> Just (t, TokenStream src ts)
+  take1_ (TokenStream _ [] _) = Nothing
+  take1_ (TokenStream src (t : ts) _) = case val t of
+    TokComment -> take1_ (TokenStream src ts (span t))
+    _ -> Just (t, TokenStream src ts (span t))
 
-  takeN_ n ts@(TokenStream src s)
+  takeN_ n ts@(TokenStream src s _)
     | n <= 0 = Just ([], ts)
     | null s = Nothing
     | otherwise =
@@ -79,7 +81,7 @@ instance Stream TokenStream where
               Nothing -> Just (x, TokenStream src s')
               Just nex -> Just (x, TokenStream (pack (drop (tokensLength pxy nex) (unpack src))) s')
 
-  takeWhile_ f (TokenStream src ts) = (takeWhile f ts, TokenStream src (dropWhile f ts))
+  takeWhile_ f (TokenStream src ts _) = (takeWhile f ts, TokenStream src (dropWhile f ts))
 
 instance VisualStream TokenStream where
   showTokens _ = unwords . map (show . val) . NE.toList

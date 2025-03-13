@@ -21,6 +21,7 @@ import Text.Megaparsec
     Stream (take1_),
     between,
     choice,
+    getInput,
     getOffset,
     many,
     manyTill,
@@ -38,20 +39,12 @@ import Prelude hiding (span)
 
 type Parser = Parsec Void TokenStream
 
--- withSpan :: Parser a -> Parser (Spanned a)
--- withSpan p = do
---   startState <- getParserState
---   let input = stateInput startState
---   start <- case take1_ input of
---     Nothing -> pure NoLoc
---     Just (WithPos _ _ s _ _, _) -> pure s
---   res <- p
---   endState <- getParserState
---   let input' = stateInput endState
---   end <- case take1_ input' of
---     Nothing -> pure start
---     Just (WithPos _ _ s _ _, _) -> pure s
---   pure $ Spanned res (start <> end)
+withSpan :: Parser a -> Parser (Spanned a)
+withSpan p = do
+  start <- getInput
+  x <- p
+  end <- getParserState
+  pure $ Spanned x (span start <> span end)
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
