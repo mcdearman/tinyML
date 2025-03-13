@@ -77,7 +77,7 @@ type TypeAlias = Spanned TypeAliasSort
 data TypeAliasSort = TypeAlias
   { aliasName :: !Name,
     aliasTyVars :: [TyVar],
-    aliasTy :: Spanned TypeAnno,
+    aliasTy :: TypeAnno,
     aliasVis :: !Visibility
   }
   deriving (Show, Eq)
@@ -87,7 +87,7 @@ type Def = Spanned DefSort
 data DefSort = Def
   { defPat :: !Pattern,
     defTyAnno :: Maybe TypeAnno,
-    defBody :: Spanned Expr,
+    defBody :: Expr,
     defVis :: !Visibility
   }
   deriving (Show, Eq)
@@ -97,7 +97,7 @@ type FnDef = Spanned FnDefSort
 data FnDefSort = FnDef
   { fnName :: !Name,
     fnTyAnno :: Maybe TypeAnno,
-    fnArgs :: [Spanned Pattern],
+    fnArgs :: [Pattern],
     fnBody :: Expr,
     fnVis :: !Visibility
   }

@@ -259,10 +259,10 @@ expr = makeExprParser apply operatorTable
       start <- tokenWithSpan TokIf
       cond <- expr
       tokenWithSpan TokThen
-      e1 <- expr
+      then' <- expr
       tokenWithSpan TokElse
-      e2 <- expr
-      pure $ Spanned (If cond e1 e2) (span start <> span e2)
+      else' <- expr
+      pure $ Spanned (If cond then' else') (span start <> span else')
 
     match :: Parser Expr
     match = do
@@ -370,8 +370,8 @@ expr = makeExprParser apply operatorTable
 --       p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TokBar
 --       pure $ Spanned (DeclData name vars p) (span name <> span (last (snd (last p))))
 
-visibility :: Parser Visibility
-visibility = option Private (tokenWithSpan TokPub $> Public)
+visibility :: Parser (Spanned Visibility)
+visibility = option (NoLoc <$> Private) (tokenWithSpan TokPub $> Public)
 
 dataDef :: Parser DataDef
 dataDef = do
