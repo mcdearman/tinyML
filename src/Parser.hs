@@ -86,16 +86,16 @@ typeIdent :: Parser (Spanned Text)
 typeIdent = token (\case (WithPos _ _ s _ (TokTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 parens :: Parser a -> Parser a
-parens p = token' TokLParen *> p <* token' TokRParen
+parens = between (token' TokLParen) (token' TokRParen)
 
 brackets :: Parser a -> Parser a
-brackets p = token' TokLBracket *> p <* token' TokRBracket
+brackets = between (token' TokLBracket) (token' TokRBracket)
 
 arrBrackets :: Parser a -> Parser a
-arrBrackets p = token' TokHash *> token' TokLBracket *> p <* token' TokRBracket
+arrBrackets = between (token' TokHash *> token' TokLBracket) (token' TokRBracket)
 
-braces :: Parser a -> Parser (Spanned a)
-braces p = withSpan $ tokenWithSpan TokLBrace *> p <* tokenWithSpan TokRBrace
+braces :: Parser a -> Parser a
+braces = between (tokenWithSpan TokLBrace) (tokenWithSpan TokRBrace)
 
 binary :: Token -> (Span -> Expr -> Expr -> Expr) -> Operator Parser Expr
 binary tok f = InfixL (f . span <$> tokenWithSpan tok)
@@ -106,8 +106,8 @@ postfix tok f = Postfix (f . span <$> tokenWithSpan tok)
 
 operatorTable :: [[Operator Parser Expr]]
 operatorTable =
-  [ [ prefix TokMinus (\s e -> Spanned (Unary (Spanned UnOpNeg s) e) (span e)),
-      prefix TokBang (\s e -> Spanned (Unary (Spanned UnOpNot s) e) (span e))
+  [ [ prefix TokMinus (\s e -> Spanned (Unary (Spanned UnOpNeg s) e) (s <> span e)),
+      prefix TokBang (\s e -> Spanned (Unary (Spanned UnOpNot s) e) (s <> span e))
     ],
     [ binary TokStar (\s l r -> Spanned (Binary (Spanned BinOpMul s) l r) (span l <> span r)),
       binary TokSlash (\s l r -> Spanned (Binary (Spanned BinOpDiv s) l r) (span l <> span r)),
@@ -133,12 +133,12 @@ operatorTable =
 pattern' :: Parser Pattern
 pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
   where
-    wildcard = tokenWithSpan TokUnderscore $> PatternWildcard
-    litP = PatternLit <$> lit
+    wildcard = token' TokUnderscore $> PatternWildcard
+    litP = PatternLit . spannedVal <$> lit
     varP = PatternVar <$> ident
-    pairP = parens $ PatternPair <$> pattern' <*> (tokenWithSpan TokDoubleColon *> pattern')
-    listP = PatternList <$> brackets $ pattern' `sepEndBy` tokenWithSpan TokComma
-    unitP = Spanned PatternUnit . span <$> unit
+    pairP = parens $ PatternPair <$> pattern' <*> (token' TokDoubleColon *> pattern')
+    listP = PatternList <$> brackets (pattern' `sepEndBy` token' TokComma)
+    unitP = unit $> PatternUnit
 
 type' :: Parser TypeAnno
 type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
@@ -200,7 +200,7 @@ expr = makeExprParser apply operatorTable
     varExpr = (\i -> Spanned (Var i) (span i)) <$> ident
 
     simple :: Parser Expr
-    simple = choice [litExpr, varExpr, try unit' <|> parens (value <$> expr)]
+    simple = choice [litExpr, varExpr, try unit' <|> parens (spannedVal <$> expr)]
 
     lambda :: Parser Expr
     lambda = do
@@ -220,8 +220,8 @@ expr = makeExprParser apply operatorTable
       e2 <- expr
       pure $ Spanned (Let p e1 e2) (span start <> span e2)
 
-    let_rec :: Parser Expr
-    let_rec = do
+    letRec :: Parser Expr
+    letRec = do
       start <- tokenWithSpan TokLet
       i <- ident
       ps <- some pattern'
@@ -282,7 +282,7 @@ expr = makeExprParser apply operatorTable
     atom :: Parser Expr
     atom =
       choice
-        [ try let_rec <|> let',
+        [ try letRec <|> let',
           lambda,
           if',
           match,

@@ -4,12 +4,6 @@ import Data.Int (Int64)
 import Data.Ratio (Ratio)
 import Data.Text
 
--- data Node v m = Node
---   { value :: v,
---     meta :: m
---   }
---   deriving (Eq, Show)
-
 class Pretty a where
   pretty :: a -> Text
 
@@ -56,7 +50,7 @@ instance Semigroup Span where
   _ <> _ = NoLoc
 
 data Spanned a = Spanned
-  { value :: a,
+  { spannedVal :: a,
     span :: Span
   }
   deriving (Show, Eq, Ord)
