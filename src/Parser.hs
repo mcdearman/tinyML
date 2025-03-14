@@ -12,7 +12,7 @@ import Data.Text (Text, pack, unpack)
 import Data.Void
 import Data.Word (Word8)
 import GHC.IO.Handle (Handle)
-import Lexer (TokenStream, WithPos (WithPos))
+import Lexer (TokenStream (..), WithPos (..))
 import Text.Megaparsec
   ( MonadParsec (eof, getParserState, lookAhead, notFollowedBy, takeWhile1P, token, try),
     ParseErrorBundle,
@@ -41,13 +41,20 @@ type Parser = Parsec Void TokenStream
 
 withSpan :: Parser a -> Parser (Spanned a)
 withSpan p = do
-  start <- getInput
+  -- s <- getInput
+  -- start <- case streamTokens <$> s of
+  --   [] -> pure NoLoc
+  --   t : _ -> pure $ wpSpan t
+  start <- fst (streamTokens <$> getInput)
   x <- p
-  end <- getParserState
-  pure $ Spanned x (span start <> span end)
+  end <- getInput
+  pure $ Spanned x (start <> streamLastSpan end)
 
 tokenWithSpan :: Token -> Parser (Spanned Token)
 tokenWithSpan t = token (\(WithPos _ _ s _ t') -> if t == t' then Just (Spanned t s) else Nothing) Set.empty
+
+token' :: Token -> Parser Token
+token' t = token (\(WithPos _ _ _ _ t') -> if t == t' then Just t else Nothing) Set.empty
 
 int :: Parser (Spanned Int64)
 int = token (\case (WithPos _ _ s _ (TokInt n)) -> Just (Spanned n s); _ -> Nothing) Set.empty
@@ -78,34 +85,17 @@ tyVar = token (\case (WithPos _ _ s _ (TokTyVar v)) -> Just (Spanned v s); _ -> 
 typeIdent :: Parser (Spanned Text)
 typeIdent = token (\case (WithPos _ _ s _ (TokTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
-parens :: Parser a -> Parser (Spanned a)
-parens p = do
-  start <- tokenWithSpan TokLParen
-  x <- p
-  end <- tokenWithSpan TokRParen
-  pure $ Spanned x (span start <> span end)
+parens :: Parser a -> Parser a
+parens p = token' TokLParen *> p <* token' TokRParen
 
-brackets :: Parser a -> Parser (Spanned a)
-brackets p = do
-  start <- tokenWithSpan TokLBracket
-  x <- p
-  end <- tokenWithSpan TokRBracket
-  pure $ Spanned x (span start <> span end)
+brackets :: Parser a -> Parser a
+brackets p = token' TokLBracket *> p <* token' TokRBracket
 
-arrBrackets :: Parser a -> Parser (Spanned a)
-arrBrackets p = do
-  start <- tokenWithSpan TokHash
-  tokenWithSpan TokLBracket
-  x <- p
-  end <- tokenWithSpan TokRBracket
-  pure $ Spanned x (span start <> span end)
+arrBrackets :: Parser a -> Parser a
+arrBrackets p = token' TokHash *> token' TokLBracket *> p <* token' TokRBracket
 
 braces :: Parser a -> Parser (Spanned a)
-braces p = do
-  start <- tokenWithSpan TokLBrace
-  x <- p
-  end <- tokenWithSpan TokRBrace
-  pure $ Spanned x (span start <> span end)
+braces p = withSpan $ tokenWithSpan TokLBrace *> p <* tokenWithSpan TokRBrace
 
 binary :: Token -> (Span -> Expr -> Expr -> Expr) -> Operator Parser Expr
 binary tok f = InfixL (f . span <$> tokenWithSpan tok)
@@ -141,19 +131,13 @@ operatorTable =
   ]
 
 pattern' :: Parser Pattern
-pattern' = choice [wildcard, litP, varP, pairP, listP, unitP]
+pattern' = withSpan $ choice [wildcard, litP, varP, pairP, listP, unitP]
   where
-    wildcard = Spanned PatternWildcard . span <$> tokenWithSpan TokUnderscore
-    litP = do
-      l <- lit
-      pure $ Spanned (PatternLit (value l)) (span l)
-    varP = do
-      i <- ident
-      pure $ Spanned (PatternVar i) (span i)
+    wildcard = tokenWithSpan TokUnderscore $> PatternWildcard
+    litP = PatternLit <$> lit
+    varP = PatternVar <$> ident
     pairP = parens $ PatternPair <$> pattern' <*> (tokenWithSpan TokDoubleColon *> pattern')
-    listP = do
-      ps <- brackets $ pattern' `sepEndBy` tokenWithSpan TokComma
-      pure $ Spanned (PatternList (value ps)) (span ps)
+    listP = PatternList <$> brackets $ pattern' `sepEndBy` tokenWithSpan TokComma
     unitP = Spanned PatternUnit . span <$> unit
 
 type' :: Parser TypeAnno
@@ -368,8 +352,8 @@ expr = makeExprParser apply operatorTable
 --       p <- ((,) <$> typeIdent <*> many type') `sepEndBy1` tokenWithSpan TokBar
 --       pure $ Spanned (DeclData name vars p) (span name <> span (last (snd (last p))))
 
-visibility :: Parser (Spanned Visibility)
-visibility = option (NoLoc <$> Private) (tokenWithSpan TokPub $> Public)
+visibility :: Parser Visibility
+visibility = option Private (tokenWithSpan TokPub $> Public)
 
 dataDef :: Parser DataDef
 dataDef = do
