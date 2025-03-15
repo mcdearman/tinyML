@@ -142,9 +142,6 @@ withPos p = do
   endOffset <- getOffset
   return $ WithPos startPos endPos (SrcLoc startOffset endOffset) (endOffset - startOffset) result
 
-lexeme :: Lexer a -> Lexer a
-lexeme p = p <* sc
-
 lexemeWithPos :: Lexer a -> Lexer (WithPos a)
 lexemeWithPos p = withPos p <* sc
 
@@ -204,8 +201,8 @@ ident = try $ do
         "end"
       ]
 
-typeIdent :: Lexer Token
-typeIdent = TokTypeIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
+typeName :: Lexer Token
+typeName = TokTypeIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
 
 tyVar :: Lexer Token
 tyVar = TokTyVar . pack <$> ((:) <$> char '\'' <*> some lowerChar)
@@ -218,7 +215,7 @@ token =
         try real <|> int,
         bool,
         str,
-        typeIdent,
+        typeName,
         tyVar,
         ident,
         TokLParen <$ char '(',

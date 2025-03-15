@@ -156,7 +156,7 @@ def foldl : a b. (a -> b -> a) -> a -> [b] -> a
   | f acc [] = acc
   | f acc (x::xs) = foldl f (f acc x) xs
 
-def foldl : a b e. (a -> b -> a) -> a -> [b] -> a
+def foldl : a b. (a -> b -> a) -> a -> [b] -> a
   | f acc []      = acc
   | f acc (x::xs) = foldl f (f acc x) xs
 

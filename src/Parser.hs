@@ -156,13 +156,14 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
 
     baseType :: Parser TypeAnno
     baseType =
+      withSpan $
       choice
         [ varType,
           identType,
           listType,
           arrayType,
           recordType,
-          try (Spanned TypeAnnoUnit . span <$> unit)
+          try unit $> TypeAnnoUnit
             <|> try tupleType
             <|> parens (value <$> type')
         ]
