@@ -9,8 +9,6 @@ data Token
   | TokWhitespace
   | TokComment
   | TokIdent Text
-  | TokTypeIdent Text
-  | TokTyVar Text
   | TokInt Int64
   | TokRational Rational64
   | TokReal Double
@@ -77,9 +75,8 @@ pShowToken TokEOF = "EOF"
 pShowToken TokWhitespace = "Whitespace"
 pShowToken TokComment = "Comment"
 pShowToken (TokIdent x) = "Ident " ++ show x
-pShowToken (TokTypeIdent x) = "TypeIdent " ++ show x
-pShowToken (TokTyVar x) = "TyVar " ++ show x
 pShowToken (TokInt x) = "Int" ++ show x
+pShowToken (TokRational x) = "Rational" ++ show x
 pShowToken (TokReal x) = "Real" ++ show x
 pShowToken (TokBool x) = "Bool" ++ show x
 pShowToken (TokString x) = "String" ++ show x
