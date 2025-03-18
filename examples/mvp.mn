@@ -5,16 +5,16 @@
 1 / 2
 
 -- value definition
-x = 1
+def x = 1
+
+-- function definition
+def f x = x + 1
 
 -- lambda
 \a b -> a + b
 
 -- lambda application
 (\a b -> a + b) 1 2
-
--- function definition
-f x = x + 1
 
 -- function application
 f x
@@ -31,11 +31,28 @@ let x = 1 in x + 1
 -- let expression function definition
 let f x = x + 1 in f 1
 
--- pretty debug print of decl
-f x = x + 1
+-- struct definition
+struct Point { x : Int, y : Int }
 
-Module @ 0..15
-  [
-    Def 
-  ]
+-- struct instantiation and field access
+let p = Point { x = 1, y = 2 } in p.x + p.y
+
+-- struct update
+let p = Point { x = 1, y = 2 } in { p with x = 3 }
+
+-- Algebraic data type
+data List a = Empty | Pair a (List a)
+
+-- ADT instantiation
+let l = Pair 1 (Pair 2 Empty) in l
+
+-- Algebraic data type with infix constructor
+data List a = [] | a :: List a
+
+-- ADT infix instantiation
+let l = 1 :: 2 :: [] in l
+
+
+
+
   
