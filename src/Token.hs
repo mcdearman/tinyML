@@ -1,4 +1,4 @@
-module Token where
+module Token (Token (..), pShowToken) where
 
 import Common (Rational64)
 import Data.Int (Int64)
@@ -8,7 +8,8 @@ data Token
   = TokEOF
   | TokWhitespace
   | TokComment
-  | TokIdent Text
+  | TokUpperCaseIdent Text
+  | TokLowerCaseIdent Text
   | TokInt Int64
   | TokRational Rational64
   | TokReal Double
@@ -74,7 +75,8 @@ pShowToken :: Token -> String
 pShowToken TokEOF = "EOF"
 pShowToken TokWhitespace = "Whitespace"
 pShowToken TokComment = "Comment"
-pShowToken (TokIdent x) = "Ident " ++ show x
+pShowToken (TokUpperCaseIdent x) = "Ident " ++ show x
+pShowToken (TokLowerCaseIdent x) = "Ident " ++ show x
 pShowToken (TokInt x) = "Int" ++ show x
 pShowToken (TokRational x) = "Rational" ++ show x
 pShowToken (TokReal x) = "Real" ++ show x

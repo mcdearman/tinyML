@@ -1,7 +1,6 @@
-module Lexer (TokenStream (..), WithPos (..), lexMML) where
+module Lexer (TokenStream (..), WithPos (..), tokenize) where
 
-import Common (Span (SrcLoc))
-import qualified Common as C
+import Common (Span (..), defaultSpan)
 import Control.Applicative (empty, (<|>))
 import Control.Monad.Combinators (manyTill_)
 import Data.Data (Proxy (Proxy))
@@ -171,7 +170,7 @@ ident = try $ do
   name <- pack <$> ((:) <$> identStartChar <*> many identChar)
   if name `elem` keywords
     then fail $ "keyword " ++ unpack name ++ " cannot be an identifier"
-    else return $ TokIdent name
+    else return $ TokLowerCaseIdent name
   where
     identStartChar = lowerChar <|> char '_'
     identChar = alphaNumChar <|> char '_' <|> char '\''
@@ -201,11 +200,8 @@ ident = try $ do
         "end"
       ]
 
-typeName :: Lexer Token
-typeName = TokTypeIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
-
-tyVar :: Lexer Token
-tyVar = TokTyVar . pack <$> ((:) <$> char '\'' <*> some lowerChar)
+upperCaseIdent :: Lexer Token
+upperCaseIdent = TokUpperCaseIdent . pack <$> ((:) <$> upperChar <*> many alphaNumChar)
 
 token :: Lexer (WithPos Token)
 token =
@@ -215,8 +211,7 @@ token =
         try real <|> int,
         bool,
         str,
-        typeName,
-        tyVar,
+        upperCaseIdent,
         ident,
         TokLParen <$ char '(',
         TokRParen <$ char ')',
@@ -266,10 +261,5 @@ token =
         TokEnd <$ string "end"
       ]
 
-lexMML :: Text -> Either (ParseErrorBundle Text Void) TokenStream
--- lexMML src = TokenStream src <$> parse (many token) "" src
-lexMML src = do
-  let tokens = parse (many token) "" src
-  case tokens of
-    Left err -> Left err
-    Right ts -> Right $ TokenStream src ts (wpSpan (last ts))
+tokenize :: Text -> Either (ParseErrorBundle Text Void) TokenStream
+tokenize src = TokenStream src <$> (parse (many token) "" src)

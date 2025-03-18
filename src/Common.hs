@@ -37,6 +37,9 @@ data Span
   | NoLoc
   deriving (Show, Eq, Ord)
 
+defaultSpan :: Span
+defaultSpan = SrcLoc 0 0
+
 instance Pretty Span where
   pretty (SrcLoc s e) = pack $ show s <> ".." <> show e
   pretty (Gen s) = "Gen " <> pretty s
