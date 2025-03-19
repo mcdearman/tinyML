@@ -123,6 +123,7 @@ data ExprSort
   | Tuple [Expr]
   | Record !(Maybe Name) [(Name, Expr)]
   | Unit
+  | Error
   deriving (Show, Eq)
 
 type UnOp = Spanned UnOpSort

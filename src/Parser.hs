@@ -77,13 +77,10 @@ lit =
     ]
 
 ident :: Parser Name
-ident = token (\case (WithPos _ _ s _ (TokIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
+ident = token (\case (WithPos _ _ s _ (TokLowerCaseIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
-tyVar :: Parser TyVar
-tyVar = token (\case (WithPos _ _ s _ (TokTyVar v)) -> Just (Spanned v s); _ -> Nothing) Set.empty
-
-typeIdent :: Parser (Spanned Text)
-typeIdent = token (\case (WithPos _ _ s _ (TokTypeIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
+typeIdent :: Parser Name
+typeIdent = token (\case (WithPos _ _ s _ (TokUpperCaseIdent i)) -> Just (Spanned i s); _ -> Nothing) Set.empty
 
 parens :: Parser a -> Parser a
 parens = between (token' TokLParen) (token' TokRParen)
@@ -157,18 +154,18 @@ type' = dbg "type" $ try kindType <|> try arrowType <|> baseType
     baseType :: Parser TypeAnno
     baseType =
       withSpan $
-      choice
-        [ varType,
-          identType,
-          listType,
-          arrayType,
-          recordType,
-          try unit $> TypeAnnoUnit
-            <|> try tupleType
-            <|> parens (value <$> type')
-        ]
+        choice
+          [ varType,
+            identType,
+            listType,
+            arrayType,
+            recordType,
+            try unit $> TypeAnnoUnit
+              <|> try tupleType
+              <|> parens (value <$> type')
+          ]
     varType = do
-      v <- tyVar
+      v <- ident
       pure $ Spanned (TypeAnnoVar v) (span v)
     identType = do
       i <- typeIdent
