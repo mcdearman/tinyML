@@ -201,46 +201,46 @@ def binary_search : a. (a -> Ordering) -> [a] -> a -> Option Int
 -- type alias
 type Point = (Int, Int)
 
--- structs
-struct Person { 
+-- records
+record Person { 
   name : String, 
   age : Int 
 }
 
 -- or with indentation
-struct Person
+record Person
   name : String
   age : Int
 
--- We can use initializer syntax to create instances of structs.
--- Notice that we don't need to specify the struct name. MiniML will
+-- We can use initializer syntax to create instances of records.
+-- Notice that we don't need to specify the record name. MiniML will
 -- infer the type based on the fields.
 def alice = { name = "Alice", age = 30 }
 
--- If there are two structs with identical fields, we can use the
--- struct name to disambiguate.
+-- If there are two records with identical fields, we can use the
+-- record name to disambiguate.
 def bob = Person { name = "Bob", age = 25 }
 
--- By default struct fields are private. We can make them public by using
+-- By default record fields are private. We can make them public by using
 -- the `pub` keyword.
-pub struct Person
+pub record Person
   pub name : String
   pub age : Int
 
--- Structs can also be initialized like functions with positional arguments.
--- Even though this looks like a function call, it is actually a struct
+-- Records can also be initialized like functions with positional arguments.
+-- Even though this looks like a function call, it is actually a record
 -- initialization under the hood. Note that this is only possible if the
--- struct **and** its fields are public.
+-- record **and** its fields are public.
 def charlie = Person "Charlie" 20
 
--- We can update struct fields using the `with` keyword. This creates a new
--- struct with the specified fields updated.
+-- We can update record fields using the `with` keyword. This creates a new
+-- record with the specified fields updated.
 def alice = { name = "Alice", age = 30 }
 def alice' = { alice with age = 31 }
 
 -- We can also update nested fields.
-struct Address { city : String, zip : Int }
-struct Person { name : String, age : Int, address : Address }
+record Address { city : String, zip : Int }
+record Person { name : String, age : Int, address : Address }
 
 def alice = { name = "Alice", age = 30, address = { city = "New York", zip = 10001 } }
 def alice' = { alice with address.city = "San Francisco" }

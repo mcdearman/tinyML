@@ -31,13 +31,13 @@ let x = 1 in x + 1
 -- let expression function definition
 let f x = x + 1 in f 1
 
--- struct definition
-struct Point { x : Int, y : Int }
+-- record definition
+record Point { x : Int, y : Int }
 
--- struct instantiation and field access
+-- record instantiation and field access
 let p = Point { x = 1, y = 2 } in p.x + p.y
 
--- struct update
+-- record update
 let p = Point { x = 1, y = 2 } in { p with x = 3 }
 
 -- Algebraic data type
