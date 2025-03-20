@@ -11,6 +11,7 @@ import Data.Text (Text, pack, unpack)
 import Data.Void (Void)
 import Text.Megaparsec
   ( MonadParsec (eof, notFollowedBy, try),
+    ParseError,
     ParseErrorBundle,
     Parsec,
     PosState (..),
@@ -227,8 +228,6 @@ token =
         TokSlash <$ char '/',
         TokBackSlash <$ char '\\',
         TokPercent <$ char '%',
-        TokAnd <$ string "&&",
-        TokOr <$ string "||",
         try (TokNeq <$ string "!=") <|> TokBang <$ char '!',
         try (TokFatArrow <$ string "=>") <|> TokEq <$ string "==" <|> TokAssign <$ char '=',
         TokLt <$ char '<',
@@ -262,5 +261,5 @@ token =
         TokEnd <$ string "end"
       ]
 
-tokenize :: Text -> Either (ParseErrorBundle Text Void) TokenStream
+tokenize :: Text -> (TokenStream, [ParseError])
 tokenize src = TokenStream src <$> (parse (many token) "" src)

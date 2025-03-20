@@ -20,13 +20,13 @@ executable tinyML
     other-modules: 
         AST
         Common
-        Compiler
         -- Core
         -- Eval
         -- Infer
         Lexer
         NIR
         Parser
+        Pipeline
         -- Rename
         -- Scheme
         TIR

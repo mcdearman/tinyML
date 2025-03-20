@@ -1,4 +1,4 @@
-module Compiler where
+module Pipeline where
 
 import Control.Monad.State (StateT)
 import Control.Monad.State.Strict
@@ -11,14 +11,14 @@ import Data.Text.Lazy (toStrict)
 import Debug.Trace (trace)
 import Infer (Solver (..), defaultSolver, infer)
 import qualified Infer as Solver
-import Lexer (lexMML)
+import Lexer (tokenize)
 import Parser (parseStream)
 import Rename
 import qualified Rename as Resolver
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 
-data Compiler = Compiler
+data PipelineEnv = PipelineEnv
   { src :: Text,
     flags :: [Text],
     resolver :: Resolver,
@@ -26,21 +26,17 @@ data Compiler = Compiler
   }
   deriving (Show)
 
-defaultCompiler :: Compiler
-defaultCompiler =
-  Compiler
+defaultPipelineEnv :: PipelineEnv
+defaultPipelineEnv =
+  PipelineEnv
     { src = "",
       flags = [],
       resolver = defaultResolver,
       solver = defaultSolver
     }
 
-type CompilerState a = State Compiler a
-
-type CompilerT a = StateT Compiler IO a
-
-run :: Text -> CompilerState Text
-run src = do
+runPipeline :: PipelineEnv -> Text -> (Text, PipelineEnv)
+runPipeline src = do
   Compiler {src = _, flags = f, resolver = r, solver = sl} <- get
   put $ Compiler {src = src, flags = f, resolver = r, solver = sl}
   case lexMML src of
