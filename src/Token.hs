@@ -5,7 +5,8 @@ import Data.Int (Int64)
 import Data.Text (Text)
 
 data Token
-  = TokEOF
+  = TokError
+  | TokEOF
   | TokWhitespace
   | TokComment
   | TokUpperCaseIdent Text
@@ -72,6 +73,7 @@ data Token
   deriving (Show, Eq, Ord)
 
 pShowToken :: Token -> String
+pShowToken TokError = "Error"
 pShowToken TokEOF = "EOF"
 pShowToken TokWhitespace = "Whitespace"
 pShowToken TokComment = "Comment"
