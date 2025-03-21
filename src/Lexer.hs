@@ -133,6 +133,8 @@ pxy = Proxy
 
 type Lexer = Parsec Void Text
 
+type LexerError = ParseError TokenStream Void
+
 withPos :: Lexer a -> Lexer (WithPos a)
 withPos p = do
   startPos <- getSourcePos
@@ -156,9 +158,6 @@ hexadecimal = char '0' >> char' 'x' >> L.hexadecimal
 
 int :: Lexer Token
 int = TokInt <$> (try octal <|> try hexadecimal <|> L.decimal)
-
-real :: Lexer Token
-real = TokReal <$> L.float
 
 bool :: Lexer Token
 bool = TokBool <$> choice [True <$ string "true", False <$ string "false"]
@@ -197,8 +196,7 @@ ident = try $ do
         "class",
         "instance",
         "derive",
-        "do",
-        "end"
+        "do"
       ]
 
 upperCaseIdent :: Lexer Token
@@ -228,7 +226,6 @@ token =
         TokSlash <$ char '/',
         TokBackSlash <$ char '\\',
         TokPercent <$ char '%',
-        try (TokNeq <$ string "!=") <|> TokBang <$ char '!',
         try (TokFatArrow <$ string "=>") <|> TokEq <$ string "==" <|> TokAssign <$ char '=',
         TokLt <$ char '<',
         TokGt <$ char '>',
@@ -240,10 +237,6 @@ token =
         TokSemiColon <$ char ';',
         try (TokPipe <$ string "|>") <|> TokBar <$ char '|',
         TokUnderscore <$ char '_',
-        TokModule <$ string "module",
-        TokImport <$ string "import",
-        TokAs <$ string "as",
-        TokPub <$ string "pub",
         TokDef <$ string "def",
         TokLet <$ string "let",
         TokIn <$ string "in",
@@ -251,15 +244,8 @@ token =
         TokThen <$ string "then",
         TokElse <$ string "else",
         TokMatch <$ string "match",
-        TokWith <$ string "with",
-        TokData <$ string "data",
-        TokType <$ string "type",
-        TokClass <$ string "class",
-        TokInstance <$ string "instance",
-        TokDerive <$ string "derive",
-        TokDo <$ string "do",
-        TokEnd <$ string "end"
+        TokWith <$ string "with"
       ]
 
-tokenize :: Text -> (TokenStream, [ParseError])
+tokenize :: Text -> (TokenStream, [LexerError])
 tokenize src = TokenStream src <$> (parse (many token) "" src)
