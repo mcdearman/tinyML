@@ -69,7 +69,6 @@ data Token
   | TokInstance
   | TokDerive
   | TokDo
-  | TokEnd
   deriving (Show, Eq, Ord)
 
 pShowToken :: Token -> String
@@ -137,4 +136,3 @@ pShowToken TokClass = "Class"
 pShowToken TokInstance = "Instance"
 pShowToken TokDerive = "Derive"
 pShowToken TokDo = "Do"
-pShowToken TokEnd = "End"
