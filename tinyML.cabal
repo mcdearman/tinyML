@@ -24,14 +24,14 @@ executable tinyML
         -- Eval
         -- Infer
         Lexer
-        NIR
+        -- NIR
         Parser
         Pipeline
         -- Rename
         -- Scheme
-        TIR
+        -- TIR
         Token
-        Ty
+        -- Ty
     default-extensions: 
         OverloadedStrings
         ScopedTypeVariables
