@@ -1,3 +1,5 @@
+{-# LANGUAGE TypeFamilies #-}
+
 module Lexer (TokenStream (..), WithPos (..), tokenize) where
 
 import Common (Span (..), defaultSpan)

@@ -37,10 +37,7 @@ executable tinyML
         ScopedTypeVariables
         LambdaCase
         TupleSections
-        TemplateHaskell
-        TypeFamilies
         RecordWildCards
-        GADTs
         BangPatterns
     build-depends:    
         base,
