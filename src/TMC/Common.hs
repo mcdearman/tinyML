@@ -1,4 +1,4 @@
-module Common where
+module TMC.Common where
 
 import Data.Int (Int64)
 import Data.Ratio (Ratio)

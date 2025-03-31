@@ -1,4 +1,4 @@
-module Main where
+module TMC where
 
 import Common
 import Compiler

@@ -18,19 +18,20 @@ executable tinyML
     import:           warnings
     main-is:          Main.hs
     other-modules: 
-        AST
-        Common
+        TMC
+        TMC.AST
+        TMC.Common
         -- Core
         -- Eval
         -- Infer
-        Lexer
+        TMC.Lexer
         -- NIR
-        Parser
-        Pipeline
+        TMC.Parser
+        TMC.Pipeline
         -- Rename
         -- Scheme
         -- TIR
-        Token
+        TMC.Token
         -- Ty
     default-extensions: 
         OverloadedStrings
@@ -39,6 +40,7 @@ executable tinyML
         TupleSections
         RecordWildCards
         BangPatterns
+        TypeFamilies
     build-depends:    
         base,
         megaparsec,

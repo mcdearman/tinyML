@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeFamilies #-}
 
-module Lexer (TokenStream (..), WithPos (..), tokenize) where
+module TMC.Lexer (TokenStream (..), WithPos (..), tokenize) where
 
 import Common (Span (..), defaultSpan)
 import Control.Applicative (empty, (<|>))

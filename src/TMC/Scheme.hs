@@ -1,4 +1,4 @@
-module Scheme where
+module TMC.Scheme where
 
 import Common (Spanned)
 import Data.Function ((&))

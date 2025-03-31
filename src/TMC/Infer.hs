@@ -1,6 +1,6 @@
 {-# OPTIONS_GHC -Wno-name-shadowing #-}
 
-module Infer where
+module TMC.Infer where
 
 import Common
 import Control.Monad

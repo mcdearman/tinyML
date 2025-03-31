@@ -1,4 +1,4 @@
-module Ty where
+module TMC.Ty where
 
 import Common
 import Data.Map

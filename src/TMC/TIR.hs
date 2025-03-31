@@ -1,4 +1,4 @@
-module TIR where
+module TMC.TIR where
 
 import Common
 import Control.Placeholder (todo)

@@ -1,4 +1,4 @@
-module Parser where
+module TMC.Parser where
 
 import AST
 import Common

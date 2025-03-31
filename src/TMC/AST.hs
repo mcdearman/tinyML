@@ -1,4 +1,4 @@
-module AST
+module TMC.AST
   ( Prog,
     Module (..),
     Def,

@@ -1,4 +1,4 @@
-module Token (Token (..), pShowToken) where
+module TMC.Token (Token (..), pShowToken) where
 
 import Data.Int (Int64)
 import Data.Text (Text)

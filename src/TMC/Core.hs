@@ -1,4 +1,4 @@
--- module Core where
+-- module TMC.Core where
 
 -- import Common (Spanned, Unique)
 

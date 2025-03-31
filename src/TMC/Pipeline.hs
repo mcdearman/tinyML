@@ -1,4 +1,4 @@
-module Pipeline where
+module TMC.Pipeline where
 
 import Control.Monad.State (StateT)
 import Control.Monad.State.Strict
