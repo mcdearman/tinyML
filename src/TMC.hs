@@ -1,48 +1,45 @@
 module TMC where
 
-import Common
-import Compiler
 import Control.Monad.State.Strict (evalState, runState)
 import Data.Text (pack, unpack)
 import Data.Text.Lazy (toStrict)
-import Infer
-import qualified Infer as Solver
 import System.Console.Haskeline
+import TMC.Common
 import Text.Megaparsec (errorBundlePretty)
 import Text.Pretty.Simple (pShow)
 
 settings :: Settings IO
 settings = defaultSettings {historyFile = Just ".tinyml_history"}
 
-repl :: Compiler -> InputT IO ()
-repl c = do
-  input <- getMultilineInput ""
-  let r = Compiler.resolver c
-  let s = Compiler.solver c
-  let ctx = Solver.ctx s
-  let cs = Solver.constraints s
-  let sub = Solver.subst s
-  case input of
-    Just "env" -> do
-      outputStrLn $ unpack $ (toStrict . pShow) r
-      repl c
-    Just "res" -> do
-      outputStrLn $ unpack $ (toStrict . pShow) ()
-      repl c
-    Just "ctx" -> do
-      outputStrLn $ unpack $ (toStrict . pShow) ctx
-      repl c
-    Just "constraints" -> do
-      outputStrLn $ unpack $ pretty cs
-      repl c
-    Just "sub" -> do
-      outputStrLn $ unpack $ (toStrict . pShow) sub
-      repl c
-    Just src -> do
-      let (out, c') = runState (Compiler.run (pack src)) c
-      outputStrLn $ unpack out
-      repl c'
-    Nothing -> return ()
+-- repl :: Compiler -> InputT IO ()
+-- repl c = do
+--   input <- getMultilineInput ""
+--   let r = Compiler.resolver c
+--   let s = Compiler.solver c
+--   let ctx = Solver.ctx s
+--   let cs = Solver.constraints s
+--   let sub = Solver.subst s
+--   case input of
+--     Just "env" -> do
+--       outputStrLn $ unpack $ (toStrict . pShow) r
+--       repl c
+--     Just "res" -> do
+--       outputStrLn $ unpack $ (toStrict . pShow) ()
+--       repl c
+--     Just "ctx" -> do
+--       outputStrLn $ unpack $ (toStrict . pShow) ctx
+--       repl c
+--     Just "constraints" -> do
+--       outputStrLn $ unpack $ pretty cs
+--       repl c
+--     Just "sub" -> do
+--       outputStrLn $ unpack $ (toStrict . pShow) sub
+--       repl c
+--     Just src -> do
+--       let (out, c') = runState (Compiler.run (pack src)) c
+--       outputStrLn $ unpack out
+--       repl c'
+--     Nothing -> return ()
 
 getMultilineInput :: String -> InputT IO (Maybe String)
 getMultilineInput acc = do
@@ -62,4 +59,4 @@ collectLines acc = do
 main :: IO ()
 main = do
   putStrLn "Welcome to the MiniML REPL!"
-  runInputT settings (repl Compiler.defaultCompiler)
+  -- runInputT settings (repl Compiler.defaultCompiler)

@@ -1,5 +1,3 @@
-{-# OPTIONS_GHC -Wno-name-shadowing #-}
-
 module TMC.Infer where
 
 import Common
@@ -12,7 +10,6 @@ import Data.Map (Map)
 import qualified Data.Map as Map
 import Data.Set
 import qualified Data.Set as Set
--- import Data.Text hiding (concat, unwords, zip)
 import qualified NIR as N
 import Scheme (Scheme (..))
 import qualified Scheme
