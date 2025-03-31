@@ -20,9 +20,9 @@ module TMC.AST
   )
 where
 
-import Common (Spanned)
 import Data.Int (Int64)
 import Data.Text (Text)
+import TMC.Common (Spanned)
 
 type Prog = Spanned Module
 

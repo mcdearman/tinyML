@@ -16,7 +16,7 @@ common warnings
 
 executable tinyML
     import:           warnings
-    main-is:          Main.hs
+    main-is:          TMC.hs
     other-modules: 
         TMC
         TMC.AST
