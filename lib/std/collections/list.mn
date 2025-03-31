@@ -1,0 +1,11 @@
+-- A pair list is either empty or a pair of an element and a pair list.
+data List a = [] | a :: List a
+
+impl Stream (List a) where
+  type Item (List a) = a
+
+  def next xs =
+    match xs with
+    | [] -> None
+    | x :: xs -> Some (x, xs)
+

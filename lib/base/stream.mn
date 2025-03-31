@@ -1,0 +1,52 @@
+pub class Stream a where
+  type Item a
+
+  @inline
+  def next : a -> Option (a, s)
+
+  @inline
+  def len : a -> Int = foldl (+ 1) 0
+
+  @inline
+  def map (f : a -> b) (stream : s) : Map b = 
+    MapStream { stream, f }
+
+  @inline
+  def zip (stream1 : i, stream2 : j) : Zip i j =
+    ZipStream { stream1 = stream1, stream2 = stream2 }
+
+  @inline
+  def fold (f : a -> Item i -> a, acc : a) (stream : i) : a =
+    FoldStream { stream = stream, f = f, acc = acc }
+  
+pub data MapStream i g = { stream : i, f : g }
+
+instance Stream (MapStream i g) where
+  type Item (MapStream i g) = g (Item i)
+
+  def next (m : MapStream i f) : Option (Item i, MapStream i f) =
+    match next m.stream with
+    | None -> None
+    | Some (x, xs) -> Some (m.f x, MapStream { stream = xs, f = m.f })
+
+pub data ZipStream a b = { stream1 : a, stream2 : b }
+
+instance Stream (ZipStream a b) where
+  type Item (ZipStream a b) = (Item a, Item b)
+
+  def next (stream : ZipStream a b) : Option ((Item a, Item b), ZipStream a b) =
+    match next stream.stream1, next stream.stream2 with
+    | Some (x, xs), Some (y, ys) -> Some ((x, y), ZipStream { stream1 = xs, stream2 = ys })
+    | _, _ -> None
+
+pub data FoldStream i a = { stream : i, f : a -> Item i -> a, acc : a }
+
+instance Stream (FoldStream i a) where
+  type Item (FoldStream i a) = a
+
+  def next (stream : FoldStream i a) : Option (a, FoldStream i a) =
+    match next stream.stream with
+    | None -> Some (stream.acc, stream)
+    | Some (x, xs) -> 
+      let acc = stream.f stream.acc x
+      Some (acc, FoldStream { stream = xs, f = stream.f, acc = acc })

@@ -1,0 +1,16 @@
+record Trie a { 
+  value : Option a, 
+  children : Map Char (Trie a)
+}
+
+def empty : Trie a = { value = None, children = Map.empty }
+
+def insert (s : String) (v : a) (t : Trie a) : Trie a =
+  match s with
+  | "" -> { t with value = Some v }
+  | (c::cs) -> 
+    let child = 
+      match t.children.get c with
+      | None -> empty
+      | Some t -> t
+    in { t with children = t.children.insert c (insert child cs v) }
