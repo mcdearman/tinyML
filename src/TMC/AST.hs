@@ -70,7 +70,7 @@ data UnOpSort
   deriving (Show, Eq)
 
 unOpName :: UnOpSort -> Text
-unOpName UnOpNeg = "prim__neg"
+unOpName UnOpNeg = "neg"
 
 type BinaryOp = Spanned BinOpSort
 
@@ -84,12 +84,12 @@ data BinOpSort
   deriving (Show, Eq)
 
 binOpName :: BinOpSort -> Text
-binOpName BinOpAdd = "prim__add"
-binOpName BinOpSub = "prim__sub"
-binOpName BinOpMul = "prim__mul"
-binOpName BinOpDiv = "prim__div"
-binOpName BinOpMod = "prim__mod"
-binOpName BinOpEq = "prim__eq"
+binOpName BinOpAdd = "add"
+binOpName BinOpSub = "sub"
+binOpName BinOpMul = "mul"
+binOpName BinOpDiv = "div"
+binOpName BinOpMod = "mod"
+binOpName BinOpEq = "eq"
 
 type Pattern = Spanned PatternSort
 

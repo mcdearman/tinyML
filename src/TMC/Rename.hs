@@ -37,9 +37,9 @@ builtins :: [Text]
 builtins =
   [ "neg",
     "not",
-    "+",
-    "-",
-    "*",
+    "add",
+    "sub",
+    "mul",
     "/",
     "%",
     "^",
