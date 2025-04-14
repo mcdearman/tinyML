@@ -16,7 +16,7 @@ common warnings
 
 executable tinyML
     import:           warnings
-    main-is:          TMC.hs
+    main-is:          src/TMC.hs
     other-modules: 
         TMC
         TMC.AST
@@ -28,7 +28,7 @@ executable tinyML
         -- NIR
         TMC.Parser
         TMC.Pipeline
-        -- Rename
+        -- TMC.Rename
         -- Scheme
         -- TIR
         TMC.Token
