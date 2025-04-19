@@ -18,6 +18,10 @@ pub class Stream a where
   @inline
   def fold (f : a -> Item i -> a, acc : a) (stream : i) : a =
     FoldStream { stream = stream, f = f, acc = acc }
+
+  @inline
+  def filter (f : a -> Bool) (stream : i) : FilterStream i = 
+    FilterStream { stream = stream, f = f }
   
 pub data MapStream i g = { stream : i, f : g }
 

@@ -1,0 +1,25 @@
+pub class Add a b =
+  type Output
+  def (+) : a -> b -> Output
+
+pub class Sub a b =
+  type Output
+  def (-) : a -> b -> Output
+
+pub class Mul a b =
+  type Output
+  def (*) : a -> b -> Output
+
+pub class Div a b =
+  type Output
+  def (/) : a -> b -> Output
+
+pub class Mod a b =
+  type Output
+  def (%) : a -> b -> Output
+
+pub class Neg a =
+  type Output
+  def neg : a -> Output
+
+pub class Num a <: (Add a a, Sub a a, Mul a a, Div a a, Mod a a, Neg a)

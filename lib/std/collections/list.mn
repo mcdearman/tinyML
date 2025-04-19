@@ -1,11 +1,36 @@
 -- A pair list is either empty or a pair of an element and a pair list.
 data List a = [] | a :: List a
 
-impl Stream (List a) where
-  type Item (List a) = a
+def length : List a -> Int
+  | [] = 0
+  | (x::xs) = 1 + length xs
 
-  def next xs =
-    match xs with
-    | [] -> None
-    | x :: xs -> Some (x, xs)
+def map : (a -> b) -> List a -> List b
+  | f [] = []
+  | f (x::xs) = f x :: map f xs
 
+def foldl : (a -> b -> a) -> a -> List b -> a
+  | f acc [] = acc
+  | f acc (x::xs) = foldl f (f acc x) xs
+
+def foldr : (a -> b -> b) -> b -> List a -> b
+  | f acc [] = acc
+  | f acc (x::xs) = f x (foldr f acc xs)
+
+def filter : (a -> Bool) -> List a -> List a
+  | f [] = []
+  | f (x::xs) = if f x then x :: filter f xs else filter f xs
+
+def concat : List (List a) -> List a
+  | [] = []
+  | (x::xs) = x ++ concat xs
+
+def (++) : List a -> List a -> List a
+  | [] ++ ys = ys
+  | (x::xs) ++ ys = x :: (xs ++ ys)
+
+def reverse : [a] -> [a] = 
+  foldl (flip (::)) []
+
+impl Functor List where
+  def map f xs = foldr (fun x acc -> f x :: acc) [] xs

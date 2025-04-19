@@ -15,7 +15,7 @@ true -- Bool
 def main : Console =
   println "Hello, world!"
 
--- Bindings are immutable by default.
+-- Bindings are immutable.
 def x = 1
 
 -- pattern bindings at the top level must be irrefutable
@@ -123,37 +123,30 @@ def map a b. (f : a -> b) (xs : [a]) : [b] =
   | [] -> []
   | (x::xs) -> f x :: map f xs
 
-pub def map f xs = match xs with
-  [] -> []
-  (x::xs) -> f x :: map f xs
-
-def map f xs =
+pub def map f xs = 
   match xs with
-  | [] -> []
-  | (x::xs) -> f x :: map f xs
+    [] -> []
+    (x::xs) -> f x :: map f xs
 
--- or
-pub def map : a b. (a -> b) -> [a] -> [b]
-  f [] -> []
-  f (x::xs) -> f x :: map f xs
+-- with braces and semicolons
+def map f xs = match xs with {
+  [] -> [];
+  (x::xs) -> f x :: map f xs
+}
 
 def foldl f acc xs =
   match xs with
   | [] -> acc
   | (x :: xs) -> foldl f (f acc x) xs
 
-def foldl = \f acc xs ->
-  match xs with
-  | [] -> acc
-  | (x :: xs) -> foldl f (f acc x) xs
-
-def foldl : a b. (a -> b -> a) -> a -> [b] -> a
-  | foldl f acc [] = acc
-  | foldl f acc (x::xs) = foldl f (f acc x) xs
-
-def foldl : a b e. (a -> b -> a ! e) -> a -> [b] -> a ! e
+pub def foldl : (a -> b -> a) -> a -> [b] -> a
   | f acc []      = acc
   | f acc (x::xs) = foldl f (f acc x) xs
+
+def foldl : a b e. (a -> b -> a ! e) -> a -> [b] -> a ! e =
+  match xs with
+    f acc []      = acc
+    f acc (x::xs) = foldl f (f acc x) xs
 
 def foldl : (a -> b -> a) -> a -> [b] -> a
   | foldl f acc [] = acc
@@ -197,45 +190,49 @@ def binarySearch (cmp : a -> Ordering) (xs : [a]) (x : a) : Option Int ->
 type Point = (Int, Int)
 
 -- structs
-struct Person { 
+record Person { 
   name : String, 
   age : Int,
 }
 
 -- or with indentation
-struct Person
+record Person
   name : String
   age : Int
 
 -- We can use initializer syntax to create instances of structs.
--- Notice that we don't need to specify the struct name. MiniML will
+-- Notice that we don't need to specify the record name. MiniML will
 -- infer the type based on the fields.
 def alice = { name = "Alice", age = 30 }
 
 -- If there are two structs with identical fields, we can use the
--- struct name to disambiguate.
+-- record name to disambiguate.
 def bob = Person { name = "Bob", age = 25 }
 
--- By default struct fields are private. We can make them public by using
+-- By default record fields are private. We can make them public by using
 -- the `pub` keyword.
-pub struct Person
+@derive(Debug, Show, Eq)
+pub record Person
   pub name : String
   pub age : Int
+
+-- We can define a constructor for the record. record constructors are just
+-- functions with the same name as the record that take the same arguments as 
+-- the record fields.
+pub def Person (name : String) (age : Int) : Person =
+  { name = name, age = age }
   
--- Structs can also be initialized like functions with positional arguments.
--- Even though this looks like a function call, it is actually a struct
--- initialization under the hood. Note that this is only possible if the
--- struct **and** its fields are public.
+-- We can use the constructor to create instances of the record.
 def charlie = Person "Charlie" 20
 
--- We can update struct fields using the `with` keyword. This creates a new
--- struct with the specified fields updated.
+-- We can update record fields using the `with` keyword. This creates a new
+-- record with the specified fields updated.
 def alice = { name = "Alice", age = 30 }
 def alice' = { alice with age = 31 }
 
 -- We can also update nested fields.
-struct Address { city : String, zip : Int }
-struct Person { name : String, age : Int, address : Address }
+record Address { city : String, zip : Int }
+record Person { name : String, age : Int, address : Address }
 
 def alice = { name = "Alice", age = 30, address = { city = "New York", zip = 10001 } }
 def alice' = { alice with address.city = "San Francisco" }
@@ -256,10 +253,10 @@ data NonEmptyList a = NonEmpty a (List a)
 data NomEmptyList a = a :| List a
 
 def (|>) : a b. a -> (a -> b) -> b
-  | x |> f = f x
+   x |> f = f x
 
 def compose : (b -> c) -> (a -> b) -> a -> c
-  | compose f g x = f (g x)
+    compose f g x = f (g x)
 
 -- methods with pipe
 [1, 2, 3]
